@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../styles/Login.css';
+import '../styles/pages/Login.css';
 
 const Login = () => {
   const [mobileNumber, setMobileNumber] = useState('');

@@ -1,4 +1,4 @@
-import '../styles/Family.css';
+import '../styles/pages/Family.css';
 
 const Family = () => {
   return (

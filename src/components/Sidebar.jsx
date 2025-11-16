@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import '../styles/Sidebar.css';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import '../styles/components/Sidebar.css';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const menuItems = [
     { path: '/dashboard', icon: '🏠', label: 'Home' },
@@ -12,6 +12,18 @@ const Sidebar = ({ isOpen, onClose }) => {
     { path: '/devices', icon: '⌚', label: 'Manage Devices' },
     { path: '/family', icon: '👨‍👩‍👧‍👦', label: 'Manage Family' },
   ];
+
+  const handleLogout = () => {
+    // Clear any stored authentication data
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Close sidebar
+    onClose();
+    
+    // Redirect to login page
+    navigate('/', { replace: true });
+  };
 
   return (
     <>
@@ -40,10 +52,10 @@ const Sidebar = ({ isOpen, onClose }) => {
         </nav>
 
         <div className="sidebar-footer">
-          <Link to="/" className="sidebar-logout" onClick={onClose}>
+          <button className="sidebar-logout" onClick={handleLogout}>
             <span className="sidebar-icon">🚪</span>
             <span className="sidebar-label">Logout</span>
-          </Link>
+          </button>
         </div>
       </div>
     </>

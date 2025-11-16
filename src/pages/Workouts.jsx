@@ -1,4 +1,4 @@
-import '../styles/Workouts.css';
+import '../styles/pages/Workouts.css';
 
 const Workouts = () => {
   return (
