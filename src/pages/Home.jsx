@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import '../styles/Home.css';
-import { availableDevices as initialAvailable, mockDevices as initialPaired, getDeviceTypeIcon, getSignalStrengthText, getSignalStrengthColor } from '../data/mockData';
+import { availableDevices as initialAvailable, mockDevices as initialPaired, getSignalStrengthText, getSignalStrengthColor } from '../data/mockData';
 
 const Home = () => {
   const [pairedDevices, setPairedDevices] = useState(initialPaired);
@@ -15,20 +15,16 @@ const Home = () => {
 
   const handlePairDevice = () => {
     if (selectedDevice) {
-      // Add device to paired list with battery level
       const pairedDevice = {
         ...selectedDevice,
         connectionStatus: 'connected',
-        batteryLevel: Math.floor(Math.random() * 30) + 70, // Random battery 70-100%
+        batteryLevel: Math.floor(Math.random() * 30) + 70,
         lastSync: new Date().toISOString()
       };
 
       setPairedDevices([...pairedDevices, pairedDevice]);
-      
-      // Remove from available devices
       setAvailableDevices(availableDevices.filter(d => d.id !== selectedDevice.id));
       
-      // Close modal
       setShowModal(false);
       setSelectedDevice(null);
     }
@@ -42,17 +38,14 @@ const Home = () => {
   return (
     <div className="home-container">
       <div className="bluetooth-ui">
-        {/* Simple Header */}
         <div className="page-header">
           <h1>Devices</h1>
         </div>
 
-        {/* Info Section */}
         <div className="bluetooth-info">
           Make sure the device you want to connect to is in pairing mode. Your phone is currently visible to nearby devices.
         </div>
 
-        {/* Paired Devices Section */}
         <div className="section-title">Paired Devices</div>
         <div className="device-list">
           {pairedDevices.length === 0 ? (
@@ -61,7 +54,9 @@ const Home = () => {
             pairedDevices.map(device => (
               <div className="device-card" key={device.id}>
                 <div className="device-content">
-                  <span className="device-icon">{getDeviceTypeIcon(device.deviceType)}</span>
+                  <div className="device-image-wrapper">
+                    <img src={device.image} alt={device.name} className="device-image" />
+                  </div>
                   <div className="device-info">
                     <span className="device-name">{device.name}</span>
                     <span className="device-model">{device.model}</span>
@@ -73,7 +68,6 @@ const Home = () => {
           )}
         </div>
 
-        {/* Available Devices Section */}
         <div className="section-title">Available Devices</div>
         <div className="device-list">
           {availableDevices.length === 0 ? (
@@ -86,7 +80,9 @@ const Home = () => {
                 onClick={() => handleDeviceClick(device)}
               >
                 <div className="device-content">
-                  <span className="device-icon">{getDeviceTypeIcon(device.deviceType)}</span>
+                  <div className="device-image-wrapper">
+                    <img src={device.image} alt={device.name} className="device-image" />
+                  </div>
                   <div className="device-info">
                     <span className="device-name">{device.name}</span>
                     <span className="device-model">{device.model}</span>
@@ -107,7 +103,6 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Pairing Confirmation Modal */}
       {showModal && selectedDevice && (
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -118,7 +113,9 @@ const Home = () => {
             
             <div className="modal-body">
               <div className="modal-device-preview">
-                <span className="modal-device-icon">{getDeviceTypeIcon(selectedDevice.deviceType)}</span>
+                <div className="modal-device-image-wrapper">
+                  <img src={selectedDevice.image} alt={selectedDevice.name} className="modal-device-image" />
+                </div>
                 <div className="modal-device-info">
                   <h4>{selectedDevice.name}</h4>
                   <p>{selectedDevice.model}</p>
