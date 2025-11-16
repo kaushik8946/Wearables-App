@@ -3,11 +3,17 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [
-    react({
-      babel: {
-        plugins: [['babel-plugin-react-compiler']],
-      },
-    }),
-  ],
+  plugins: [react()],
+  server: {
+    host: '0.0.0.0',
+    allowedHosts: ['localhost', '.compute.amazonaws.com'],
+    port: 5173,
+    cors: true
+  },
+  preview: {
+    host: '0.0.0.0',
+    port: 4173,
+    allowedHosts: ['localhost', '.compute.amazonaws.com'],
+    cors: true
+  }
 })
