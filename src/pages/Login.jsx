@@ -1,4 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import '../styles/Login.css';
 
 const Login = () => {
   const [mobileNumber, setMobileNumber] = useState('');
@@ -6,23 +8,33 @@ const Login = () => {
   const [otp, setOtp] = useState(Array(6).fill(''));
   const [errors, setErrors] = useState({ mobile: '', otp: '' });
   const inputs = useRef([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (showOtpInput) {
+      const prefilledOtp = ['1', '2', '3', '4', '5', '6'];
+      setOtp(prefilledOtp);
+    }
+  }, [showOtpInput]);
 
   const handleMobileNumberChange = (e) => {
     const value = e.target.value.replace(/\D/g, '');
     if (value.length <= 10) {
       setMobileNumber(value);
-      setErrors({ ...errors, mobile: '' });
+      if (value.length === 10) {
+        setErrors({ ...errors, mobile: '' });
+      } else {
+        setErrors({ ...errors, mobile: 'Enter a valid mobile number' });
+      }
     }
   };
 
   const handleSendOtp = (e) => {
     e.preventDefault();
-    
     if (mobileNumber.length !== 10) {
-      setErrors({ ...errors, mobile: 'Please enter a valid 10-digit mobile number' });
+      setErrors({ ...errors, mobile: 'Enter a valid mobile number' });
       return;
     }
-
     setShowOtpInput(true);
     setErrors({ mobile: '', otp: '' });
   };
@@ -65,10 +77,16 @@ const Login = () => {
     }
 
     console.log('Verifying OTP:', otpValue);
+    
+    if (mobileNumber.endsWith('123')) {
+      navigate('/signup');
+    } else {
+      navigate('/home');
+    }
   };
 
   const handleResendOtp = () => {
-    setOtp(Array(6).fill(''));
+    setOtp(['1', '2', '3', '4', '5', '6']);
     console.log('Resending OTP to:', mobileNumber);
   };
 
@@ -82,7 +100,7 @@ const Login = () => {
 
         {!showOtpInput ? (
           <form onSubmit={handleSendOtp} className="login-form">
-            <h2>Login</h2>
+            <h2>Login/Sign Up</h2>
             <p className="subtitle">Enter your mobile number to continue</p>
 
             <div className="input-group">
@@ -104,8 +122,8 @@ const Login = () => {
               {errors.mobile && <span className="error-text">{errors.mobile}</span>}
             </div>
 
-            <button type="submit" className="btn-primary">
-              Send OTP
+            <button type="submit" className="btn-primary" disabled={mobileNumber.length !== 10}>
+              Generate OTP
             </button>
           </form>
         ) : (
@@ -130,7 +148,6 @@ const Login = () => {
                     onKeyDown={(e) => handleKeyDown(e, index)}
                     ref={(el) => (inputs.current[index] = el)}
                     className={`otp-box ${errors.otp ? 'input-error' : ''}`}
-                    style={{ color: '#222' }}
                     autoFocus={index === 0}
                   />
                 ))}

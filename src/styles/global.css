@@ -1,0 +1,25 @@
+/* Global Reset & Mobile-First Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #fff !important;
+  min-height: 100vh;
+}
+
+/* Ensure minimum touch target sizes (44x44px) */
+button {
+  min-height: 44px;
+  min-width: 44px;
+}
