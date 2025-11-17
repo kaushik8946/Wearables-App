@@ -4,9 +4,10 @@ import Signup from './pages/Signup';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
-import Workouts from './pages/Workouts';
 import Devices from './pages/Devices';
 import Family from './pages/Family';
+
+import ClassWorkout from './pages/ClassWorkout';
 import './styles/global.css';
 
 function App() {
@@ -20,9 +21,10 @@ function App() {
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/workouts" element={<Workouts />} />
           <Route path="/devices" element={<Devices />} />
           <Route path="/family" element={<Family />} />
+
+          <Route path="/class-workout" element={<ClassWorkout />} />
         </Route>
 
         {/* Redirect /home to /dashboard */}

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/pages/Signup.css';
@@ -10,6 +9,7 @@ const Signup = () => {
     age: '',
     gender: '',
     email: '',
+    mobileNumber: '',
   });
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
@@ -18,10 +18,12 @@ const Signup = () => {
     const newErrors = {};
     if (!form.firstName.trim()) newErrors.firstName = 'First name is required';
     if (!form.lastName.trim()) newErrors.lastName = 'Last name is required';
+    if (!form.mobileNumber.trim() || form.mobileNumber.length !== 10) newErrors.mobileNumber = 'Valid mobile number is required';
     if (!form.age || isNaN(form.age) || form.age < 1 || form.age > 120) newErrors.age = 'Enter valid age (1-120)';
     if (!form.gender) newErrors.gender = 'Select gender';
     if (form.firstName.length > 100) newErrors.firstName = 'Max 100 characters';
     if (form.lastName.length > 100) newErrors.lastName = 'Max 100 characters';
+    if (form.email && !/\S+@\S+\.\S+/.test(form.email)) newErrors.email = 'Enter valid email';
     return newErrors;
   };
 
@@ -38,13 +40,18 @@ const Signup = () => {
       setErrors(validation);
       return;
     }
-    // All inputs valid, go to dashboard
-    navigate('/home');
-  };
-
-  const isFormValid = () => {
-    const validation = validate();
-    return Object.keys(validation).length === 0;
+    const userToSave = {
+      name: form.firstName+" "+form.lastName,
+      lastName: form.lastName,
+      age: form.age,
+      gender: form.gender,
+      email: form.email,
+      mobile: form.mobileNumber,
+    };
+    localStorage.setItem('registeredUser', JSON.stringify(userToSave));
+    localStorage.setItem('currentUser', JSON.stringify(userToSave));
+    localStorage.setItem('isAuthenticated', 'true');
+    navigate('/dashboard');
   };
 
   return (
@@ -79,6 +86,19 @@ const Signup = () => {
               className={errors.lastName ? 'input-error' : ''}
             />
             {errors.lastName && <span className="error-text">{errors.lastName}</span>}
+          </div>
+          <div className="input-group">
+            <label htmlFor="mobileNumber">Mobile Number<span style={{color:'red'}}>*</span></label>
+            <input
+              type="tel"
+              id="mobileNumber"
+              name="mobileNumber"
+              maxLength={10}
+              value={form.mobileNumber}
+              onChange={handleChange}
+              className={errors.mobileNumber ? 'input-error' : ''}
+            />
+            {errors.mobileNumber && <span className="error-text">{errors.mobileNumber}</span>}
           </div>
           <div className="input-group">
             <label htmlFor="age">Age<span style={{color:'red'}}>*</span></label>
@@ -124,7 +144,9 @@ const Signup = () => {
               name="email"
               value={form.email}
               onChange={handleChange}
+              className={errors.email ? 'input-error' : ''}
             />
+            {errors.email && <span className="error-text">{errors.email}</span>}
           </div>
           <button type="submit" className="btn-primary">
             Submit

@@ -1,63 +1,55 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import '../styles/components/Sidebar.css';
 
-const Sidebar = ({ isOpen, onClose }) => {
-  const location = useLocation();
-  const navigate = useNavigate();
-
+const Sidebar = ({ isOpen, onClose, onLogout }) => {
   const menuItems = [
-    { path: '/dashboard', icon: '🏠', label: 'Home' },
-    { path: '/profile', icon: '👤', label: 'User Profile' },
-    { path: '/workouts', icon: '💪', label: 'Class & Workout' },
-    { path: '/devices', icon: '⌚', label: 'Manage Devices' },
-    { path: '/family', icon: '👨‍👩‍👧‍👦', label: 'Manage Family' },
+    { id: 1, path: '/dashboard', label: 'Dashboard', icon: '📊' },
+    { id: 2, path: '/devices', label: 'Devices', icon: '⌚' },
+    { id: 3, path: '/family', label: 'Family', icon: '👨‍👩‍👧‍👦' },
+    { id: 4, path: '/class-workout', label: 'Class & Workout', icon: '🏋️' },
   ];
-
-  const handleLogout = () => {
-    // Clear any stored authentication data
-    localStorage.clear();
-    sessionStorage.clear();
-    
-    // Close sidebar
-    onClose();
-    
-    // Redirect to login page
-    navigate('/', { replace: true });
-  };
 
   return (
     <>
       {/* Overlay */}
-      {isOpen && <div className="sidebar-overlay" onClick={onClose}></div>}
-      
+      {isOpen && (
+        <div
+          className="sidebar-overlay sidebar-overlay-open"
+          onClick={onClose}
+        />
+      )}
+
       {/* Sidebar */}
-      <div className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
+      <nav className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-header">
-          <h2>Wearables App</h2>
-          <button className="sidebar-close" onClick={onClose}>✕</button>
+          <h2>Menu</h2>
+          <button className="sidebar-close" onClick={onClose} aria-label="Close sidebar">
+            ✕
+          </button>
         </div>
 
-        <nav className="sidebar-nav">
+        <ul className="sidebar-nav">
           {menuItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
-              onClick={onClose}
-            >
-              <span className="sidebar-icon">{item.icon}</span>
-              <span className="sidebar-label">{item.label}</span>
-            </Link>
+            <li key={item.id} className="sidebar-item">
+              <NavLink
+                to={item.path}
+                className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+                onClick={onClose}
+              >
+                <span className="sidebar-icon">{item.icon}</span>
+                <span className="sidebar-label">{item.label}</span>
+              </NavLink>
+            </li>
           ))}
-        </nav>
+        </ul>
 
         <div className="sidebar-footer">
-          <button className="sidebar-logout" onClick={handleLogout}>
-            <span className="sidebar-icon">🚪</span>
+          <button className="sidebar-logout" onClick={onLogout}>
+            <span className="sidebar-icon">↩️</span>
             <span className="sidebar-label">Logout</span>
           </button>
         </div>
-      </div>
+      </nav>
     </>
   );
 };

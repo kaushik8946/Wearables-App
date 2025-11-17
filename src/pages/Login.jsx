@@ -1,93 +1,73 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/pages/Login.css';
 
 const Login = () => {
   const [mobileNumber, setMobileNumber] = useState('');
-  const [showOtpInput, setShowOtpInput] = useState(false);
-  const [otp, setOtp] = useState(Array(6).fill(''));
-  const [errors, setErrors] = useState({ mobile: '', otp: '' });
-  const inputs = useRef([]);
+  const [showOtpScreen, setShowOtpScreen] = useState(false);
+  const [otp, setOtp] = useState(['1', '2', '3', '4', '5', '6']);
+  const [errors, setErrors] = useState({});
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (showOtpInput) {
-      const prefilledOtp = ['1', '2', '3', '4', '5', '6'];
-      setOtp(prefilledOtp);
-    }
-  }, [showOtpInput]);
-
-  const handleMobileNumberChange = (e) => {
-    const value = e.target.value.replace(/\D/g, '');
-    if (value.length <= 10) {
-      setMobileNumber(value);
-      if (value.length === 10) {
-        setErrors({ ...errors, mobile: '' });
-      } else {
-        setErrors({ ...errors, mobile: 'Enter a valid mobile number' });
-      }
-    }
+  const handleMobileChange = (e) => {
+    const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+    setMobileNumber(value);
+    setErrors((prev) => ({ ...prev, mobile: '' }));
   };
 
-  const handleSendOtp = (e) => {
+  const handleRequestOtp = (e) => {
     e.preventDefault();
     if (mobileNumber.length !== 10) {
-      setErrors({ ...errors, mobile: 'Enter a valid mobile number' });
+      setErrors({ ...errors, mobile: 'Enter valid 10 digit mobile number' });
       return;
     }
-    setShowOtpInput(true);
-    setErrors({ mobile: '', otp: '' });
+    setShowOtpScreen(true);
+    setOtp(['1','2','3','4','5','6']);
   };
 
-  const handleOtpChange = (e, index) => {
-    const { value } = e.target;
-
-    if (value.match(/^\d$/)) {
-      const newOtp = [...otp];
-      newOtp[index] = value;
-      setOtp(newOtp);
-
-      if (index < 5) {
-        inputs.current[index + 1].focus();
-      }
-    }
-
-    if (value === '') {
-      const newOtp = [...otp];
-      newOtp[index] = '';
-      setOtp(newOtp);
-    }
-  };
-
-  const handleKeyDown = (e, index) => {
-    if (e.key === 'Backspace' && otp[index] === '') {
-      if (index > 0) {
-        inputs.current[index - 1].focus();
-      }
+  const handleOtpInput = (e, idx) => {
+    const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 1);
+    const updatedOtp = otp.map((v, i) => (i === idx ? value : v));
+    setOtp(updatedOtp);
+    setErrors((prev) => ({ ...prev, otp: '' }));
+    if (value && idx < 5) {
+      document.getElementById(`otp-${idx + 1}`).focus();
     }
   };
 
   const handleVerifyOtp = (e) => {
     e.preventDefault();
-    
     const otpValue = otp.join('');
-    if (otpValue.length !== 6) {
-      setErrors({ ...errors, otp: 'Please enter complete 6-digit OTP' });
+    if (otpValue !== '123456') {
+      setErrors({ ...errors, otp: 'Please enter correct OTP (123456)' });
       return;
     }
 
-    console.log('Verifying OTP:', otpValue);
-    
+    // Fetch registered user data if exists
+    const registeredUser = localStorage.getItem('registeredUser');
+    const parsedUser = registeredUser ? JSON.parse(registeredUser) : null;
+
+    // Create user object, fall back to generic if none registered yet
+    const user = parsedUser || {
+      name: 'User',
+      lastName: '',
+      age: null,
+      gender: '',
+      email: '',
+      mobile: mobileNumber,
+    };
+
+    // Save user info as current user
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    localStorage.setItem('isAuthenticated', 'true');
+    localStorage.setItem('userPhone', mobileNumber);
+
+    // If mobile ends with 123, go to signup (registration)
     if (mobileNumber.endsWith('123')) {
       navigate('/signup');
     } else {
-      navigate('/home');
+      navigate('/dashboard');
     }
-  };
-
-  const handleResendOtp = () => {
-    setOtp(['1', '2', '3', '4', '5', '6']);
-    console.log('Resending OTP to:', mobileNumber);
   };
 
   return (
@@ -95,88 +75,53 @@ const Login = () => {
       <div className="login-card">
         <div className="logo-section">
           <h1>Wearables App</h1>
-          <p className="tagline">Monitor Your Health</p>
+          <p className="tagline">Track your health in one place.</p>
         </div>
-
-        {!showOtpInput ? (
-          <form onSubmit={handleSendOtp} className="login-form">
-            <h2>Login/Sign Up</h2>
-            <p className="subtitle">Enter your mobile number to continue</p>
-
+        {!showOtpScreen ? (
+          <form className="login-form" onSubmit={handleRequestOtp}>
+            <h2>Sign in</h2>
+            <p className="subtitle">Enter your mobile number to proceed.</p>
             <div className="input-group">
-              <label htmlFor="mobile">Mobile Number</label>
+              <label htmlFor="mobile">Mobile Number<span style={{color:'red'}}>*</span></label>
               <div className="mobile-input-wrapper">
                 <span className="country-code">+91</span>
                 <input
-                  id="mobile"
                   type="tel"
-                  inputMode="numeric"
-                  pattern="[0-9]{10}"
+                  id="mobile"
+                  name="mobile"
                   value={mobileNumber}
-                  onChange={handleMobileNumberChange}
-                  placeholder="10-digit number"
+                  onChange={handleMobileChange}
+                  placeholder="Enter 10 digit mobile"
                   className={errors.mobile ? 'input-error' : ''}
                   autoFocus
+                  maxLength={10}
                 />
               </div>
               {errors.mobile && <span className="error-text">{errors.mobile}</span>}
             </div>
-
-            <button type="submit" className="btn-primary" disabled={mobileNumber.length !== 10}>
-              Generate OTP
-            </button>
+            <button type="submit" className="btn-primary">Request OTP</button>
           </form>
         ) : (
-          <form onSubmit={handleVerifyOtp} className="login-form">
-            <h2>Verify OTP</h2>
-            <p className="subtitle">
-              Code sent to <strong>+91 {mobileNumber}</strong>
-            </p>
-
+          <form className="login-form" onSubmit={handleVerifyOtp}>
+            <h2>Enter OTP</h2>
+            <p className="subtitle">For demo purposes, your OTP is <strong>123456</strong>.</p>
             <div className="input-group">
-              <label>Enter OTP</label>
               <div className="otp-input-wrapper">
-                {otp.map((digit, index) => (
+                {otp.map((value, idx) => (
                   <input
-                    key={index}
+                    key={idx}
+                    id={`otp-${idx}`}
+                    className="otp-box"
                     type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]{1}"
-                    maxLength="1"
-                    value={digit}
-                    onChange={(e) => handleOtpChange(e, index)}
-                    onKeyDown={(e) => handleKeyDown(e, index)}
-                    ref={(el) => (inputs.current[index] = el)}
-                    className={`otp-box ${errors.otp ? 'input-error' : ''}`}
-                    autoFocus={index === 0}
+                    maxLength={1}
+                    value={value}
+                    onChange={(e) => handleOtpInput(e, idx)}
                   />
                 ))}
               </div>
               {errors.otp && <span className="error-text">{errors.otp}</span>}
             </div>
-
-            <button type="submit" className="btn-primary">
-              Verify & Continue
-            </button>
-
-            <div className="resend-section">
-              <p>Didn't receive the code?</p>
-              <button type="button" onClick={handleResendOtp} className="btn-link">
-                Resend OTP
-              </button>
-            </div>
-
-            <button 
-              type="button" 
-              onClick={() => {
-                setShowOtpInput(false);
-                setOtp(Array(6).fill(''));
-                setErrors({ mobile: '', otp: '' });
-              }} 
-              className="btn-secondary"
-            >
-              Change Number
-            </button>
+            <button type="submit" className="btn-primary">Verify & Login</button>
           </form>
         )}
       </div>
