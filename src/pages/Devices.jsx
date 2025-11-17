@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import '../styles/Home.css';
+import '../styles/pages/Home.css';
 import { availableDevices as initialAvailable, mockDevices as initialPaired, getSignalStrengthText, getSignalStrengthColor } from '../data/mockData';
 
 const Home = () => {
