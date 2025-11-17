@@ -33,6 +33,7 @@ const ManageAccount = () => {
   const [user, setUser] = useState({});
   const [editKey, setEditKey] = useState(null);
   const [editValue, setEditValue] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const u = JSON.parse(localStorage.getItem('currentUser')) || {};
@@ -53,6 +54,15 @@ const ManageAccount = () => {
   };
 
   const handleSave = (key) => {
+    // Birthday validation: must be a past date
+    if (key === 'birthday') {
+      const today = new Date();
+      const inputDate = new Date(editValue);
+      if (!editValue || isNaN(inputDate) || inputDate >= today.setHours(0,0,0,0)) {
+        setError('Birthday must be a valid past date.');
+        return;
+      }
+    }
     let updated = { ...user, [key]: editValue };
     // If birthday is updated, recalculate age
     if (key === 'birthday') {
@@ -150,6 +160,16 @@ const ManageAccount = () => {
               );
             })}
           </div>
+          {/* Error Modal Popup */}
+          {error && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <div className="modal-title">Invalid Birthday</div>
+                <div className="modal-message">{error}</div>
+                <button className="modal-close-btn" onClick={() => setError('')}>OK</button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
