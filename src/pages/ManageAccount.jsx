@@ -4,9 +4,23 @@ import '../styles/pages/ManageAccount.css';
 const fields = [
   { key: 'gender', label: 'Gender', type: 'select', options: ['Male', 'Female', 'Other'] },
   { key: 'birthday', label: 'Birthday', type: 'date' },
+  { key: 'age', label: 'Age', type: 'readonly' },
   { key: 'height', label: 'Height', type: 'number', unit: 'cm' },
   { key: 'weight', label: 'Weight', type: 'number', unit: 'kg' }
 ];
+
+function calculateAge(birthday) {
+  if (!birthday) return '';
+  const birth = new Date(birthday);
+  if (isNaN(birth)) return '';
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+}
 
 function formatBirthday(dateStr) {
   if (!dateStr) return '';
@@ -22,6 +36,14 @@ const ManageAccount = () => {
 
   useEffect(() => {
     const u = JSON.parse(localStorage.getItem('currentUser')) || {};
+    // Always keep age in sync with birthday
+    if (u.birthday) {
+      const age = calculateAge(u.birthday);
+      if (u.age !== age) {
+        u.age = age;
+        localStorage.setItem('currentUser', JSON.stringify(u));
+      }
+    }
     setUser(u);
   }, []);
 
@@ -31,7 +53,11 @@ const ManageAccount = () => {
   };
 
   const handleSave = (key) => {
-    const updated = { ...user, [key]: editValue };
+    let updated = { ...user, [key]: editValue };
+    // If birthday is updated, recalculate age
+    if (key === 'birthday') {
+      updated.age = calculateAge(editValue);
+    }
     setUser(updated);
     localStorage.setItem('currentUser', JSON.stringify(updated));
     setEditKey(null);
@@ -47,55 +73,82 @@ const ManageAccount = () => {
           <h1 className="manage-account-title">Profile</h1>
           <p className="manage-account-desc">Update your personal info for best fitness insights</p>
           <div className="profile-list">
-            {fields.map(({ key, label, type, options, unit }) => (
-              <div className="profile-row" key={key}>
-                {/* Top row: label and value/add */}
-                <div className="profile-row-main">
-                  <span className="profile-label">{label}</span>
-                  {(editKey !== key) && (
-                    user[key]
-                      ? <span
-                          className="profile-value"
-                          onClick={() => handleEdit(key)}
-                          tabIndex={0}
-                          role="button"
-                        >
-                          {
-                            key === 'birthday'
-                              ? formatBirthday(user[key])
-                              : unit
-                                ? `${user[key]}${unit}`
-                                : user[key]
-                          }
-                        </span>
-                      : <button
-                          className="profile-add-btn"
-                          onClick={() => handleEdit(key)}
-                          type="button"
-                        >
-                          Add
-                        </button>
+            {fields.map(({ key, label, type, options, unit }) => {
+              if (key === 'age') {
+                // Age is calculated from birthday
+                const age = calculateAge(user.birthday);
+                return (
+                  <div className="profile-row" key={key}>
+                    <div className="profile-row-main">
+                      <span className="profile-label">{label}</span>
+                      <span className="profile-value" style={{ cursor: 'default', color: '#222' }}>{age ? age : <span className="profile-placeholder">--</span>}</span>
+                    </div>
+                  </div>
+                );
+              }
+              // Add unit hint for height and weight
+              let labelWithUnit = label;
+              if (key === 'height' && unit) labelWithUnit = `${label} (${unit})`;
+              if (key === 'weight' && unit) labelWithUnit = `${label} (${unit})`;
+              return (
+                <div className="profile-row" key={key}>
+                  {/* Top row: label and value/add */}
+                  <div className="profile-row-main">
+                    <span className="profile-label">{labelWithUnit}</span>
+                    {(editKey !== key) && (
+                      user[key]
+                        ? <span
+                            className="profile-value"
+                            onClick={() => handleEdit(key)}
+                            tabIndex={0}
+                            role="button"
+                          >
+                            {
+                              key === 'birthday'
+                                ? formatBirthday(user[key])
+                                : unit
+                                  ? `${user[key]}${unit}`
+                                  : user[key]
+                            }
+                          </span>
+                        : <button
+                            className="profile-add-btn"
+                            onClick={() => handleEdit(key)}
+                            type="button"
+                          >
+                            Add
+                          </button>
+                    )}
+                  </div>
+                  {/* Second row: input + buttons */}
+                  {editKey === key && (
+                    <div className="profile-row-edit">
+                      {type === 'select' ? (
+                        <select value={editValue} onChange={handleInput} className="profile-input modern-input">
+                          <option value="">Select</option>
+                          {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                      ) : type === 'date' ? (
+                        <input type="date" value={editValue} onChange={handleInput} className="profile-input modern-input" />
+                      ) : (
+                        <input
+                          type="number"
+                          value={editValue}
+                          onChange={handleInput}
+                          className="profile-input modern-input"
+                          min="1"
+                          step="any"
+                          inputMode="decimal"
+                          pattern="[0-9]*"
+                        />
+                      )}
+                      <button className="profile-save-btn" onClick={() => handleSave(key)}>Save</button>
+                      <button className="profile-cancel-btn" onClick={() => setEditKey(null)}>Cancel</button>
+                    </div>
                   )}
                 </div>
-                {/* Second row: input + buttons */}
-                {editKey === key && (
-                  <div className="profile-row-edit">
-                    {type === 'select' ? (
-                      <select value={editValue} onChange={handleInput} className="profile-input modern-input">
-                        <option value="">Select</option>
-                        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                      </select>
-                    ) : type === 'date' ? (
-                      <input type="date" value={editValue} onChange={handleInput} className="profile-input modern-input" />
-                    ) : (
-                      <input type="number" value={editValue} onChange={handleInput} className="profile-input modern-input" min="0" />
-                    )}
-                    <button className="profile-save-btn" onClick={() => handleSave(key)}>Save</button>
-                    <button className="profile-cancel-btn" onClick={() => setEditKey(null)}>Cancel</button>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

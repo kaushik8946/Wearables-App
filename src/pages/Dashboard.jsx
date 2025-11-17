@@ -144,9 +144,31 @@ const Dashboard = () => {
               localStorage.setItem('defaultDeviceId', dev.id);
             }}
           >
-            {connectedDevices.map(dev => (
-              <option key={dev.id} value={dev.id}>{dev.name || dev.deviceType || dev.type || 'Device'}</option>
-            ))}
+            {connectedDevices.map(dev => {
+              let userLabel = '';
+              const userId = dev.assignedTo || dev.user || dev.owner;
+              let currentUserId = null;
+              try {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                currentUserId = currentUser && currentUser.id ? String(currentUser.id) : null;
+              } catch {}
+              if (userId && currentUserId && String(userId) === currentUserId) {
+                userLabel = ' (used by: self)';
+              } else if (userId) {
+                try {
+                  const users = JSON.parse(localStorage.getItem('users') || '[]');
+                  const userObj = users.find(u => String(u.id) === String(userId));
+                  if (userObj && userObj.name && !/^\d{8,}$/.test(userObj.name)) {
+                    userLabel = ` (used by: ${userObj.name})`;
+                  }
+                } catch {}
+              }
+              return (
+                <option key={dev.id} value={dev.id}>
+                  {(dev.name || dev.deviceType || dev.type || 'Device') + userLabel}
+                </option>
+              );
+            })}
           </select>
         </div>
 
