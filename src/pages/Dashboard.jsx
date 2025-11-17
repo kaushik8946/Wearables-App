@@ -102,8 +102,25 @@ const Dashboard = () => {
     navigate('/devices');
   };
 
-  if (!metrics || !selectedDevice) {
-    return <div className="page-container"><div className="page-content">Loading...</div></div>;
+
+  // Show empty state if no devices
+  if (connectedDevices.length === 0) {
+    return (
+      <div className="page-container">
+        <div className="page-content">
+          <div className="empty-state-card">
+            <div className="empty-state-icon">⌚</div>
+            <div className="empty-state-title">No devices paired</div>
+            <div className="empty-state-description">
+              You have not paired any devices yet. To get started, pair a device.
+            </div>
+            <button className="btn-connect-device" onClick={handleGoToDevices}>
+              Go to Device Management
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
 
