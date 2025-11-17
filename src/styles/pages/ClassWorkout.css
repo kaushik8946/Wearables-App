@@ -1,50 +1,220 @@
-.classworkout-container {
-  max-width: 600px;
-  margin: 40px auto;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  padding: 48px 24px;
-  text-align: center;
+/* Modern background glass effect */
+.classworkout-bg {
+  background: linear-gradient(115deg, #f5f7fa 0%, #eaecfa 100%);
+  min-height: 100vh;
 }
 
+/* Tabs section */
 .classworkout-tabs {
   display: flex;
   justify-content: center;
-  gap: 16px;
-  margin-bottom: 32px;
+  gap: 20px;
+  position: sticky;
+  top: 0;
+  background: rgba(255,255,255,0.91);
+  border-radius: 0 0 18px 18px;
+  box-shadow: 0 1px 10px rgba(44,32,120,0.06);
+  padding: 10px 0 10px 0;
+  z-index: 10;
 }
 
+/* Tab buttons */
 .classworkout-tab {
-  padding: 10px 28px;
-  font-size: 1rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px 8px 0 0;
-  background: #f5f5f5;
-  color: #666;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  outline: none;
-}
-.classworkout-tab.active {
-  background: #667eea;
-  color: #fff;
-}
-
-.classworkout-content {
-  min-height: 120px;
-}
-
-.classworkout-title {
-  font-size: 2rem;
+  padding: 12px 36px;
+  font-size: 1.08rem;
   font-weight: 700;
-  color: #3a3a3a;
-  margin-bottom: 12px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(102,126,234,0.08);
+  color: #6a70a8;
+  cursor: pointer;
+  transition: background 0.33s, color 0.27s, box-shadow 0.15s;
+  outline: none;
+  box-shadow: 0 1px 8px rgba(98, 104, 164, 0.07);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: 0.2px;
+}
+
+.tab-icon {
+  font-size: 18px;
+  vertical-align: middle;
+}
+
+.classworkout-tab.active {
+  background: linear-gradient(98deg, #667eea 60%, #764ba2 100%);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.13);
+  transform: scale(1.03);
+}
+
+/* Content container */
+.classworkout-container {
+  max-width: 630px;
+  margin: 0px auto;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0 0 32px 0;
+  text-align: center;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Headings & descriptions */
+.classworkout-title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #21243d;
+  margin: 22px 0 10px 0;
+  text-align: left;
 }
 
 .classworkout-desc {
-  font-size: 1.1rem;
+  font-size: 1.18rem;
   color: #666;
-  margin-bottom: 0;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.cw-vertical-scroll {
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+  padding-bottom: 18px;
+}
+
+.cw-category-section {
+  margin-bottom: 38px;
+}
+
+.cw-category-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #334;
+  margin-bottom: 12px;
+  margin-left: 2px;
+  text-align: left;
+}
+
+.cw-hscroll {
+  display: flex;
+  gap: 19px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scroll-snap-type: x mandatory;
+}
+
+.cw-hscroll::-webkit-scrollbar {
+  height: 10px;
+}
+.cw-hscroll::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 6px;
+}
+
+/* Class cards */
+.cw-card {
+  min-width: 178px;
+  max-width: 185px;
+  flex: 0 0 178px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: none;
+  overflow: hidden;
+  text-align: left;
+  scroll-snap-align: start;
+  transition: box-shadow 0.19s, transform 0.19s;
+}
+
+.cw-card.modern-card {
+  background: rgba(255,255,255,0.93);
+  border-radius: 17px;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.10), 0 1px 9px 0 rgba(46,47,106,0.04);
+  border: 1px solid rgba(134,134,234,0.07);
+  transform: scale(1);
+}
+
+.cw-card.modern-card:hover {
+  box-shadow: 0 8px 32px rgba(102,126,234,0.21);
+  transform: scale(1.042);
+}
+
+.cw-card img {
+  width: 100%;
+  height: 112px;
+  object-fit: cover;
+  border-radius: 17px 17px 0 0;
+  pointer-events: none;
+  background: #efeffb;
+}
+
+.cw-card-body {
+  padding: 14px 16px 18px 16px;
+}
+
+.cw-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 11px;
+}
+
+.cw-level {
+  background: rgba(102,126,234,0.11);
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #556def;
+  font-weight: 600;
+}
+
+.cw-duration {
+  font-size: 13px;
+  color: #889;
+  font-weight: 600;
+}
+
+.cw-card-title {
+  font-weight: 700;
+  font-size: 15.5px;
+  color: #27284b;
+  line-height: 1.2;
+}
+
+@media (max-width: 800px) {
+  .classworkout-container {
+    max-width: 97vw;
+    padding: 0 1vw 24px 1vw;
+  }
+  .cw-hscroll {
+    gap: 13px;
+  }
+}
+
+@media (max-width: 600px) {
+  .cw-hscroll {
+    gap: 11px;
+  }
+  .cw-card,
+  .cw-card.modern-card {
+    min-width: 140px;
+    max-width: 146px;
+    flex-basis: 140px;
+    border-radius: 12px;
+  }
+  .cw-card img {
+    height: 78px;
+    border-radius: 12px 12px 0 0;
+  }
+  .cw-card-body {
+    padding: 10px 9px 14px 9px;
+  }
+  .cw-meta-row {
+    margin-bottom: 7px;
+  }
+  .cw-card-title {
+    font-size: 13px;
+  }
 }

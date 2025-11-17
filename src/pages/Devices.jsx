@@ -24,18 +24,18 @@ const Devices = () => {
 
   const [showModal, setShowModal] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState(null);
-  const [familyMembers, setFamilyMembers] = useState([]);
-  const [selectedFamilyMember, setSelectedFamilyMember] = useState('');
+  const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState('');
   // Settings modal state
   const [settingsModal, setSettingsModal] = useState({ open: false, device: null, newMember: '' });
   // Removed makeDefault state
 
   useEffect(() => {
     const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {};
-    const otherMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]');
+    const otherUsers = JSON.parse(localStorage.getItem('users') || '[]');
     // Ensure all mobile values are strings
     const normalize = m => ({ ...m, mobile: String(m.mobile) });
-    setFamilyMembers([{ ...normalize(currentUser), self: true }, ...otherMembers.map(normalize)]);
+    setUsers([{ ...normalize(currentUser), self: true }, ...otherUsers.map(normalize)]);
   }, []);
 
   // Auto-set first paired device as default if none
@@ -52,19 +52,19 @@ const Devices = () => {
 
   const handleDeviceClick = (device) => {
     setSelectedDevice(device);
-    setSelectedFamilyMember('');
+    setSelectedUser('');
     setShowModal(true);
   };
 
   const handlePairDevice = () => {
-    if (!selectedFamilyMember) {
-      alert('Please select a family member to assign this device');
+    if (!selectedUser) {
+      alert('Please select a user to assign this device');
       return;
     }
     if (selectedDevice) {
       const pairedDevice = {
         ...selectedDevice,
-        assignedTo: selectedFamilyMember,
+        assignedTo: selectedUser,
         connectionStatus: 'connected',
         batteryLevel: Math.floor(Math.random() * 30) + 70,
         lastSync: new Date().toISOString()
@@ -79,7 +79,7 @@ const Devices = () => {
 
       setShowModal(false);
       setSelectedDevice(null);
-      setSelectedFamilyMember('');
+      setSelectedUser('');
     }
   };
 
@@ -89,16 +89,16 @@ const Devices = () => {
     setSelectedFamilyMember('');
   };
 
-  const getAssignedMemberName = (mobile) => {
+  const getAssignedUserName = (mobile) => {
     if (!mobile) return 'Unknown';
-    const member = familyMembers.find(m => String(m.mobile) === String(mobile));
-    return member ? member.name + (member.self ? ' (You)' : '') : 'Unknown';
+    const user = users.find(m => String(m.mobile) === String(mobile));
+    return user ? user.name + (user.self ? ' (Self)' : '') : 'Unknown';
   };
 
   const handleSettings = (e, deviceId) => {
     e.stopPropagation();
     const device = pairedDevices.find(d => d.id === deviceId);
-    setSettingsModal({ open: true, device, newMember: device.assignedTo });
+    setSettingsModal({ open: true, device, newUser: device.assignedTo });
   };
 
   const handleCloseSettingsModal = () => {
@@ -106,12 +106,12 @@ const Devices = () => {
   };
 
   const handleReassign = () => {
-    if (!settingsModal.newMember) {
-      alert('Please select a family member to assign this device');
+    if (!settingsModal.newUser) {
+      alert('Please select a user to assign this device');
       return;
     }
     const updatedPairedDevices = pairedDevices.map(d =>
-      d.id === settingsModal.device.id ? { ...d, assignedTo: settingsModal.newMember } : d
+      d.id === settingsModal.device.id ? { ...d, assignedTo: settingsModal.newUser } : d
     );
     setPairedDevices(updatedPairedDevices);
     localStorage.setItem('pairedDevices', JSON.stringify(updatedPairedDevices));
@@ -159,7 +159,7 @@ const Devices = () => {
                     </span>
                     <span className="device-model">{device.model}</span>
                     <span className="device-assigned">
-                      Assigned to: {getAssignedMemberName(device.assignedTo)}
+                      Assigned to: {getAssignedUserName(device.assignedTo)}
                     </span>
                   </div>
                 </div>
@@ -221,16 +221,16 @@ const Devices = () => {
                 </div>
               </div>
 
-              <p className="modal-message">Select family member to assign this device:</p>
+              <p className="modal-message">Select user to assign this device:</p>
               <select
-                className="family-member-dropdown"
-                value={selectedFamilyMember}
-                onChange={(e) => setSelectedFamilyMember(e.target.value)}
+                className="user-dropdown"
+                value={selectedUser}
+                onChange={(e) => setSelectedUser(e.target.value)}
               >
-                <option value="">-- Choose Family Member --</option>
-                {familyMembers.map((member, idx) => (
-                  <option key={idx} value={member.mobile}>
-                    {member.name} {member.self ? "(You)" : ""}
+                <option value="">-- Choose User --</option>
+                {users.map((user, idx) => (
+                  <option key={idx} value={user.mobile}>
+                    {user.name} {user.self ? "(Self)" : ""}
                   </option>
                 ))}
               </select>
@@ -264,16 +264,16 @@ const Devices = () => {
                   <span className="modal-device-brand">{settingsModal.device.brand}</span>
                 </div>
               </div>
-              <p className="modal-message">Reassign this device to another family member:</p>
+              <p className="modal-message">Reassign this device to another user:</p>
               <select
-                className="family-member-dropdown"
-                value={settingsModal.newMember}
-                onChange={e => setSettingsModal(s => ({ ...s, newMember: e.target.value }))}
+                className="user-dropdown"
+                value={settingsModal.newUser}
+                onChange={e => setSettingsModal(s => ({ ...s, newUser: e.target.value }))}
               >
-                <option value="">-- Choose Family Member --</option>
-                {familyMembers.map((member, idx) => (
-                  <option key={idx} value={member.mobile}>
-                    {member.name} {member.self ? "(You)" : ""}
+                <option value="">-- Choose User --</option>
+                {users.map((user, idx) => (
+                  <option key={idx} value={user.mobile}>
+                    {user.name} {user.self ? "(Self)" : ""}
                   </option>
                 ))}
               </select>

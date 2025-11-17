@@ -5,8 +5,9 @@ const Sidebar = ({ isOpen, onClose, onLogout }) => {
   const menuItems = [
     { id: 1, path: '/dashboard', label: 'Dashboard', icon: '📊' },
     { id: 2, path: '/devices', label: 'Devices', icon: '⌚' },
-    { id: 3, path: '/family', label: 'Family', icon: '👨‍👩‍👧‍👦' },
+    { id: 3, path: '/users', label: 'Users', icon: '👨‍👩‍👧‍👦' },
     { id: 4, path: '/class-workout', label: 'Class & Workout', icon: '🏋️' },
+    { id: 5, path: '/manage-account', label: 'Manage Account', icon: '🧑‍💼' },
   ];
 
   return (

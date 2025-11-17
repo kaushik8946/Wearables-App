@@ -3,6 +3,11 @@
 // No connected devices initially
 export const mockDevices = [];
 
+// Images for classes/workouts (pre-existing in assets/images)
+import c1 from '../assets/images/c1.jpeg';
+import c2 from '../assets/images/c2.jpeg';
+import c3 from '../assets/images/c3.jpeg';
+
 // Available devices for pairing (6 devices: 2 watches, 2 rings, 2 weighing scales)
 export const availableDevices = [
   // Smart Watches
@@ -147,10 +152,49 @@ export const getDeviceTypeIcon = (type) => {
   }
 };
 
+// Mock data for Classes / Workouts grouped by category
+export const classCategories = [
+  {
+    name: 'Fat Loss',
+    id: 'fat-loss',
+    items: [
+      { id: 'c1', title: 'Abdominal Primary', duration: '12 mins', level: 'L1', image: c1 },
+      { id: 'c2', title: 'Tabata Fat Burning', duration: '5 mins', level: 'L1', image: c2 },
+      { id: 'c3', title: 'Steel Arm Sculpting', duration: '14 mins', level: 'L2', image: c3 },
+    ]
+  },
+  {
+    name: 'Strength Training',
+    id: 'strength',
+    items: [
+      { id: 'c4', title: 'Dumbbell Shoulder Curl', duration: '11 mins', level: 'L2', image: c1 },
+      { id: 'c5', title: 'Enhancing Chest', duration: '22 mins', level: 'L3', image: c2 },
+      { id: 'c6', title: 'Core Strength Builder', duration: '18 mins', level: 'L2', image: c3 },
+    ]
+  },
+  {
+    name: 'Yoga & Flexibility',
+    id: 'yoga',
+    items: [
+      { id: 'c7', title: 'Morning Yoga Flow', duration: '20 mins', level: 'L1', image: c2 },
+      { id: 'c8', title: 'Stretch & Relax', duration: '15 mins', level: 'L1', image: c3 },
+    ]
+  },
+  {
+    name: 'HIIT & Cardio',
+    id: 'hiit',
+    items: [
+      { id: 'c9', title: 'HIIT Express', duration: '10 mins', level: 'L2', image: c1 },
+      { id: 'c10', title: 'Cardio Burn', duration: '17 mins', level: 'L2', image: c2 },
+    ]
+  }
+];
+
 // Export default object with all mock data
 export default {
   devices: mockDevices,
   availableDevices,
+  classCategories,
   helpers: {
     getBatteryIcon,
     getBatteryColor,

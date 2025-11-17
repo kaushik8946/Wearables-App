@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import '../styles/pages/Family.css';
 
-const Family = () => {
+const Users = () => {
   const [users, setUsers] = useState([]);
   const [editingIndex, setEditingIndex] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -14,13 +14,13 @@ const Family = () => {
 
   useEffect(() => {
     const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {};
-    const familyMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]');
-    setUsers([{ ...currentUser, self: true }, ...familyMembers]);
+    const otherUsers = JSON.parse(localStorage.getItem('users') || '[]');
+    setUsers([{ ...currentUser, self: true }, ...otherUsers]);
   }, []);
 
-  const saveFamilyMembers = (updatedUsers) => {
-    const onlyFamily = updatedUsers.filter(u => !u.self);
-    localStorage.setItem('familyMembers', JSON.stringify(onlyFamily));
+  const saveUsers = (updatedUsers) => {
+    const onlyUsers = updatedUsers.filter(u => !u.self);
+    localStorage.setItem('users', JSON.stringify(onlyUsers));
     setUsers(updatedUsers);
   };
 
@@ -51,9 +51,9 @@ const Family = () => {
     if (!formData.age || isNaN(formData.age)) return alert('Valid age is required');
     if (!formData.gender) return alert('Gender is required');
 
-    const newMember = { ...formData, self: false };
-    const updatedUsers = [...users, newMember];
-    saveFamilyMembers(updatedUsers);
+    const newUser = { ...formData, self: false };
+    const updatedUsers = [...users, newUser];
+    saveUsers(updatedUsers);
     closeModal();
   };
 
@@ -63,17 +63,22 @@ const Family = () => {
     if (!formData.gender) return alert('Gender is required');
 
     const updatedUsers = [...users];
+    const isSelf = updatedUsers[editingIndex]?.self;
     updatedUsers[editingIndex] = { ...updatedUsers[editingIndex], ...formData };
-    saveFamilyMembers(updatedUsers);
+    if (isSelf) {
+      // Update currentUser in localStorage as well
+      localStorage.setItem('currentUser', JSON.stringify({ ...updatedUsers[editingIndex], self: undefined }));
+    }
+    saveUsers(updatedUsers);
     closeModal();
   };
 
   const handleRemove = (idx) => {
     if (users[idx].self) return alert("Can't remove default logged-in user.");
-    if (!window.confirm('Remove this family member?')) return;
+    if (!window.confirm('Remove this user?')) return;
 
     const updatedUsers = users.filter((_, i) => i !== idx);
-    saveFamilyMembers(updatedUsers);
+    saveUsers(updatedUsers);
   };
 
   const handleInputChange = (e) => {
@@ -84,20 +89,20 @@ const Family = () => {
   return (
     <div className="page-container">
       <div className="page-content">
-        <h2>Manage Family</h2>
+        <h2>Manage Users</h2>
 
         <button className="btn-primary add-member-btn" onClick={openAddModal}>
-          + Add Member
+          + Add User
         </button>
 
         <div className="user-list">
           {users.map((user, idx) => (
             <div className={`user-card${user.self ? ' main-user' : ''}`} key={idx}>
               <div className="user-avatar">
-                {user.self ? <span role="img" aria-label="You">🧑‍💼</span> : <span role="img" aria-label="User">👤</span>}
+                {user.self ? <span role="img" aria-label="Self">🧑‍💼</span> : <span role="img" aria-label="User">👤</span>}
               </div>
               <div className="user-info">
-                <p className="user-name">{user.self ? `${user.name || 'You'} (You)` : user.name}</p>
+                <p className="user-name">{user.self ? `${user.name || 'Self'} (Self)` : user.name}</p>
                 <p className="user-meta">{user.age ? `Age: ${user.age}, ` : ''}{user.gender}</p>
               </div>
               <div className="user-actions">
@@ -115,7 +120,8 @@ const Family = () => {
       {modalOpen && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>{modalMode === 'add' ? 'Add Family Member' : 'Edit Family Member'}</h3>
+            <button className="modal-close-btn" onClick={closeModal} aria-label="Close">×</button>
+            <h3>{modalMode === 'add' ? 'Add User' : 'Edit User'}</h3>
             <input
               type="text"
               name="name"
@@ -148,11 +154,10 @@ const Family = () => {
             </select>
             <div className="modal-buttons">
               {modalMode === 'add' ? (
-                <button onClick={handleAdd} className="btn-primary">Add Member</button>
+                <button onClick={handleAdd} className="btn-primary">Add User</button>
               ) : (
                 <button onClick={handleSaveEdit} className="btn-primary">Save Changes</button>
               )}
-              <button onClick={closeModal} className="cancel-btn">Cancel</button>
             </div>
           </div>
         </div>
@@ -161,4 +166,4 @@ const Family = () => {
   );
 };
 
-export default Family;
+export default Users;

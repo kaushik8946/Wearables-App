@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/pages/Signup.css';
 
@@ -11,6 +11,13 @@ const Signup = () => {
     email: '',
     mobileNumber: '',
   });
+  
+  useEffect(() => {
+    const userPhone = localStorage.getItem('userPhone');
+    if (userPhone) {
+      setForm((prev) => ({ ...prev, mobileNumber: userPhone }));
+    }
+  }, []);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
 

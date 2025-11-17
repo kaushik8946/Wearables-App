@@ -157,6 +157,8 @@ const Dashboard = () => {
         </div>
 
         {/* Health Metrics Cards */}
+        {/* Guard: only render health cards if metrics is available */}
+        {metrics ? (
         <div className="health-cards">
           {/* Weight card for weighing scale */}
           {isWeighingScale && (
@@ -368,6 +370,9 @@ const Dashboard = () => {
             </>
           )}
         </div>
+        ) : (
+          <div className="page-content" style={{textAlign:'center',padding:'40px 0',color:'#888'}}>Loading health data...</div>
+        )}
       </div>
     </div>
   );

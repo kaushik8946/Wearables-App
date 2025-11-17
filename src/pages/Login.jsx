@@ -42,12 +42,8 @@ const Login = () => {
       setErrors({ ...errors, otp: 'Please enter correct OTP (123456)' });
       return;
     }
-
-    // Fetch registered user data if exists
     const registeredUser = localStorage.getItem('registeredUser');
     const parsedUser = registeredUser ? JSON.parse(registeredUser) : null;
-
-    // Create user object, fall back to generic if none registered yet
     const user = parsedUser || {
       name: 'User',
       lastName: '',
@@ -56,13 +52,9 @@ const Login = () => {
       email: '',
       mobile: mobileNumber,
     };
-
-    // Save user info as current user
     localStorage.setItem('currentUser', JSON.stringify(user));
     localStorage.setItem('isAuthenticated', 'true');
     localStorage.setItem('userPhone', mobileNumber);
-
-    // If mobile ends with 123, go to signup (registration)
     if (mobileNumber.endsWith('123')) {
       navigate('/signup');
     } else {
@@ -71,59 +63,61 @@ const Login = () => {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <div className="logo-section">
-          <h1>Wearables App</h1>
-          <p className="tagline">Track your health in one place.</p>
-        </div>
-        {!showOtpScreen ? (
-          <form className="login-form" onSubmit={handleRequestOtp}>
-            <h2>Sign in</h2>
-            <p className="subtitle">Enter your mobile number to proceed.</p>
-            <div className="input-group">
-              <label htmlFor="mobile">Mobile Number<span style={{color:'red'}}>*</span></label>
-              <div className="mobile-input-wrapper">
-                <span className="country-code">+91</span>
-                <input
-                  type="tel"
-                  id="mobile"
-                  name="mobile"
-                  value={mobileNumber}
-                  onChange={handleMobileChange}
-                  placeholder="Enter 10 digit mobile"
-                  className={errors.mobile ? 'input-error' : ''}
-                  autoFocus
-                  maxLength={10}
-                />
-              </div>
-              {errors.mobile && <span className="error-text">{errors.mobile}</span>}
-            </div>
-            <button type="submit" className="btn-primary">Request OTP</button>
-          </form>
-        ) : (
-          <form className="login-form" onSubmit={handleVerifyOtp}>
-            <h2>Enter OTP</h2>
-            <p className="subtitle">For demo purposes, your OTP is <strong>123456</strong>.</p>
-            <div className="input-group">
-              <div className="otp-input-wrapper">
-                {otp.map((value, idx) => (
+    <div className="login-theme-bg">
+      <div className="login-container">
+        
+        <div className="login-card">
+          <div className="logo-section">
+            <h1>Wearables</h1>
+            <p className="tagline">Track your health in one place.</p>
+          </div>
+          {!showOtpScreen ? (
+            <form className="login-form" onSubmit={handleRequestOtp}>
+                 <h2 className="form-title" style={{textAlign: 'center', marginBottom: 18}}>Welcome Back!</h2>
+              <div className="input-group">
+                <label htmlFor="mobile">Mobile Number <span style={{color:'red'}}>*</span></label>
+                <div className="mobile-input-wrapper">
+                  <span className="country-code">+91</span>
                   <input
-                    key={idx}
-                    id={`otp-${idx}`}
-                    className="otp-box"
-                    type="text"
-                    maxLength={1}
-                    value={value}
-                    onChange={(e) => handleOtpInput(e, idx)}
+                    type="tel"
+                    id="mobile"
+                    name="mobile"
+                    value={mobileNumber}
+                    onChange={handleMobileChange}
+                    placeholder="Enter 10 digit mobile"
+                    className={errors.mobile ? 'input-error' : ''}
+                    autoFocus
+                    maxLength={10}
                   />
-                ))}
+                </div>
+                {errors.mobile && <span className="error-text">{errors.mobile}</span>}
               </div>
-              {errors.otp && <span className="error-text">{errors.otp}</span>}
-            </div>
-            <button type="submit" className="btn-primary">Verify & Login</button>
-          </form>
-        )}
+              <button type="submit" className="btn-primary" style={{marginTop: 10, fontSize: 17}}>Request OTP</button>
+            </form>
+          ) : (
+            <form className="login-form" onSubmit={handleVerifyOtp}>
+              <h2 className="form-title">Enter OTP</h2>
+              <p className="subtitle">For demo purposes, your OTP is <strong>123456</strong>.</p>
+              <div className="input-group">
+                <div className="otp-input-wrapper">
+                  {otp.map((value, idx) => (
+                    <input
+                      key={idx}
+                      id={`otp-${idx}`}
+                      className="otp-box"
+                      type="text"
+                      maxLength={1}
+                      value={value}
+                      onChange={(e) => handleOtpInput(e, idx)}
+                    />
+                  ))}
+                </div>
+                {errors.otp && <span className="error-text">{errors.otp}</span>}
+              </div>
+              <button type="submit" className="btn-primary">Verify & Login</button>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );
