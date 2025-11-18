@@ -1,4 +1,6 @@
 import { NavLink } from 'react-router-dom';
+import { MdDashboard, MdWatch, MdGroup, MdFitnessCenter, MdPerson } from 'react-icons/md';
+import { BsBoxArrowLeft } from 'react-icons/bs';
 import '../styles/components/Sidebar.css';
 
 const Sidebar = ({ isOpen, onClose, onLogout }) => {
@@ -30,23 +32,36 @@ const Sidebar = ({ isOpen, onClose, onLogout }) => {
         </div>
 
         <ul className="sidebar-nav">
-          {menuItems.map((item) => (
-            <li key={item.id} className="sidebar-item">
-              <NavLink
-                to={item.path}
-                className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-                onClick={onClose}
-              >
-                <span className="sidebar-icon">{item.icon}</span>
-                <span className="sidebar-label">{item.label}</span>
-              </NavLink>
-            </li>
-          ))}
+          {menuItems.map((item) => {
+            const icons = {
+              '/dashboard': <MdDashboard size={22} style={{ fontWeight: 'bold', color: '#111' }} />,
+              '/devices': <MdWatch size={22} style={{ fontWeight: 'bold', color: '#111' }} />,
+              '/users': <MdGroup size={22} style={{ fontWeight: 'bold', color: '#111' }} />,
+              '/class-workout': <MdFitnessCenter size={22} style={{ fontWeight: 'bold', color: '#111' }} />,
+              '/manage-account': <MdPerson size={22} style={{ fontWeight: 'bold', color: '#111' }} />,
+            };
+            return (
+              <li key={item.id} className="sidebar-item">
+                <NavLink
+                  to={item.path}
+                  className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+                  onClick={onClose}
+                >
+                  <span className="sidebar-icon" style={{ fontWeight: 'bold', color: '#111' }}>
+                    {icons[item.path]}
+                  </span>
+                  <span className="sidebar-label">{item.label}</span>
+                </NavLink>
+              </li>
+            );
+          })}
         </ul>
 
         <div className="sidebar-footer">
           <button className="sidebar-logout" onClick={onLogout}>
-            <span className="sidebar-icon">↩️</span>
+            <span className="sidebar-icon" style={{ fontWeight: 'bold', color: '#111' }}>
+              <BsBoxArrowLeft size={22} style={{ fontWeight: 'bold', color: '#111' }} />
+            </span>
             <span className="sidebar-label">Logout</span>
           </button>
         </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { MdMenu } from 'react-icons/md';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -29,15 +30,13 @@ const Layout = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
+
   return (
     <div className="layout">
-      {/* Top Header with Hamburger */}
       <header className="app-header">
         <h1 className="app-title">Wearables App</h1>
-        <button className="hamburger-btn" onClick={toggleSidebar}>
-          <span className="hamburger-line"></span>
-          <span className="hamburger-line"></span>
-          <span className="hamburger-line"></span>
+        <button className="sidebar-toggle" onClick={toggleSidebar} style={{ background: 'none', border: 'none', boxShadow: 'none', padding: 0, margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <MdMenu size={32} style={{ fontWeight: 'bold', color: '#222', filter: 'none' }} />
         </button>
       </header>
 

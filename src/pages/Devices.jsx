@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { MdSettings } from 'react-icons/md';
 // Battery icon SVGs
 const BatteryIcon = ({ level }) => {
   let color = '#4caf50';
@@ -225,8 +226,9 @@ const Devices = () => {
                   className="device-settings"
                   onClick={e => { e.stopPropagation(); handleSettings(e, device.id); }}
                   title="Device settings"
+                  style={{ fontWeight: 'bold', color: '#111' }}
                 >
-                  ⚙️
+                  <MdSettings size={24} style={{ fontWeight: 'bold', color: '#111' }} />
                 </button>
               </div>
             ))

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { MdPerson, MdPersonOutline } from 'react-icons/md';
 import '../styles/pages/Family.css';
 
 const Users = () => {
@@ -99,7 +100,11 @@ const Users = () => {
           {users.map((user, idx) => (
             <div className={`user-card${user.self ? ' main-user' : ''}`} key={idx}>
               <div className="user-avatar">
-                {user.self ? <span role="img" aria-label="Self">🧑‍💼</span> : <span role="img" aria-label="User">👤</span>}
+                {user.self ? (
+                  <MdPerson size={28} style={{ fontWeight: 'bold', color: '#111' }} />
+                ) : (
+                  <MdPersonOutline size={28} style={{ fontWeight: 'bold', color: '#111' }} />
+                )}
               </div>
               <div className="user-info">
                 <p className="user-name">{user.self ? `${user.name || 'Self'} (Self)` : user.name}</p>

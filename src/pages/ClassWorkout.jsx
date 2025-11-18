@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { MdVideoLibrary, MdFitnessCenter } from 'react-icons/md';
 import '../styles/pages/ClassWorkout.css';
 import mockData from '../data/mockData';
 import Workout from './Workout';
@@ -13,14 +14,14 @@ const ClassWorkout = () => {
           className={`classworkout-tab${activeTab === 'classes' ? ' active' : ''}`}
           onClick={() => setActiveTab('classes')}
         >
-          <span className="tab-icon">🎥</span>
+          <span className="tab-icon" style={{ fontWeight: 'bold', color: '#111' }}><MdVideoLibrary size={22} style={{ fontWeight: 'bold', color: '#111' }} /></span>
           Classes
         </button>
         <button
           className={`classworkout-tab${activeTab === 'workouts' ? ' active' : ''}`}
           onClick={() => setActiveTab('workouts')}
         >
-          <span className="tab-icon">🏋️‍♂️</span>
+          <span className="tab-icon" style={{ fontWeight: 'bold', color: '#111' }}><MdFitnessCenter size={22} style={{ fontWeight: 'bold', color: '#111' }} /></span>
           Workouts
         </button>
       </div>
