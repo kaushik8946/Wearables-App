@@ -1,125 +1,181 @@
-/* Family Page Container */
+/* Family.css - Modern, Clean & Stylish User Management UI (Without Avatar Icons) */
+
+/* Page Container */
 .page-container {
-  min-height: calc(100vh - 60px);
-  padding: 20px 16px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e8eaf6 100%);
+  min-height: 100vh;
+  max-height: 100vh;
+  padding: 32px 20px 60px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   box-sizing: border-box;
+  overflow-y: auto;
+  scroll-padding-bottom: 60px;
 }
 
 .page-content {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', sans-serif;
+  animation: fadeIn 0.5s ease;
 }
 
 .page-content h2 {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin-bottom: 24px;
-  text-align: center;
+  font-size: 32px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 32px;
+  text-align: left;
+  letter-spacing: -0.5px;
 }
 
-/* Add Member Button */
+/* Add User Button - Floating Style */
 .add-member-btn {
-  display: inline-block;
-  margin-bottom: 20px;
-  padding: 10px 18px;
-  background: #667eea;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 28px;
+  padding: 14px 28px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
   border: none;
-  color: white;
-  font-weight: 600;
-  border-radius: 8px;
+  color: #667eea;
+  font-weight: 700;
+  font-size: 15px;
+  border-radius: 14px;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .add-member-btn:hover {
-  background: #5466c8;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+  background: #ffffff;
+}
+
+.add-member-btn:active {
+  transform: translateY(0);
 }
 
 /* User List */
 .user-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
-/* User Card Styling */
+/* User Card - Modern Design WITHOUT Avatar */
 .user-card {
   display: flex;
   align-items: center;
-  background: #ef4444;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
   border: none;
-  border-radius: 8px;
-  padding: 10px 20px;
-  color: white;
-  font-weight: 600;
+  border-radius: 16px;
+  padding: 24px 28px;
+  color: #1a1a1a;
   cursor: pointer;
-  transition: filter 0.2s;
-  font-size: 15px;
-  box-sizing: border-box;
-  height: 42px;
-  line-height: normal;
-/* User Avatar */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 14px;
-  border-radius: 50%;
-  background: #f0f0f0;
-  user-select: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+  min-height: 72px;
 }
 
-.main-user .user-avatar {
-  background: #d2dbf7;
+.user-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.user-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+}
+
+.user-card:hover::before {
+  opacity: 1;
+}
+
+/* Main User (Self) Card - Special Styling */
+.main-user {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+  border: 2px solid rgba(102, 126, 234, 0.3);
+}
+
+.main-user::before {
+  opacity: 1;
+  width: 5px;
+}
+
+/* User Avatar - HIDDEN */
+.user-avatar {
+  display: none;
 }
 
 /* User Info */
 .user-info {
   flex: 1;
+  min-width: 0;
 }
 
 .user-name {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: #1a1a1a;
-  margin-bottom: 4px;
+  margin: 0 0 6px 0;
+  line-height: 1.3;
 }
 
 .user-meta {
-  font-size: 13px;
-  color: #5f6368;
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+  font-weight: 500;
 }
 
 /* User Actions */
 .user-actions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .user-actions button {
-  background: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
+  border-radius: 10px;
+  padding: 10px 20px;
   color: white;
   font-weight: 600;
   cursor: pointer;
   font-size: 14px;
-  transition: background 0.3s;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .user-actions button:hover {
-  background: #5466c8;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.user-actions button:active {
+  transform: translateY(0);
 }
 
 .user-actions .remove-btn {
-  background: #e74c3c;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 .user-actions .remove-btn:hover {
-  background: #c23021;
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
 }
 
 /* Modal Overlay */
@@ -129,79 +185,124 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 999;
+  animation: fadeIn 0.2s ease;
 }
 
-/* Modal Content */
+/* Modal Content - Modern Design */
 .modal-content {
   background: white;
-  padding: 24px 28px;
+  padding: 32px 36px;
   width: 100%;
-  max-width: 380px;
-  border-radius: 14px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  max-width: 460px;
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   position: relative;
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-close-btn {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  background: transparent;
+  top: 16px;
+  right: 16px;
+  background: #f1f5f9;
   border: none;
-  font-size: 28px;
-  color: #666;
+  font-size: 24px;
+  color: #64748b;
   cursor: pointer;
   padding: 0;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  transition: all 0.2s;
+  border-radius: 8px;
+  transition: all 0.2s ease;
   line-height: 1;
+  font-weight: 300;
 }
 
 .modal-close-btn:hover {
-  background: #f0f0f0;
-  color: #333;
+  background: #e2e8f0;
+  color: #1a1a1a;
+  transform: rotate(90deg);
 }
 
 .modal-content h3 {
-  margin: 0 0 20px 0;
-  font-weight: 700;
+  margin: 0 0 8px 0;
+  font-weight: 800;
   color: #1a1a1a;
-  font-size: 20px;
+  font-size: 24px;
+  letter-spacing: -0.5px;
 }
 
+/* Form Inputs - Modern Styling */
 .modal-content input,
 .modal-content select {
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
+  padding: 14px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
   font-size: 15px;
-  background: #fff;
-  color: #000;
-  transition: border 0.2s;
+  background: #f8fafc;
+  color: #1a1a1a;
+  transition: all 0.3s ease;
   box-sizing: border-box;
   width: 100%;
-  min-width: 0;
-  appearance: none;
-  margin-bottom: 12px;
+  font-weight: 500;
+  font-family: inherit;
 }
 
 .modal-content input:focus,
 .modal-content select:focus {
   outline: none;
   border-color: #667eea;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+}
+
+.modal-content input::placeholder {
+  color: #94a3b8;
+}
+
+.modal-content select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2364748b' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+.modal-content select option {
+  padding: 10px;
 }
 
 /* Modal Buttons */
@@ -209,64 +310,127 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 .modal-buttons button {
   border: none;
-  border-radius: 8px;
-  padding: 10px 20px;
+  border-radius: 12px;
+  padding: 14px 32px;
   color: white;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   font-size: 15px;
   width: 100%;
-  max-width: 200px;
-  height: 42px;
+  height: auto;
   box-sizing: border-box;
   line-height: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.3s ease;
 }
 
 .modal-buttons .btn-primary {
-  background: #667eea;
-  transition: background 0.3s;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
 }
 
 .modal-buttons .btn-primary:hover {
-  background: #5466c8;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.4);
 }
 
-/* Responsive */
-@media (max-width: 480px) {
-  .user-card {
-    padding: 12px 14px;
+.modal-buttons .btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Black Text Input Class */
+.black-text-input {
+  color: #1a1a1a !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .page-container {
+    padding: 24px 16px 60px 16px;
   }
-  .user-avatar {
-    width: 36px;
-    height: 36px;
-    font-size: 24px;
-    margin-right: 10px;
+
+  .page-content h2 {
+    font-size: 28px;
+    text-align: center;
   }
-  .user-name {
-    font-size: 14px;
-  }
-  .user-meta {
-    font-size: 12px;
-  }
-  .user-actions button {
-    padding: 6px 12px;
-    font-size: 13px;
-  }
+
   .add-member-btn {
     width: 100%;
-    padding: 12px 0;
+    justify-content: center;
+  }
+
+  .user-card {
+    padding: 20px 24px;
+    min-height: auto;
+  }
+
+  .user-name {
     font-size: 16px;
   }
+
+  .user-meta {
+    font-size: 13px;
+  }
+
+  .user-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .user-actions button {
+    padding: 8px 16px;
+    font-size: 13px;
+    width: 100%;
+  }
+
   .modal-content {
     max-width: 90%;
-    padding: 20px 24px;
+    padding: 28px 24px;
   }
+
+  .modal-content h3 {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .user-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .user-info {
+    width: 100%;
+  }
+
+  .user-actions {
+    width: 100%;
+  }
+}
+
+/* Smooth Scrollbar Styling */
+.page-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.page-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.page-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+}
+
+.page-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
 }

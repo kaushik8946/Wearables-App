@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { BsSmartwatch } from 'react-icons/bs';
 import '../styles/pages/Dashboard.css';
 import WeightHistory from '../components/WeightHistory';
 
@@ -109,7 +110,7 @@ const Dashboard = () => {
       <div className="page-container">
         <div className="page-content">
           <div className="empty-state-card">
-            <div className="empty-state-icon">⌚</div>
+            <div className="empty-state-icon"><BsSmartwatch size={72} /></div>
             <div className="empty-state-title">No devices paired</div>
             <div className="empty-state-description">
               You have not paired any devices yet. To get started, pair a device.
@@ -132,51 +133,31 @@ const Dashboard = () => {
   return (
     <div className="dashboard-container-light">
       <div className="dashboard-content-light">
-        {/* Device Selector Dropdown */}
-        <div className="device-selector-row">
-          <label htmlFor="device-selector">Device:</label>
-          <select
-            id="device-selector"
-            value={selectedDevice?.id || ''}
-            onChange={e => {
-              const dev = connectedDevices.find(d => String(d.id) === e.target.value);
-              setSelectedDevice(dev);
-              localStorage.setItem('defaultDeviceId', dev.id);
-            }}
-          >
-            {connectedDevices.map(dev => {
-              let userLabel = '';
-              const userId = dev.assignedTo || dev.user || dev.owner;
-              let currentUserId = null;
-              try {
-                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-                currentUserId = currentUser && currentUser.id ? String(currentUser.id) : null;
-              } catch {}
-              if (userId && currentUserId && String(userId) === currentUserId) {
-                userLabel = ' (used by: self)';
-              } else if (userId) {
+        {/* Device/User Info Row */}
+        <div className="device-selector-row" style={{justifyContent:'flex-start',gap:'18px',background:'none',boxShadow:'none',padding:'0',marginBottom:'18px'}}>
+          <span style={{fontWeight:600,fontSize:16,color:'#222'}}>
+            {selectedDevice?.name || selectedDevice?.deviceType || selectedDevice?.type || 'Device'}
+            {(() => {
+              let userName = '';
+              const userId = selectedDevice?.assignedTo || selectedDevice?.user || selectedDevice?.owner;
+              if (userId) {
                 try {
-                  const users = JSON.parse(localStorage.getItem('users') || '[]');
-                  const userObj = users.find(u => String(u.id) === String(userId));
-                  if (userObj && userObj.name && !/^\d{8,}$/.test(userObj.name)) {
-                    userLabel = ` (used by: ${userObj.name})`;
+                  const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                  if (currentUser && String(currentUser.id) === String(userId)) {
+                    userName = currentUser.name ? `${currentUser.name} (Self)` : 'Self';
+                  } else {
+                    const users = JSON.parse(localStorage.getItem('users') || '[]');
+                    const userObj = users.find(u => String(u.id) === String(userId));
+                    if (userObj && userObj.name) userName = userObj.name;
                   }
                 } catch {}
               }
-              return (
-                <option key={dev.id} value={dev.id}>
-                  {(dev.name || dev.deviceType || dev.type || 'Device') + userLabel}
-                </option>
-              );
-            })}
-          </select>
+              return userName ? ` — ${userName}` : '';
+            })()}
+          </span>
         </div>
 
-        {/* Date Header */}
-        <div className="date-header">
-          <div className="date-label">{getCurrentDate()}</div>
-          <h1 className="today-title">Today</h1>
-        </div>
+
 
         {/* Health Metrics Cards */}
         {/* Guard: only render health cards if metrics is available */}

@@ -33,12 +33,12 @@ const Layout = () => {
     <div className="layout">
       {/* Top Header with Hamburger */}
       <header className="app-header">
+        <h1 className="app-title">Wearables App</h1>
         <button className="hamburger-btn" onClick={toggleSidebar}>
           <span className="hamburger-line"></span>
           <span className="hamburger-line"></span>
           <span className="hamburger-line"></span>
         </button>
-        <h1 className="app-title">Wearables App</h1>
       </header>
 
       {/* Sidebar */}

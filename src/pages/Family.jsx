@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { BsPersonCircle, BsPersonFill, BsPencilSquare, BsTrash, BsX, BsPersonPlusFill } from 'react-icons/bs';
 import '../styles/pages/Family.css';
 
 const Users = () => {
@@ -92,23 +93,23 @@ const Users = () => {
         <h2>Manage Users</h2>
 
         <button className="btn-primary add-member-btn" onClick={openAddModal}>
-          + Add User
+          <BsPersonPlusFill size={18} style={{marginRight: '8px'}} /> Add User
         </button>
 
         <div className="user-list">
           {users.map((user, idx) => (
             <div className={`user-card${user.self ? ' main-user' : ''}`} key={idx}>
               <div className="user-avatar">
-                {user.self ? <span role="img" aria-label="Self">🧑‍💼</span> : <span role="img" aria-label="User">👤</span>}
+                {user.self ? <BsPersonCircle size={40} /> : <BsPersonFill size={40} />}
               </div>
               <div className="user-info">
                 <p className="user-name">{user.self ? `${user.name || 'Self'} (Self)` : user.name}</p>
                 <p className="user-meta">{user.age ? `Age: ${user.age}, ` : ''}{user.gender}</p>
               </div>
               <div className="user-actions">
-                <button onClick={() => openEditModal(idx)}>Edit</button>
+                <button onClick={() => openEditModal(idx)}><BsPencilSquare size={16} /> Edit</button>
                 {!user.self && (
-                  <button onClick={() => handleRemove(idx)} className="remove-btn">Remove</button>
+                  <button onClick={() => handleRemove(idx)} className="remove-btn"><BsTrash size={16} /> Remove</button>
                 )}
               </div>
             </div>
@@ -120,7 +121,7 @@ const Users = () => {
       {modalOpen && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close-btn" onClick={closeModal} aria-label="Close">×</button>
+            <button className="modal-close-btn" onClick={closeModal} aria-label="Close"><BsX size={24} /></button>
             <h3>{modalMode === 'add' ? 'Add User' : 'Edit User'}</h3>
             <input
               type="text"

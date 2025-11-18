@@ -22,12 +22,12 @@
 .sidebar {
   position: fixed;
   top: 0;
-  left: -100vw;
+  right: -100vw;
   width: 280px;
   height: 100vh;
   background: #fff;
-  box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-  transition: left 0.3s ease;
+  box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+  transition: right 0.3s ease;
   z-index: 1000;
   display: block;
   overflow-y: auto;
@@ -35,7 +35,7 @@
 
 /* When open */
 .sidebar.sidebar-open {
-  left: 0;
+  right: 0;
 }
 
 /* Sidebar Header */

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { BsGearFill, BsX } from 'react-icons/bs';
 import '../styles/pages/Devices.css';
 import { availableDevices as initialAvailableDevices } from '../data/mockData';
 import watchImg from '../assets/images/watch.png';
@@ -34,10 +35,7 @@ const Devices = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [users, setUsers] = useState([]);
-  // Remove selectedUser state, not needed for pairing
-  // Settings modal state
   const [settingsModal, setSettingsModal] = useState({ open: false, device: null, newMember: '' });
-  // Removed makeDefault state
 
   useEffect(() => {
     const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {};
@@ -47,7 +45,6 @@ const Devices = () => {
     setUsers([{ ...normalize(currentUser), self: true }, ...otherUsers.map(normalize)]);
   }, []);
 
-  // Auto-set first paired device as default if none
   useEffect(() => {
     if (pairedDevices.length > 0 && !defaultDeviceId) {
       setDefaultDeviceId(String(pairedDevices[0].id));
@@ -68,7 +65,7 @@ const Devices = () => {
     if (selectedDevice) {
       const pairedDevice = {
         ...selectedDevice,
-        assignedTo: 'none', // Not assigned to any user initially
+        assignedTo: 'none', 
         connectionStatus: 'connected',
         batteryLevel: Math.floor(Math.random() * 30) + 70,
         lastSync: new Date().toISOString()
@@ -175,7 +172,7 @@ const Devices = () => {
                   onClick={(e) => handleSettings(e, device.id)}
                   title="Device settings"
                 >
-                  ⚙️
+                  <BsGearFill size={20} />
                 </button>
               </div>
             ))
@@ -213,7 +210,7 @@ const Devices = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Pair Device</h3>
-              <button className="modal-close" onClick={handleCloseModal}>✕</button>
+              <button className="modal-close" onClick={handleCloseModal}><BsX size={24} /></button>
             </div>
 
             <div className="modal-body">
@@ -242,7 +239,7 @@ const Devices = () => {
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Device Settings</h3>
-              <button className="modal-close" onClick={handleCloseSettingsModal}>✕</button>
+              <button className="modal-close" onClick={handleCloseSettingsModal}><BsX size={24} /></button>
             </div>
             <div className="modal-body">
               <div className="modal-device-preview">
@@ -283,7 +280,7 @@ const Devices = () => {
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Manage Default Device</h3>
-              <button className="modal-close" onClick={() => setShowDefaultModal(false)}>✕</button>
+              <button className="modal-close" onClick={() => setShowDefaultModal(false)}><BsX size={24} /></button>
             </div>
             <div className="modal-body">
               <p className="modal-message">Select your default device:</p>

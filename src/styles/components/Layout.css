@@ -2,7 +2,7 @@
 .layout {
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
+  flex-direction: row-reverse;
 }
 
 /* App Header */
@@ -16,6 +16,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0 16px;
   gap: 16px;
   z-index: 998;
