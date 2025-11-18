@@ -15,14 +15,14 @@ export default defineConfig({
     allowedHosts: ['localhost', '.compute.amazonaws.com'],
     cors: true
   },
-  build: {
-    rollupOptions: {
-      output: {
-        // Keep original file names without hashing
-        assetFileNames: "[name][extname]",
-        chunkFileNames: "[name].js",
-        entryFileNames: "[name].js",
-      }
-    }
-  }
+  // build: {
+  //   rollupOptions: {
+  //     output: {
+  //       // Keep original file names without hashing
+  //       assetFileNames: "[name][extname]",
+  //       chunkFileNames: "[name].js",
+  //       entryFileNames: "[name].js",
+  //     }
+  //   }
+  // }
 })
