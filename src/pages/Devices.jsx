@@ -25,7 +25,7 @@ const Devices = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [users, setUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState('');
+  // Remove selectedUser state, not needed for pairing
   // Settings modal state
   const [settingsModal, setSettingsModal] = useState({ open: false, device: null, newMember: '' });
   // Removed makeDefault state
@@ -52,19 +52,14 @@ const Devices = () => {
 
   const handleDeviceClick = (device) => {
     setSelectedDevice(device);
-    setSelectedUser('');
     setShowModal(true);
   };
 
   const handlePairDevice = () => {
-    if (!selectedUser) {
-      alert('Please select a user to assign this device');
-      return;
-    }
     if (selectedDevice) {
       const pairedDevice = {
         ...selectedDevice,
-        assignedTo: selectedUser,
+        assignedTo: 'none', // Not assigned to any user initially
         connectionStatus: 'connected',
         batteryLevel: Math.floor(Math.random() * 30) + 70,
         lastSync: new Date().toISOString()
@@ -79,18 +74,16 @@ const Devices = () => {
 
       setShowModal(false);
       setSelectedDevice(null);
-      setSelectedUser('');
     }
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedDevice(null);
-    setSelectedFamilyMember('');
   };
 
   const getAssignedUserName = (mobile) => {
-    if (!mobile) return 'Unknown';
+    if (!mobile || mobile === 'none') return 'User not assigned';
     const user = users.find(m => String(m.mobile) === String(mobile));
     return user ? user.name + (user.self ? ' (Self)' : '') : 'Unknown';
   };
@@ -156,11 +149,16 @@ const Devices = () => {
                       {String(defaultDeviceId) === String(device.id) && (
                         <span className="device-default-badge">Default</span>
                       )}
+                      {device.assignedTo === 'none' && (
+                        <span className="device-default-badge" style={{ background: '#9e9e9e' }}>User not assigned</span>
+                      )}
                     </span>
                     <span className="device-model">{device.model}</span>
-                    <span className="device-assigned">
-                      Assigned to: {getAssignedUserName(device.assignedTo)}
-                    </span>
+                    {device.assignedTo !== 'none' ? (
+                      <span className="device-assigned">
+                        Assigned to: {getAssignedUserName(device.assignedTo)}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
                 <button 
@@ -220,27 +218,11 @@ const Devices = () => {
                   <span className="modal-device-brand">{selectedDevice.brand}</span>
                 </div>
               </div>
-
-              <p className="modal-message">Select user to assign this device:</p>
-              <select
-                className="user-dropdown"
-                value={selectedUser}
-                onChange={(e) => setSelectedUser(e.target.value)}
-              >
-                <option value="">-- Choose User --</option>
-                {users.map((user, idx) => (
-                  <option key={idx} value={user.mobile}>
-                    {user.name} {user.self ? "(Self)" : ""}
-                  </option>
-                ))}
-              </select>
-              
-
             </div>
 
             <div className="modal-footer">
-              <button className="btn-cancel" onClick={handleCloseModal}>Cancel</button>
               <button className="btn-pair" onClick={handlePairDevice}>Pair Device</button>
+              <button className="btn-cancel" onClick={handleCloseModal}>Cancel</button>
             </div>
           </div>
         </div>
@@ -307,7 +289,7 @@ const Devices = () => {
                 <option value="">-- Select Device --</option>
                 {pairedDevices.map((device) => (
                   <option key={device.id} value={device.id}>
-                    {device.name} ({device.model}) - {getAssignedMemberName(device.assignedTo)}
+                    {device.name} ({device.model}) - {getAssignedUserName(device.assignedTo)}
                   </option>
                 ))}
               </select>
