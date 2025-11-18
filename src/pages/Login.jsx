@@ -65,7 +65,6 @@ const Login = () => {
   return (
     <div className="login-theme-bg">
       <div className="login-container">
-        
         <div className="login-card">
           <div className="logo-section">
             <h1>Wearables</h1>
@@ -73,9 +72,9 @@ const Login = () => {
           </div>
           {!showOtpScreen ? (
             <form className="login-form" onSubmit={handleRequestOtp}>
-                 <h2 className="form-title" style={{textAlign: 'center', marginBottom: 18}}>Welcome Back!</h2>
+              <h2 className="form-title">Welcome Back!</h2>
               <div className="input-group">
-                <label htmlFor="mobile">Mobile Number <span style={{color:'red'}}>*</span></label>
+                <label htmlFor="mobile">Mobile Number <span style={{color:'#ff4757'}}>*</span></label>
                 <div className="mobile-input-wrapper">
                   <span className="country-code">+91</span>
                   <input
@@ -92,7 +91,7 @@ const Login = () => {
                 </div>
                 {errors.mobile && <span className="error-text">{errors.mobile}</span>}
               </div>
-              <button type="submit" className="btn-primary" style={{marginTop: 10, fontSize: 17}}>Request OTP</button>
+              <button type="submit" className="btn-primary">Request OTP</button>
             </form>
           ) : (
             <form className="login-form" onSubmit={handleVerifyOtp}>
