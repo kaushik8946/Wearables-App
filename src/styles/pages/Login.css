@@ -114,15 +114,18 @@
 
 .country-code {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 70px;
+  align-items: center;      /* vertical centering */
+  justify-content: center;  /* horizontal centering */
+  width: 56px;
+  min-width: 56px;
+  max-width: 70px;
   color: #374151;
   background: #f9fafb;
   font-weight: 600;
   font-size: 15px;
   border-right: 2px solid #e5e7eb;
-  padding: 0 8px;
+  padding: 0;               /* remove left padding */
+  box-sizing: border-box;
 }
 
 .mobile-input-wrapper input {
@@ -191,7 +194,6 @@
   font-weight: 700;
 }
 
-/* Primary button with gradient */
 .btn-primary {
   margin-top: 8px;
   padding: 16px 0;

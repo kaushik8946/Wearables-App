@@ -76,7 +76,6 @@ const Login = () => {
               <div className="input-group">
                 <label htmlFor="mobile">Mobile Number <span style={{color:'#ff4757'}}>*</span></label>
                 <div className="mobile-input-wrapper">
-                  <span className="country-code">+91</span>
                   <input
                     type="tel"
                     id="mobile"
