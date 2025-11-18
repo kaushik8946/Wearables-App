@@ -3,13 +3,102 @@ import { useState, useEffect } from 'react';
 import '../styles/pages/Dashboard.css';
 import WeightHistory from '../components/WeightHistory';
 
+// ActivityRings Component
+const ActivityRings = ({ steps, stepsGoal, active, activeGoal, cals, calsGoal }) => {
+  // Adjusted radii and SVG size to prevent cropping
+  const ringProps = [
+    {
+      value: steps,
+      goal: stepsGoal,
+      color: '#21bf73',   // Darker green
+      bgColor: '#b3eac2', // Lighter green
+      radius: 70,
+      stroke: 18
+    },
+    {
+      value: active,
+      goal: activeGoal,
+      color: '#268ed9',   // Darker blue
+      bgColor: '#b0dbf6', // Lighter blue
+      radius: 52,
+      stroke: 18
+    },
+    {
+      value: cals,
+      goal: calsGoal,
+      color: '#e04085',   // Darker pink
+      bgColor: '#fdc5ec', // Light pink
+      radius: 32,
+      stroke: 18
+    }
+  ];
+  // Center at 90,90, but SVG is 200x200 for padding
+  const rotate = 'rotate(-90 100 100)';
+  return (
+    <div className="activity-rings-container">
+      <svg width="200" height="200" viewBox="0 0 200 200">
+        {ringProps.map((ring, idx) => {
+          const progress = Math.min(ring.value / ring.goal, 1);
+          const circum = 2 * Math.PI * ring.radius;
+          return (
+            <g key={idx}>
+              {/* Light background circle */}
+              <circle
+                cx="100"
+                cy="100"
+                r={ring.radius}
+                fill="none"
+                stroke={ring.bgColor}
+                strokeWidth={ring.stroke}
+                style={{ opacity: 0.7 }}
+                transform={rotate}
+              />
+              {/* Dark progress path */}
+              <circle
+                cx="100"
+                cy="100"
+                r={ring.radius}
+                fill="none"
+                stroke={ring.color}
+                strokeWidth={ring.stroke}
+                strokeDasharray={circum}
+                strokeDashoffset={circum * (1 - progress)}
+                strokeLinecap="round"
+                style={{ opacity: 0.93 }}
+                transform={rotate}
+              />
+            </g>
+          );
+        })}
+        <circle cx="100" cy="100" r="22" fill="#f0f4fa"/>
+      </svg>
+      <div className="activity-rings-stats-row">
+        <div className="stat-col">
+          <span className="stat-value">{steps}</span>
+          <span className="stat-label">STEPS</span>
+          <span className="stat-goal">/ {stepsGoal}</span>
+        </div>
+        <div className="stat-col">
+          <span className="stat-value">{active}</span>
+          <span className="stat-label">ACTIVE</span>
+          <span className="stat-goal">/ {activeGoal} min</span>
+        </div>
+        <div className="stat-col">
+          <span className="stat-value">{cals}</span>
+          <span className="stat-label">CALS</span>
+          <span className="stat-goal">/ {calsGoal}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState(null);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [connectedDevices, setConnectedDevices] = useState([]);
 
-  // Load devices and set default on mount
   useEffect(() => {
     const devices = JSON.parse(localStorage.getItem('pairedDevices') || '[]');
     setConnectedDevices(devices);
@@ -20,25 +109,22 @@ const Dashboard = () => {
     }
   }, []);
 
-  // Flexible device type matching
   const deviceTypeLower = (selectedDevice?.deviceType || selectedDevice?.type || '').toLowerCase();
   const isWeighingScale = deviceTypeLower.includes('scale') || deviceTypeLower.includes('weight');
   const isWatchOrRing = deviceTypeLower.includes('watch') || deviceTypeLower.includes('ring') || deviceTypeLower.includes('band');
 
-  // Generate metrics when device changes
   useEffect(() => {
     if (!selectedDevice) return;
-
-    // Generate mock metrics
     const mockMetrics = {
       steps: {
         count: Math.floor(Math.random() * 5000) + 2000,
-        goal: 10000,
+        goal: 20000,
         distance: (Math.random() * 500 + 200).toFixed(0),
-        calories: Math.floor(Math.random() * 50) + 10,
+        calories: Math.floor(Math.random() * 50) + 100,
         time: Math.floor(Math.random() * 10) + 2,
         timestamp: new Date().toLocaleString()
       },
+      active: 39,
       sleep: {
         hours: Math.floor(Math.random() * 3) + 5,
         minutes: Math.floor(Math.random() * 60),
@@ -79,7 +165,6 @@ const Dashboard = () => {
       }
     };
 
-    // Add a small 7-day weight history if we have a scale
     if (isWeighingScale) {
       const historyBase = Number(mockMetrics.weight.value);
       const history = [];
@@ -87,7 +172,6 @@ const Dashboard = () => {
         const day = new Date();
         day.setDate(day.getDate() - i);
         const label = day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        // small random fluctuations and slight downward trend
         const fluctuation = (Math.random() - 0.5) * 0.8;
         const val = (historyBase + fluctuation - (i * 0.05)).toFixed(1);
         history.push({ label, value: val });
@@ -102,8 +186,6 @@ const Dashboard = () => {
     navigate('/devices');
   };
 
-
-  // Show empty state if no devices
   if (connectedDevices.length === 0) {
     return (
       <div className="page-container">
@@ -123,16 +205,9 @@ const Dashboard = () => {
     );
   }
 
-
-  const getCurrentDate = () => {
-    const options = { weekday: 'long', month: 'long', day: 'numeric' };
-    return new Date().toLocaleDateString('en-US', options);
-  };
-
   return (
     <div className="dashboard-container-light">
       <div className="dashboard-content-light">
-        {/* Device/User Info Row */}
         <div className="device-selector-row" style={{justifyContent:'flex-start',gap:'18px',background:'none',boxShadow:'none',padding:'0',marginBottom:'18px'}}>
           <span style={{fontWeight:600,fontSize:16,color:'#222'}}>
             {selectedDevice?.name || selectedDevice?.deviceType || selectedDevice?.type || 'Device'}
@@ -156,13 +231,20 @@ const Dashboard = () => {
           </span>
         </div>
 
+        {/* Activity rings above cards */}
+        {metrics && (
+          <ActivityRings
+            steps={metrics.steps.count}
+            stepsGoal={metrics.steps.goal}
+            active={metrics.active}
+            activeGoal={100}
+            cals={metrics.steps.calories}
+            calsGoal={1000}
+          />
+        )}
 
-
-        {/* Health Metrics Cards */}
-        {/* Guard: only render health cards if metrics is available */}
         {metrics ? (
         <div className="health-cards">
-          {/* Weight card for weighing scale */}
           {isWeighingScale && (
             <div className="health-card">
               <div className="card-header">
@@ -178,17 +260,14 @@ const Dashboard = () => {
                 <span className="value-large">{metrics.weight.value}</span>
                 <span className="value-unit">{metrics.weight.unit}</span>
               </div>
-              {/* Past weight graph */}
               {metrics.weight && metrics.weight.history && (
                 <WeightHistory data={metrics.weight.history} />
               )}
             </div>
           )}
 
-          {/* All cards except weight for watch/ring */}
           {isWatchOrRing && (
             <>
-              {/* Steps Card */}
               <div className="health-card">
                 <div className="card-header">
                   <div className="card-icon" style={{background: 'rgba(0, 200, 200, 0.15)'}}>
@@ -220,7 +299,6 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Sleep Card */}
               <div className="health-card">
                 <div className="card-header">
                   <div className="card-icon" style={{background: 'rgba(180, 100, 255, 0.15)'}}>
@@ -244,7 +322,6 @@ const Dashboard = () => {
                 )}
               </div>
 
-              {/* Heart Rate Card */}
               <div className="health-card">
                 <div className="card-header">
                   <div className="card-icon" style={{background: 'rgba(255, 80, 120, 0.15)'}}>
@@ -275,7 +352,6 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* BP Card */}
               <div className="health-card">
                 <div className="card-header">
                   <div className="card-icon" style={{background: 'rgba(100, 150, 255, 0.15)'}}>
@@ -309,7 +385,6 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Blood Oxygen Card */}
               <div className="health-card">
                 <div className="card-header">
                   <div className="card-icon" style={{background: 'rgba(100, 220, 180, 0.15)'}}>
@@ -342,7 +417,6 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Stress Card */}
               <div className="health-card">
                 <div className="card-header">
                   <div className="card-icon" style={{background: 'rgba(200, 220, 100, 0.15)'}}>

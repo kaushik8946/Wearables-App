@@ -1,20 +1,134 @@
-/* Dashboard.css - Definitive Fix for Last Card Visibility */
+/* Activity Rings Component */
+
+.activity-rings-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0 32px 0;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.activity-rings-container svg {
+  display: block;
+  margin-bottom: 18px;
+  width: 180px;
+  height: 180px;
+  max-width: 100vw;
+}
+
+
+.activity-rings-stats-row {
+  display: flex;
+  gap: 80px;
+  justify-content: center;
+  align-items: baseline;
+  width: 100%;
+  max-width: 600px;
+}
+
+.stat-col {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Light theme metrics row */
+.light-metrics-row {
+  background: none;
+  gap: 60px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.light-metric {
+  min-width: 150px;
+  align-items: flex-start;
+  margin: 0 8px;
+}
+
+.light-label {
+  font-size: 16px;
+  font-weight: 500;
+  color: #8b8b8b;
+  margin-bottom: 4px;
+  letter-spacing: 0.01em;
+}
+
+.light-value-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.light-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #222;
+  letter-spacing: 0.01em;
+}
+
+.light-goal {
+  font-size: 15px;
+  color: #8b8b8b;
+  font-weight: 400;
+  margin-top: 0px;
+}
+
+.stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 2px;
+}
+
+.stat-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+  letter-spacing: 1.1px;
+}
+
+.stat-goal {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Responsive for mobile */
+@media (max-width: 768px) {
+  .activity-rings-container { padding: 10px 0 14px 0; max-width: 98vw; }
+  .activity-rings-container svg {
+    width: 140px;
+    height: 140px;
+  }
+  .activity-rings-stats-row { gap: 18px; max-width: 98vw; }
+  .light-metrics-row { gap: 24px; }
+  .light-metric { min-width: auto; margin: 0 4px; }
+  .light-label { font-size: 14px; }
+  .light-value { font-size: 24px; }
+  .light-goal { font-size: 13px; }
+  .stat-value { font-size: 18px; }
+}
+
 
 .dashboard-container-light {
   min-height: 100vh;
   max-height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  padding: 24px 16px 60px 16px; /* Increased bottom padding to 60px */
+  padding: 24px 16px 60px 16px;
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
-  scroll-padding-bottom: 60px; /* Scroll padding property */
+  scroll-padding-bottom: 60px;
 }
 
 .dashboard-content-light {
   max-width: 1200px;
   margin: 0 auto;
-  padding-bottom: 60px; /* Increased to 60px */
+  padding-bottom: 60px;
 }
 
 .health-cards {
@@ -22,9 +136,8 @@
   grid-template-columns: repeat(2, 1fr);
   gap: 20px;
   animation: fadeIn 0.6s ease;
-  padding-bottom: 40px; /* Extra padding after grid */
+  padding-bottom: 40px;
 }
-
 
 .device-selector-row {
   display: flex;
@@ -110,6 +223,7 @@
   position: relative;
   overflow: hidden;
 }
+
 
 .health-card::before {
   content: '';
@@ -350,41 +464,32 @@
     padding: 16px 12px 60px 12px;
     scroll-padding-bottom: 60px;
   }
-
   .health-cards {
     grid-template-columns: 1fr;
     gap: 16px;
     padding-bottom: 40px;
   }
-
   .health-card:last-child {
-    margin-bottom: 60px; /* More margin on mobile */
+    margin-bottom: 60px;
   }
-
   .health-card {
     padding: 20px;
   }
-
   .value-large {
     font-size: 32px;
   }
-
   .card-title-section h3 {
     font-size: 16px;
   }
-
   .card-mini-stats {
     gap: 12px;
   }
-
   .empty-state-card {
     padding: 36px 24px;
   }
-
   .empty-state-icon {
     font-size: 56px;
   }
-
   .empty-state-title {
     font-size: 20px;
   }
@@ -394,7 +499,6 @@
   .health-cards {
     gap: 18px;
   }
-
   .dashboard-container-light {
     padding: 20px 20px 60px 20px;
   }
@@ -404,7 +508,6 @@
   .dashboard-content-light {
     max-width: 1400px;
   }
-
   .health-cards {
     gap: 24px;
   }
@@ -414,7 +517,6 @@
   .dashboard-container-light {
     background: white;
   }
-
   .health-card {
     box-shadow: none;
     border: 1px solid #e2e8f0;
