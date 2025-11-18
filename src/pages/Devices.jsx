@@ -1,6 +1,15 @@
 import { useState, useEffect } from 'react';
 import '../styles/pages/Devices.css';
 import { availableDevices as initialAvailableDevices } from '../data/mockData';
+import watchImg from '../assets/images/watch.png';
+import ringImg from '../assets/images/ring.webp';
+import scaleImg from '../assets/images/weighing-scale.avif';
+
+const deviceImageMap = {
+  'watch.png': watchImg,
+  'ring.webp': ringImg,
+  'weighing-scale.avif': scaleImg,
+};
 
 const Devices = () => {
   // Default device state
@@ -141,7 +150,7 @@ const Devices = () => {
               <div className="device-card" key={device.id}>
                 <div className="device-content">
                   <div className="device-image-wrapper">
-                    <img src={device.image} alt={device.name} className="device-image" />
+                    <img src={deviceImageMap[device.image] || device.image} alt={device.name} className="device-image" />
                   </div>
                   <div className="device-info">
                     <span className="device-name">
@@ -186,7 +195,7 @@ const Devices = () => {
               >
                 <div className="device-content">
                   <div className="device-image-wrapper">
-                    <img src={device.image} alt={device.name} className="device-image" />
+                    <img src={deviceImageMap[device.image] || device.image} alt={device.name} className="device-image" />
                   </div>
                   <div className="device-info">
                     <span className="device-name">{device.name}</span>
@@ -210,7 +219,7 @@ const Devices = () => {
             <div className="modal-body">
               <div className="modal-device-preview">
                 <div className="modal-device-image-wrapper">
-                  <img src={selectedDevice.image} alt={selectedDevice.name} className="modal-device-image" />
+                  <img src={deviceImageMap[selectedDevice.image] || selectedDevice.image} alt={selectedDevice.name} className="modal-device-image" />
                 </div>
                 <div className="modal-device-info">
                   <h4>{selectedDevice.name}</h4>
@@ -238,7 +247,7 @@ const Devices = () => {
             <div className="modal-body">
               <div className="modal-device-preview">
                 <div className="modal-device-image-wrapper">
-                  <img src={settingsModal.device.image} alt={settingsModal.device.name} className="modal-device-image" />
+                  <img src={deviceImageMap[settingsModal.device.image] || settingsModal.device.image} alt={settingsModal.device.name} className="modal-device-image" />
                 </div>
                 <div className="modal-device-info">
                   <h4>{settingsModal.device.name}</h4>
