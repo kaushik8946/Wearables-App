@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { BsSmartwatch } from 'react-icons/bs';
 import '../styles/pages/Dashboard.css';
 import WeightHistory from '../components/WeightHistory';
 
@@ -110,7 +109,7 @@ const Dashboard = () => {
       <div className="page-container">
         <div className="page-content">
           <div className="empty-state-card">
-            <div className="empty-state-icon"><BsSmartwatch size={72} /></div>
+            <div className="empty-state-icon">⌚</div>
             <div className="empty-state-title">No devices paired</div>
             <div className="empty-state-description">
               You have not paired any devices yet. To get started, pair a device.

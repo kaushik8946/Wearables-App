@@ -1,5 +1,18 @@
 import { useState, useEffect } from 'react';
-import { BsGearFill, BsX } from 'react-icons/bs';
+// Battery icon SVGs
+const BatteryIcon = ({ level }) => {
+  let color = '#4caf50';
+  if (level <= 20) color = '#e74c3c';
+  else if (level <= 50) color = '#fbc02d';
+  else if (level <= 80) color = '#ffb300';
+  return (
+    <svg width="28" height="16" viewBox="0 0 28 16" style={{ verticalAlign: 'middle', marginRight: 4 }}>
+      <rect x="1" y="3" width="22" height="10" rx="3" fill="none" stroke={color} strokeWidth="2" />
+      <rect x="24" y="6" width="3" height="4" rx="1" fill={color} />
+      <rect x="3" y="5" width={Math.max(0, Math.round(18 * (level / 100)))} height="6" rx="2" fill={color} />
+    </svg>
+  );
+};
 import '../styles/pages/Devices.css';
 import { availableDevices as initialAvailableDevices } from '../data/mockData';
 import watchImg from '../assets/images/watch.png';
@@ -21,7 +34,12 @@ const Devices = () => {
   const [showDefaultModal, setShowDefaultModal] = useState(false);
   const [pairedDevices, setPairedDevices] = useState(() => {
     const saved = localStorage.getItem('pairedDevices');
-    return saved ? JSON.parse(saved) : [];
+    if (!saved) return [];
+    // On every reload, assign a new random batteryLevel to each device
+    return JSON.parse(saved).map(device => ({
+      ...device,
+      batteryLevel: Math.floor(Math.random() * 100) + 1
+    }));
   });
 
   // Removed defaultDeviceId state
@@ -36,6 +54,9 @@ const Devices = () => {
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [users, setUsers] = useState([]);
   const [settingsModal, setSettingsModal] = useState({ open: false, device: null, newMember: '' });
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [deviceToAssign, setDeviceToAssign] = useState(null);
+  const [selectedUserForAssign, setSelectedUserForAssign] = useState('');
 
   useEffect(() => {
     const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {};
@@ -67,7 +88,7 @@ const Devices = () => {
         ...selectedDevice,
         assignedTo: 'none', 
         connectionStatus: 'connected',
-        batteryLevel: Math.floor(Math.random() * 30) + 70,
+        batteryLevel: Math.floor(Math.random() * 100) + 1,
         lastSync: new Date().toISOString()
       };
 
@@ -79,6 +100,12 @@ const Devices = () => {
       setAvailableDevices(updatedAvailableDevices);
 
       setShowModal(false);
+      
+      // Show assign user modal after pairing
+      setDeviceToAssign(pairedDevice);
+      setSelectedUserForAssign('');
+      setShowAssignModal(true);
+      
       setSelectedDevice(null);
     }
   };
@@ -126,6 +153,29 @@ const Devices = () => {
     handleCloseSettingsModal();
   };
 
+  const handleAssignUser = () => {
+    if (!selectedUserForAssign) {
+      alert('Please select a user to assign this device');
+      return;
+    }
+    
+    const updatedPairedDevices = pairedDevices.map(d =>
+      d.id === deviceToAssign.id ? { ...d, assignedTo: selectedUserForAssign } : d
+    );
+    setPairedDevices(updatedPairedDevices);
+    localStorage.setItem('pairedDevices', JSON.stringify(updatedPairedDevices));
+    
+    setShowAssignModal(false);
+    setDeviceToAssign(null);
+    setSelectedUserForAssign('');
+  };
+
+  const handleCloseAssignModal = () => {
+    setShowAssignModal(false);
+    setDeviceToAssign(null);
+    setSelectedUserForAssign('');
+  };
+
   return (
     <div className="devices-container">
       <div className="devices-ui">
@@ -133,7 +183,7 @@ const Devices = () => {
           <h1>Devices</h1>
           {pairedDevices.length > 0 && (
             <button className="btn-manage-default" onClick={() => setShowDefaultModal(true)}>
-              Manage Default
+              Change Default
             </button>
           )}
         </div>
@@ -144,7 +194,7 @@ const Devices = () => {
             <div className="device-card empty">No paired devices</div>
           ) : (
             pairedDevices.map(device => (
-              <div className="device-card" key={device.id}>
+              <div className="device-card" key={device.id} onClick={e => handleSettings(e, device.id)} style={{ cursor: 'pointer' }}>
                 <div className="device-content">
                   <div className="device-image-wrapper">
                     <img src={deviceImageMap[device.image] || device.image} alt={device.name} className="device-image" />
@@ -159,6 +209,10 @@ const Devices = () => {
                         <span className="device-default-badge" style={{ background: '#9e9e9e' }}>User not assigned</span>
                       )}
                     </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                      <BatteryIcon level={device.batteryLevel || 0} />
+                      <span style={{ fontSize: 12, color: device.batteryLevel <= 20 ? '#e74c3c' : '#333', fontWeight: 600 }}>{device.batteryLevel}%</span>
+                    </span>
                     <span className="device-model">{device.model}</span>
                     {device.assignedTo !== 'none' ? (
                       <span className="device-assigned">
@@ -169,10 +223,10 @@ const Devices = () => {
                 </div>
                 <button 
                   className="device-settings"
-                  onClick={(e) => handleSettings(e, device.id)}
+                  onClick={e => { e.stopPropagation(); handleSettings(e, device.id); }}
                   title="Device settings"
                 >
-                  <BsGearFill size={20} />
+                  ⚙️
                 </button>
               </div>
             ))
@@ -210,7 +264,7 @@ const Devices = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Pair Device</h3>
-              <button className="modal-close" onClick={handleCloseModal}><BsX size={24} /></button>
+              <button className="modal-close" onClick={handleCloseModal}>✕</button>
             </div>
 
             <div className="modal-body">
@@ -239,7 +293,7 @@ const Devices = () => {
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Device Settings</h3>
-              <button className="modal-close" onClick={handleCloseSettingsModal}><BsX size={24} /></button>
+              <button className="modal-close" onClick={handleCloseSettingsModal}>✕</button>
             </div>
             <div className="modal-body">
               <div className="modal-device-preview">
@@ -279,8 +333,8 @@ const Devices = () => {
         <div className="modal-overlay" onClick={() => setShowDefaultModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Manage Default Device</h3>
-              <button className="modal-close" onClick={() => setShowDefaultModal(false)}><BsX size={24} /></button>
+              <h3>Change Default Device</h3>
+              <button className="modal-close" onClick={() => setShowDefaultModal(false)}>✕</button>
             </div>
             <div className="modal-body">
               <p className="modal-message">Select your default device:</p>
@@ -302,6 +356,45 @@ const Devices = () => {
             </div>
             <div className="modal-footer">
               <button className="btn-cancel" onClick={() => setShowDefaultModal(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Assign User Modal */}
+      {showAssignModal && deviceToAssign && (
+        <div className="modal-overlay">
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Assign Device to User</h3>
+            </div>
+            <div className="modal-body">
+              <div className="modal-device-preview">
+                <div className="modal-device-image-wrapper">
+                  <img src={deviceImageMap[deviceToAssign.image] || deviceToAssign.image} alt={deviceToAssign.name} className="modal-device-image" />
+                </div>
+                <div className="modal-device-info">
+                  <h4>{deviceToAssign.name}</h4>
+                  <p>{deviceToAssign.model}</p>
+                  <span className="modal-device-brand">{deviceToAssign.brand}</span>
+                </div>
+              </div>
+              <p className="modal-message">Assign this device to a user: <span style={{color: 'red'}}>*</span></p>
+              <select
+                className="family-member-dropdown"
+                value={selectedUserForAssign}
+                onChange={e => setSelectedUserForAssign(e.target.value)}
+              >
+                <option value="">-- Choose User --</option>
+                {users.map((user, idx) => (
+                  <option key={idx} value={user.mobile}>
+                    {user.name} {user.self ? "(Self)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-pair" onClick={handleAssignUser}>Assign</button>
             </div>
           </div>
         </div>
