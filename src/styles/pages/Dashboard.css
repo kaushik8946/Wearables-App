@@ -10,12 +10,12 @@
   margin: 0 auto;
 }
 
-.activity-rings-container svg {
+.activity-rings-graphic {
   display: block;
   margin-bottom: 18px;
-  width: 180px;
-  height: 180px;
-  max-width: 100vw;
+  width: 220px;
+  height: 220px;
+  max-width: 100%;
 }
 
 
@@ -97,10 +97,20 @@
   font-weight: 500;
 }
 
+/* Activity row icons (smaller than card icons) */
+.activity-ring-icon {
+  font-size: 18px;
+  vertical-align: middle;
+  margin-bottom: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Responsive for mobile */
 @media (max-width: 768px) {
   .activity-rings-container { padding: 10px 0 14px 0; max-width: 98vw; }
-  .activity-rings-container svg {
+  .activity-rings-graphic {
     width: 140px;
     height: 140px;
   }
@@ -111,6 +121,7 @@
   .light-value { font-size: 24px; }
   .light-goal { font-size: 13px; }
   .stat-value { font-size: 18px; }
+  .activity-ring-icon { font-size: 16px; }
 }
 
 
