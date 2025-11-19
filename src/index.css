@@ -36,7 +36,11 @@ body {
   width: 100vw;
   min-height: 100vh;
   overflow: hidden;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  
+  /* Theme tokens — fallbacks if not provided by a higher-level theme */
+  --card: #ffffff;
+  --primary: #667eea;
+  --text: #213547;
 }
 
 h1 {

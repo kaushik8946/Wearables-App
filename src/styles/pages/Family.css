@@ -494,6 +494,16 @@ select.form-input {
   transform: translateY(0);
 }
 
+.no-devices-placeholder {
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px dashed #e2e8f0;
+  color: #64748b;
+  border-radius: 8px;
+  font-size: 14px;
+  display: inline-block;
+}
+
 /* Smooth Scrollbar */
 .page-container::-webkit-scrollbar {
   width: 10px;

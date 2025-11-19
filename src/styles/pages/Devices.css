@@ -1,3 +1,19 @@
+.btn-unlink {
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: #e74c3c;
+  color: #fff;
+  transition: background 0.2s ease;
+  min-width: 72px;
+  max-width: 100px;
+}
+.btn-unlink:hover {
+  background: #c0392b;
+}
 .btn-manage-default {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;
@@ -173,104 +189,6 @@ h1 {
   color: #667eea;
 }
 
-/* Modal */
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.modal-content {
-  background: #ffffff;
-  border-radius: 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  max-width: 420px;
-  width: 100%;
-  padding: 24px;
-  box-sizing: border-box;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.modal-header h3 {
-  font-size: 20px;
-  font-weight: 700;
-  margin: 0;
-  color: #1a1a1a;
-}
-
-.modal-close {
-  font-size: 24px;
-  color: #5f6368;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.modal-close:hover {
-  color: #1a1a1a;
-}
-
-.modal-device-preview {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.modal-device-image-wrapper {
-  width: 80px;
-  height: 80px;
-  border-radius: 18px;
-  overflow: hidden;
-}
-
-.modal-device-image {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 18px;
-}
-
-.modal-device-info h4 {
-  margin: 0 0 6px 0;
-  color: #1a1a1a;
-}
-
-.modal-device-info p {
-  margin: 0;
-  color: #5f6368;
-}
-
-.modal-device-brand {
-  background: rgba(102, 126, 234, 0.1);
-  color: #667eea;
-  font-weight: 500;
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-}
-
-.modal-message {
-  font-size: 14px;
-  color: #5f6368;
-  margin-bottom: 16px;
-}
 
 .family-member-dropdown {
   width: 100%;
@@ -303,6 +221,20 @@ h1 {
   user-select: none;
 }
 
+.btn-pair-new {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.12);
+}
+.btn-pair-new:hover {
+  transform: translateY(-1px);
+}
+
 .modal-default-toggle label {
   cursor: pointer;
   display: flex;
@@ -326,43 +258,7 @@ h1 {
   margin-top: 12px;
 }
 
-.btn-cancel,
-.btn-pair {
-  flex: 1;
-  padding: 12px 24px;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  transition: background 0.2s ease;
-}
-
-.btn-cancel {
-  background: transparent;
-  color: #5f6368;
-  border: 2px solid rgba(0, 0, 0, 0.12);
-}
-
-.btn-cancel:hover {
-  background: rgba(0, 0, 0, 0.05);
-  border-color: rgba(0, 0, 0, 0.2);
-}
-
-.btn-pair {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.btn-pair:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
-}
-
-.btn-pair:active {
-  transform: translateY(0);
-}
+/* Modal moved to src/components/PairDeviceModal + styles in src/styles/components */
 
 /* Responsive */
 @media (max-width: 480px) {

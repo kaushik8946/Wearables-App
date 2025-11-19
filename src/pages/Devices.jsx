@@ -17,6 +17,7 @@ const BatteryIcon = ({ level }) => {
 };
 import '../styles/pages/Devices.css';
 import { availableDevices as initialAvailableDevices } from '../data/mockData';
+import PairDeviceModal from '../components/PairDeviceModal';
 import watchImg from '../assets/images/watch.png';
 import ringImg from '../assets/images/ring.webp';
 import scaleImg from '../assets/images/weighing-scale.avif';
@@ -35,10 +36,9 @@ const randomizeBatteryLevels = (devices) =>
   }));
 
 const Devices = () => {
-  // Default device state
-  const [defaultDeviceId, setDefaultDeviceId] = useState('');
-  const [showDefaultModal, setShowDefaultModal] = useState(false);
+  // Default device state removed
   const [pairedDevices, setPairedDevices] = useState([]);
+  const [defaultUserDeviceId, setDefaultUserDeviceId] = useState('');
 
   // Removed defaultDeviceId state
 
@@ -46,18 +46,14 @@ const Devices = () => {
 
   const [showModal, setShowModal] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState(null);
-  const [users, setUsers] = useState([]);
-  const [settingsModal, setSettingsModal] = useState({ open: false, device: null, newUser: '' });
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [deviceToAssign, setDeviceToAssign] = useState(null);
-  const [selectedUserForAssign, setSelectedUserForAssign] = useState('');
+  // User-related state removed
 
   useEffect(() => {
     let isMounted = true;
     (async () => {
       try {
-        const [storedDefaultId, storedPairedDevices, currentUser, otherUsers] = await Promise.all([
-          idbGet('defaultDeviceId'),
+        const [_, storedPairedDevices, currentUser, otherUsers] = await Promise.all([
+          idbGet('defaultDeviceId'), // we will look up user mapping instead
           idbGetJSON('pairedDevices', []),
           idbGetJSON('currentUser', null),
           idbGetJSON('users', []),
@@ -65,25 +61,17 @@ const Devices = () => {
         if (!isMounted) return;
         const randomizedPaired = randomizeBatteryLevels(storedPairedDevices);
         setPairedDevices(randomizedPaired);
-        const fallbackDefault = randomizedPaired[0] ? String(randomizedPaired[0].id) : '';
-        setDefaultDeviceId(storedDefaultId || fallbackDefault);
+        // Compute default user's mapped device id
+        const allUsers = [ ...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers.map(u => ({ ...u })) ];
+        const storedDefaultUserId = await idbGet('defaultUserId');
+        if (storedDefaultUserId) {
+          const defUser = allUsers.find(u => String(u.id) === String(storedDefaultUserId));
+          setDefaultUserDeviceId(defUser?.deviceId ? String(defUser.deviceId) : '');
+        } else {
+          setDefaultUserDeviceId('');
+        }
         const pairedIds = storedPairedDevices.map(d => d.id);
         setAvailableDevices(initialAvailableDevices.filter(device => !pairedIds.includes(device.id)));
-        // Ensure each user has a stable, non-empty identifier for use in selects
-        // Some users may not have a `mobile` number (added in `Family`), so we provide
-        // a fallback `id` and also use that as the select value if mobile is absent.
-        const normalizeUser = (member = {}, idx = 0) => ({
-          ...member,
-          // keep mobile as a string if available
-          mobile: member?.mobile ? String(member.mobile) : '',
-          // generate a fallback id if the user lacks one -- prefer existing id, then mobile
-          id: member?.id ? String(member.id) : (member?.mobile ? String(member.mobile) : `__user_${idx}`),
-        });
-        const hydratedUsers = [
-          ...(currentUser ? [{ ...normalizeUser(currentUser), self: true }] : []),
-          ...otherUsers.map(normalizeUser),
-        ];
-        setUsers(hydratedUsers);
       } catch (err) {
         console.error('Failed to load device data from IndexedDB', err);
       }
@@ -93,49 +81,56 @@ const Devices = () => {
     };
   }, []);
 
+  // Recompute default user's device mapping when paired devices change - helps keep UI up to date
   useEffect(() => {
-    if (pairedDevices.length > 0 && !defaultDeviceId) {
-      const fallbackId = String(pairedDevices[0].id);
-      setDefaultDeviceId(fallbackId);
-      idbSet('defaultDeviceId', fallbackId).catch(err => console.error('Failed to persist default device', err));
-    }
-    if (pairedDevices.length === 0 && defaultDeviceId) {
-      setDefaultDeviceId('');
-      idbRemove('defaultDeviceId').catch(err => console.error('Failed to clear default device', err));
-    }
-  }, [pairedDevices, defaultDeviceId]);
+    (async () => {
+      try {
+        const currentUser = await idbGetJSON('currentUser', null);
+        const otherUsers = await idbGetJSON('users', []);
+        const storedDefaultUserId = await idbGet('defaultUserId');
+        const allUsers = [ ...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers.map(u => ({ ...u })) ];
+        if (storedDefaultUserId) {
+          const defUser = allUsers.find(u => String(u.id) === String(storedDefaultUserId));
+          setDefaultUserDeviceId(defUser?.deviceId ? String(defUser.deviceId) : '');
+        } else {
+          setDefaultUserDeviceId('');
+        }
+      } catch (err) {
+        // ignore
+      }
+    })();
+  }, [pairedDevices]);
+
+  // Default device effect removed
 
   const handleDeviceClick = (device) => {
-    setSelectedDevice(device);
+    // map images to local asset when opening the modal
+    const mappedImage = deviceImageMap[device.image] || device.image;
+    setSelectedDevice({ ...device, image: mappedImage });
     setShowModal(true);
   };
 
-  const handlePairDevice = async () => {
-    if (selectedDevice) {
-      const pairedDevice = {
-        ...selectedDevice,
-        assignedTo: 'none', 
-        connectionStatus: 'connected',
-        batteryLevel: getRandomBatteryLevel(),
-        lastSync: new Date().toISOString()
-      };
+  const handlePairDevice = async (deviceOrNull) => {
+    // Accept device argument from modal to support picking from list; fall back to selectedDevice
+    const deviceToPair = deviceOrNull || selectedDevice;
+    if (!deviceToPair) return;
 
-      const updatedPairedDevices = [...pairedDevices, pairedDevice];
-      setPairedDevices(updatedPairedDevices);
-      await idbSetJSON('pairedDevices', updatedPairedDevices);
+    const pairedDevice = {
+      ...deviceToPair,
+      connectionStatus: 'connected',
+      batteryLevel: getRandomBatteryLevel(),
+      lastSync: new Date().toISOString()
+    };
 
-      const updatedAvailableDevices = availableDevices.filter(d => d.id !== selectedDevice.id);
-      setAvailableDevices(updatedAvailableDevices);
+    const updatedPairedDevices = [...pairedDevices, pairedDevice];
+    setPairedDevices(updatedPairedDevices);
+    await idbSetJSON('pairedDevices', updatedPairedDevices);
 
-      setShowModal(false);
-      
-      // Show assign user modal after pairing
-      setDeviceToAssign(pairedDevice);
-      setSelectedUserForAssign('');
-      setShowAssignModal(true);
-      
-      setSelectedDevice(null);
-    }
+    const updatedAvailableDevices = availableDevices.filter(d => d.id !== deviceToPair.id);
+    setAvailableDevices(updatedAvailableDevices);
+
+    setShowModal(false);
+    setSelectedDevice(null);
   };
 
   const handleCloseModal = () => {
@@ -143,66 +138,20 @@ const Devices = () => {
     setSelectedDevice(null);
   };
 
-  // Device assignment and display: match either by mobile or fallback id
-  const getAssignedUserName = (identifier) => {
-    if (!identifier || identifier === 'none') return 'User not assigned';
-    const user = users.find(u => String(u.mobile) === String(identifier) || String(u.id) === String(identifier));
-    return user ? user.name + (user.self ? ' (Self)' : '') : 'Unknown';
-  };
-
+  // User-related functions removed
   const handleSettings = (e, deviceId) => {
     e.stopPropagation();
-    const device = pairedDevices.find(d => d.id === deviceId);
-    setSettingsModal({ open: true, device, newUser: device.assignedTo });
+    // No-op or could show a simple settings modal if needed
   };
 
-  const handleCloseSettingsModal = () => {
-    setSettingsModal({ open: false, device: null, newMember: '' });
-  };
-
-  const handleReassign = async () => {
-    if (!settingsModal.newUser) {
-      alert('Please select a user to assign this device');
-      return;
-    }
-    const updatedPairedDevices = pairedDevices.map(d =>
-      d.id === settingsModal.device.id ? { ...d, assignedTo: settingsModal.newUser } : d
-    );
-    setPairedDevices(updatedPairedDevices);
-    await idbSetJSON('pairedDevices', updatedPairedDevices);
-    handleCloseSettingsModal();
-  };
-
-  const handleRemoveDevice = async () => {
+  const handleRemoveDevice = async (deviceId) => {
     // Remove from paired, add back to available
-    const updatedPairedDevices = pairedDevices.filter(d => d.id !== settingsModal.device.id);
+    const device = pairedDevices.find(d => d.id === deviceId);
+    if (!device) return;
+    const updatedPairedDevices = pairedDevices.filter(d => d.id !== deviceId);
     setPairedDevices(updatedPairedDevices);
     await idbSetJSON('pairedDevices', updatedPairedDevices);
-    setAvailableDevices([...availableDevices, settingsModal.device]);
-    handleCloseSettingsModal();
-  };
-
-  const handleAssignUser = async () => {
-    if (!selectedUserForAssign) {
-      alert('Please select a user to assign this device');
-      return;
-    }
-    
-    const updatedPairedDevices = pairedDevices.map(d =>
-      d.id === deviceToAssign.id ? { ...d, assignedTo: selectedUserForAssign } : d
-    );
-    setPairedDevices(updatedPairedDevices);
-    await idbSetJSON('pairedDevices', updatedPairedDevices);
-    
-    setShowAssignModal(false);
-    setDeviceToAssign(null);
-    setSelectedUserForAssign('');
-  };
-
-  const handleCloseAssignModal = () => {
-    setShowAssignModal(false);
-    setDeviceToAssign(null);
-    setSelectedUserForAssign('');
+    setAvailableDevices([...availableDevices, device]);
   };
 
   return (
@@ -210,11 +159,7 @@ const Devices = () => {
       <div className="devices-ui">
         <div className="devices-header">
           <h1>Devices</h1>
-          {pairedDevices.length > 0 && (
-            <button className="btn-manage-default" onClick={() => setShowDefaultModal(true)}>
-              Change Default
-            </button>
-          )}
+          {/* Default device button removed */}
         </div>
 
         <div className="section-title">Paired Devices</div>
@@ -223,7 +168,7 @@ const Devices = () => {
             <div className="device-card empty">No paired devices</div>
           ) : (
             pairedDevices.map(device => (
-              <div className="device-card" key={device.id} onClick={e => handleSettings(e, device.id)} style={{ cursor: 'pointer' }}>
+              <div className="device-card" key={device.id} style={{ cursor: 'pointer' }}>
                 <div className="device-content">
                   <div className="device-image-wrapper">
                     <img src={deviceImageMap[device.image] || device.image} alt={device.name} className="device-image" />
@@ -231,209 +176,51 @@ const Devices = () => {
                   <div className="device-info">
                     <span className="device-name">
                       {device.name}
-                      {String(defaultDeviceId) === String(device.id) && (
-                        <span className="device-default-badge">Default</span>
-                      )}
-                      {device.assignedTo === 'none' && (
-                        <span className="device-default-badge" style={{ background: '#9e9e9e' }}>User not assigned</span>
-                      )}
-                    </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                      <BatteryIcon level={device.batteryLevel || 0} />
-                      <span style={{ fontSize: 12, color: device.batteryLevel <= 20 ? '#e74c3c' : '#333', fontWeight: 600 }}>{device.batteryLevel}%</span>
                     </span>
                     <span className="device-model">{device.model}</span>
-                    {device.assignedTo !== 'none' ? (
-                      <span className="device-assigned">
-                        Assigned to: {getAssignedUserName(device.assignedTo)}
-                      </span>
-                    ) : null}
                   </div>
                 </div>
-                <button 
-                  className="device-settings"
-                  onClick={e => { e.stopPropagation(); handleSettings(e, device.id); }}
-                  title="Device settings"
-                  style={{ fontWeight: 'bold', color: '#111' }}
+                <button
+                  className="btn-unlink"
+                  onClick={e => { e.stopPropagation(); handleRemoveDevice(device.id); }}
+                  title="Unlink device"
+                  style={{ fontWeight: 'bold' }}
                 >
-                  <MdSettings size={24} style={{ fontWeight: 'bold', color: '#111' }} />
+                  Unlink
                 </button>
               </div>
             ))
           )}
         </div>
 
-        <div className="section-title">Available Devices</div>
-        <div className="device-list">
-          {availableDevices.length === 0 ? (
-            <div className="device-card empty">No available devices</div>
-          ) : (
-            availableDevices.map(device => (
-              <div 
-                className="device-card" 
-                key={device.id}
-                onClick={() => handleDeviceClick(device)}
-              >
-                <div className="device-content">
-                  <div className="device-image-wrapper">
-                    <img src={deviceImageMap[device.image] || device.image} alt={device.name} className="device-image" />
-                  </div>
-                  <div className="device-info">
-                    <span className="device-name">{device.name}</span>
-                    <span className="device-model">{device.model}</span>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 0 20px 0' }}>
+          <button
+            className="btn-pair-new"
+            onClick={() => { setSelectedDevice(null); setShowModal(true); }}
+            title="Pair new device"
+          >
+            Pair new device
+          </button>
         </div>
       </div>
 
-      {showModal && selectedDevice && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Pair Device</h3>
-              <button className="modal-close" onClick={handleCloseModal}>✕</button>
-            </div>
-
-            <div className="modal-body">
-              <div className="modal-device-preview">
-                <div className="modal-device-image-wrapper">
-                  <img src={deviceImageMap[selectedDevice.image] || selectedDevice.image} alt={selectedDevice.name} className="modal-device-image" />
-                </div>
-                <div className="modal-device-info">
-                  <h4>{selectedDevice.name}</h4>
-                  <p>{selectedDevice.model}</p>
-                  <span className="modal-device-brand">{selectedDevice.brand}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="modal-footer">
-              <button className="btn-pair" onClick={handlePairDevice}>Pair Device</button>
-              <button className="btn-cancel" onClick={handleCloseModal}>Cancel</button>
-            </div>
-          </div>
-        </div>
+      {showModal && (
+        <PairDeviceModal
+          device={selectedDevice}
+          availableDevices={availableDevices}
+          onClose={handleCloseModal}
+          onPair={handlePairDevice}
+          onOpenDevice={(dev) => {
+            // Map image to local asset then open detailed device preview inside modal
+            const mappedImage = deviceImageMap[dev.image] || dev.image;
+            setSelectedDevice({ ...dev, image: mappedImage });
+          }}
+        />
       )}
-      {/* Settings Modal */}
-      {settingsModal.open && settingsModal.device && (
-        <div className="modal-overlay" onClick={handleCloseSettingsModal}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Device Settings</h3>
-              <button className="modal-close" onClick={handleCloseSettingsModal}>✕</button>
-            </div>
-            <div className="modal-body">
-              <div className="modal-device-preview">
-                <div className="modal-device-image-wrapper">
-                  <img src={deviceImageMap[settingsModal.device.image] || settingsModal.device.image} alt={settingsModal.device.name} className="modal-device-image" />
-                </div>
-                <div className="modal-device-info">
-                  <h4>{settingsModal.device.name}</h4>
-                  <p>{settingsModal.device.model}</p>
-                  <span className="modal-device-brand">{settingsModal.device.brand}</span>
-                </div>
-              </div>
-              <p className="modal-message">Reassign this device to another user:</p>
-              <select
-                className="user-dropdown"
-                value={settingsModal.newUser}
-                onChange={e => setSettingsModal(s => ({ ...s, newUser: e.target.value }))}
-              >
-                <option value="">-- Choose User --</option>
-                {users.map((user, idx) => (
-                  <option key={idx} value={user.mobile || user.id}>
-                    {user.name} {user.self ? "(Self)" : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="modal-footer">
-              <button className="btn-pair" onClick={handleReassign}>Reassign</button>
-              <button className="btn-remove" onClick={handleRemoveDevice}>Remove Device</button>
-              <button className="btn-cancel" onClick={handleCloseSettingsModal}>Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Default Device Modal */}
-      {showDefaultModal && (
-        <div className="modal-overlay" onClick={() => setShowDefaultModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Change Default Device</h3>
-              <button className="modal-close" onClick={() => setShowDefaultModal(false)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <p className="modal-message">Select your default device:</p>
-              <select
-                className="family-member-dropdown"
-                value={defaultDeviceId}
-                onChange={async e => {
-                  const value = e.target.value;
-                  setDefaultDeviceId(value);
-                  if (value) {
-                    await idbSet('defaultDeviceId', value);
-                  } else {
-                    await idbRemove('defaultDeviceId');
-                  }
-                }}
-              >
-                <option value="">-- Select Device --</option>
-                {pairedDevices.map((device) => (
-                  <option key={device.id} value={device.id}>
-                    {device.name} ({device.model}) - {getAssignedUserName(device.assignedTo)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="modal-footer">
-              <button className="btn-cancel" onClick={() => setShowDefaultModal(false)}>Close</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Settings Modal removed (user-related) */}
+      {/* Default Device Modal removed */}
       
-      {/* Assign User Modal */}
-      {showAssignModal && deviceToAssign && (
-        <div className="modal-overlay">
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Assign Device to User</h3>
-            </div>
-            <div className="modal-body">
-              <div className="modal-device-preview">
-                <div className="modal-device-image-wrapper">
-                  <img src={deviceImageMap[deviceToAssign.image] || deviceToAssign.image} alt={deviceToAssign.name} className="modal-device-image" />
-                </div>
-                <div className="modal-device-info">
-                  <h4>{deviceToAssign.name}</h4>
-                  <p>{deviceToAssign.model}</p>
-                  <span className="modal-device-brand">{deviceToAssign.brand}</span>
-                </div>
-              </div>
-              <p className="modal-message">Assign this device to a user: <span style={{color: 'red'}}>*</span></p>
-              <select
-                className="family-member-dropdown"
-                value={selectedUserForAssign}
-                onChange={e => setSelectedUserForAssign(e.target.value)}
-              >
-                <option value="">-- Choose User --</option>
-                {users.map((user, idx) => (
-                  <option key={idx} value={user.mobile || user.id}>
-                    {user.name} {user.self ? "(Self)" : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="modal-footer">
-              <button className="btn-pair" onClick={handleAssignUser}>Assign</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Assign User Modal removed */}
     </div>
   );
 };
