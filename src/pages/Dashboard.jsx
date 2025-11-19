@@ -1,44 +1,64 @@
-import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { idbGet, idbGetJSON } from '../data/db';
-
-import { FaShoePrints } from 'react-icons/fa6';
-import { FiClock } from 'react-icons/fi';
-import { PiDropFill } from 'react-icons/pi';
+import React, { useState } from 'react';
+import { 
+  Heart, 
+  Footprints, 
+  Clock,
+  Moon, 
+  Wind, 
+  Zap, 
+  Scale, 
+  CalendarHeart, 
+  Stethoscope, 
+  Flame, 
+  X,
+  MoreHorizontal,
+  TrendingUp
+} from 'lucide-react';
 import '../styles/pages/Dashboard.css';
-import WeightHistory from '../components/WeightHistory';
+import { idbGet, idbGetJSON } from '../data/db';
+import { getDeviceTypeIcon } from '../data/mockData';
 
-// ActivityRings Component
-const ActivityRings = ({ steps, stepsGoal, active, activeGoal, cals, calsGoal }) => {
-  // Adjusted radii and SVG size to prevent cropping
+// Helper for SVG Curved Lines (Heart Rate) - Now accepting hex color
+const SineWave = ({ color = "#ffffff", width = 100, height = 50 }) => (
+  <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} fill="none" className="overflow-visible">
+    <path
+      d={`M0 ${height/2} Q ${width/4} ${height} ${width/2} ${height/2} T ${width} ${height/2}`}
+      stroke={color}
+      strokeWidth="3"
+      fill="none"
+      strokeLinecap="round"
+    />
+    {/* Fill Area */}
+    <path
+      d={`M0 ${height/2} Q ${width/4} ${height} ${width/2} ${height/2} T ${width} ${height/2} V ${height} H 0 Z`}
+      fill={color}
+      fillOpacity="0.2"
+    />
+  </svg>
+);
+
+const BarChart = () => (
+  <div className="barchart-container">
+    {[40, 70, 50, 90, 60, 80, 45].map((h, i) => (
+      <div 
+        key={i} 
+        className="barchart-bar"
+        style={{ height: `${h}%` }}
+      />
+    ))}
+  </div>
+);
+
+// ActivityRings component - integrated to show Steps/Active/Calories in rings
+const ActivityRings = ({ steps = 4784, stepsGoal = 8000, active = 45, activeGoal = 60, cals = 512, calsGoal = 800 }) => {
   const ringProps = [
-    {
-      value: steps,
-      goal: stepsGoal,
-      color: '#21bf73',   // Darker green
-      bgColor: '#b3eac2', // Lighter green
-      radius: 70,
-      stroke: 18
-    },
-    {
-      value: active,
-      goal: activeGoal,
-      color: '#268ed9',   // Darker blue
-      bgColor: '#b0dbf6', // Lighter blue
-      radius: 52,
-      stroke: 18
-    },
-    {
-      value: cals,
-      goal: calsGoal,
-      color: '#e04085',   // Darker pink
-      bgColor: '#fdc5ec', // Light pink
-      radius: 32,
-      stroke: 18
-    }
+    { value: steps, goal: stepsGoal, color: '#21bf73', bgColor: '#b3eac2', radius: 70, stroke: 18 },
+    { value: active, goal: activeGoal, color: '#268ed9', bgColor: '#b0dbf6', radius: 52, stroke: 18 },
+    { value: cals, goal: calsGoal, color: '#e04085', bgColor: '#fdc5ec', radius: 32, stroke: 18 }
   ];
-  // Center at 90,90, but SVG is 200x200 for padding
+
   const rotate = 'rotate(-90 100 100)';
+
   return (
     <div className="activity-rings-container">
       <svg className="activity-rings-graphic" width="200" height="200" viewBox="0 0 200 200">
@@ -47,437 +67,363 @@ const ActivityRings = ({ steps, stepsGoal, active, activeGoal, cals, calsGoal })
           const circum = 2 * Math.PI * ring.radius;
           return (
             <g key={idx}>
-              {/* Light background circle */}
-              <circle
-                cx="100"
-                cy="100"
-                r={ring.radius}
-                fill="none"
-                stroke={ring.bgColor}
-                strokeWidth={ring.stroke}
-                style={{ opacity: 0.7 }}
-                transform={rotate}
-              />
-              {/* Dark progress path */}
-              <circle
-                cx="100"
-                cy="100"
-                r={ring.radius}
-                fill="none"
-                stroke={ring.color}
-                strokeWidth={ring.stroke}
-                strokeDasharray={circum}
-                strokeDashoffset={circum * (1 - progress)}
-                strokeLinecap="round"
-                style={{ opacity: 0.93 }}
-                transform={rotate}
-              />
+              <circle cx="100" cy="100" r={ring.radius} fill="none" stroke={ring.bgColor} strokeWidth={ring.stroke} style={{ opacity: 0.7 }} transform={rotate} />
+              <circle cx="100" cy="100" r={ring.radius} fill="none" stroke={ring.color} strokeWidth={ring.stroke} strokeDasharray={circum} strokeDashoffset={circum * (1 - progress)} strokeLinecap="round" style={{ opacity: 0.93 }} transform={rotate} />
             </g>
           );
         })}
         <circle cx="100" cy="100" r="22" fill="#f0f4fa" />
       </svg>
-      {/* Fitness icons below are not SVGs and do not use the svg CSS class */}
-      <div className="activity-rings-stats-row dark-style">
-        <div className="stat-col" style={{marginBottom: 0, gap: 0, padding: 0}}>
-          <FaShoePrints className="activity-ring-icon" style={{color:'#21bf73'}} />
-          <span className="stat-value dark">{steps.toLocaleString()}</span>
-          <span className="stat-label dark">Steps</span>
-          <span className="stat-goal dark">/ {stepsGoal.toLocaleString()}</span>
+
+      <div className="activity-rings-stats-row">
+        <div className="stat-col">
+          <Footprints className="activity-ring-icon" size={20} style={{ color: '#21bf73' }} />
+          <span className="stat-value">{steps.toLocaleString()}</span>
+          <span className="stat-label">Steps</span>
+          <span className="stat-goal">/ {stepsGoal.toLocaleString()}</span>
         </div>
-        <div className="stat-col" style={{marginBottom: 0, gap: 0, padding: 0}}>
-          <FiClock className="activity-ring-icon" style={{color:'#268ed9'}} />
-          <span className="stat-value dark">{active}</span>
-          <span className="stat-label dark">Active time</span>
-          <span className="stat-goal dark">/ {activeGoal} mins</span>
+
+        <div className="stat-col">
+          <Clock className="activity-ring-icon" size={20} style={{ color: '#268ed9' }} />
+          <span className="stat-value">{active}</span>
+          <span className="stat-label">Active time</span>
+          <span className="stat-goal">/ {activeGoal} mins</span>
         </div>
-        <div className="stat-col" style={{marginBottom: 0, gap: 0, padding: 0}}>
-          <PiDropFill className="activity-ring-icon" style={{color:'#e04085'}} />
-          <span className="stat-value dark">{cals}</span>
-          <span className="stat-label dark">Activity calories</span>
-          <span className="stat-goal dark">/ {calsGoal.toLocaleString()} kcal</span>
+
+        <div className="stat-col">
+          <Flame className="activity-ring-icon" size={20} style={{ color: '#e04085' }} />
+          <span className="stat-value">{cals}</span>
+          <span className="stat-label">Activity calories</span>
+          <span className="stat-goal">/ {calsGoal.toLocaleString()} kcal</span>
         </div>
       </div>
     </div>
   );
 };
 
-const Dashboard = () => {
-  const navigate = useNavigate();
-  const [metrics, setMetrics] = useState(null);
-  const [selectedDevice, setSelectedDevice] = useState(null);
-  const [connectedDevices, setConnectedDevices] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [familyUsers, setFamilyUsers] = useState([]);
+// --- NEW COMPONENT: STEPS MODAL ---
+const StepsModal = ({ onClose }) => {
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content hide-scrollbar">
+        
+        {/* Close Button */}
+        <button onClick={onClose} className="close-btn">
+          <X size={20} color="#4b5563" />
+        </button>
 
-  useEffect(() => {
-    let isMounted = true;
+        {/* Header Tabs */}
+        <div className="tabs-container">
+          <button className="tab-btn">Daily</button>
+          <button className="tab-btn active">Weekly</button>
+          <button className="tab-btn">Monthly</button>
+        </div>
+
+        {/* Main Stat */}
+        <div className="big-stat">
+          512 <span>Kcal</span>
+        </div>
+
+        {/* Bar Chart Area */}
+        <div className="modal-chart-area">
+          {/* Y-Axis Labels */}
+          <div className="y-axis">
+             <span>160</span>
+             <span>120</span>
+             <span>80</span>
+             <span>40</span>
+             <span>0</span>
+          </div>
+          
+          {/* Bars */}
+          <div className="chart-bars-container">
+            {[
+              { day: 'Sun', val: 80, type: 'indigo' },
+              { day: 'Mon', val: 45, type: 'indigo' },
+              { day: 'Tue', val: 25, type: 'indigo' },
+              { day: 'Wed', val: 105, type: 'indigo' },
+              { day: 'Thu', val: 150, type: 'amber' }, // Highlighted
+              { day: 'Fri', val: 105, type: 'indigo' },
+              { day: 'Sat', val: 75, type: 'indigo' },
+            ].map((item, i) => (
+              <div key={i} className="chart-col">
+                 <div 
+                   className={`chart-bar-visual ${item.type === 'amber' ? 'bar-amber' : 'bar-indigo'}`} 
+                   style={{ height: `${(item.val / 160) * 100}%` }}
+                 ></div>
+                 <span className="day-label">{item.day}</span>
+              </div>
+            ))}
+          </div>
+          {/* Grid Lines */}
+          <div className="grid-lines-container">
+            {[0, 25, 50, 75, 100].map((pos) => (
+               <div key={pos} className="grid-line" style={{ bottom: `${pos}%`, marginBottom: '1.5rem' }}></div>
+            ))}
+          </div>
+        </div>
+
+        {/* Total Steps Card */}
+        <div className="total-card">
+          <div>
+            <p style={{ fontSize: '0.75rem', color: '#e0e7ff', marginBottom: '0.25rem' }}>Total steps</p>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: '700' }}>3500 <span style={{ fontSize: '0.75rem', fontWeight: '400', opacity: 0.6 }}>(Kcal)</span></h3>
+          </div>
+          
+          {/* Donut Chart */}
+          <div className="donut-chart">
+             <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="4" />
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#fbbf24" strokeWidth="4" strokeDasharray="73, 100" strokeLinecap="round" />
+             </svg>
+             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white', borderRadius: '50%', margin: '6px' }}>
+               <span style={{ fontSize: '0.625rem', fontWeight: '700', color: '#1f2937' }}>73%</span>
+             </div>
+          </div>
+        </div>
+
+        {/* Bottom Stats Grid */}
+        <div className="stats-grid">
+          {/* Calories Burnt */}
+          <div className="stat-box bg-gray">
+             <div className="icon-circle">
+               <Flame size={20} color="#4f46e5" fill="#4f46e5" />
+             </div>
+             <p className="stat-title">Calories burnt</p>
+             <h4 className="stat-val">512</h4>
+             <span style={{ fontSize: '0.625rem', color: '#9ca3af' }}>Kcal</span>
+          </div>
+
+          {/* Calories Left */}
+          <div className="stat-box bg-amber">
+             <div className="icon-circle">
+               <Flame size={20} color="#fbbf24" fill="#fbbf24" />
+             </div>
+             <p className="stat-title">Calories left</p>
+             <h4 className="stat-val">102</h4>
+             <span style={{ fontSize: '0.625rem', color: '#9ca3af' }}>Kcal</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// 1. MAIN DASHBOARD (Light Mode)
+const DashboardView = ({ onOpenSteps, connectedDevice }) => {
+  return (
+    <div className="app-container">
+      <div className="max-w-wrapper">
+        {/* Show connected device name near the top */}
+        <div className="connected-device-row">
+          <div className="connected-label">Connected</div>
+          <div className="connected-device-name">
+            {connectedDevice ? (
+              <>
+                <span className="connected-device-icon" style={{ marginRight: 8 }}>{ getDeviceTypeIcon(connectedDevice.deviceType) }</span>
+                {connectedDevice.name}
+              </>
+            ) : 'No device connected'}
+          </div>
+          {connectedDevice && <div className="connected-device-model">{connectedDevice.model}</div>}
+        </div>
+        {/* Activity Rings */}
+        <ActivityRings steps={4784} stepsGoal={8000} active={45} activeGoal={60} cals={512} calsGoal={800} />
+      
+        {/* Cards Grid (2 Columns) */}
+        <div className="grid-2">
+          
+          {/* 1. Steps - CLICKABLE */}
+          <div 
+            onClick={onOpenSteps}
+            className="card card-rose"
+          >
+            <div className="card-content">
+              <div className="flex-between-start mb-2">
+                <span className="card-label text-rose-100">Steps</span>
+                <Footprints size={16} className="text-rose-200" />
+              </div>
+              <h3 className="title-main">4,784 <span className="subtitle text-rose-100">steps</span></h3>
+            </div>
+            <div className="mt-4 width-full">
+              <BarChart />
+            </div>
+          </div>
+
+          {/* 2. Heart Rate */}
+          <div className="card card-lime">
+            <div className="card-content">
+              <div className="flex-between-start mb-2">
+                <span className="card-label text-lime-900">Heart Rate</span>
+                <Heart size={16} className="icon-lime-bg" />
+              </div>
+              <h3 className="title-main">82 <span className="subtitle text-lime-800">bpm</span></h3>
+            </div>
+            
+            {/* Graph Visualization */}
+            <div className="graph-container">
+               <SineWave color="#ffffff" />
+            </div>
+          </div>
+
+          {/* 3. Sleep */}
+          <div className="card card-indigo">
+            <div className="card-content">
+              <div className="flex-between-start mb-2">
+                <span className="card-label text-indigo-100">Sleep</span>
+                <Moon size={16} className="text-indigo-200" />
+              </div>
+              <h3 className="title-main">5<span className="text-lg opacity-80 font-normal">h</span> 22<span className="text-lg opacity-80 font-normal">m</span></h3>
+              <p className="mt-1 tag-indigo text-indigo-100">Light Sleep</p>
+            </div>
+            <div className="sleep-bars mt-4">
+               <div className="bar bar-light" style={{ height: '40%' }}></div>
+               <div className="bar bar-white" style={{ height: '80%' }}></div>
+               <div className="bar bar-light" style={{ height: '60%' }}></div>
+               <div className="bar bar-light" style={{ height: '30%' }}></div>
+               <div className="bar bar-light" style={{ height: '50%' }}></div>
+            </div>
+          </div>
+
+          {/* 4. Blood Pressure (BP) */}
+          <div className="card card-sky">
+             <div className="card-content">
+              <div className="flex-between-start mb-2">
+                <span className="card-label text-sky-100">BP</span>
+                <Stethoscope size={16} className="text-sky-200" />
+              </div>
+              <h3 className="title-main">119<span className="subtitle text-sky-200 inline">/</span>82</h3>
+              <p className="text-sky-100 subtitle mt-1">mmHg</p>
+            </div>
+            {/* Line Graph */}
+            <div className="graph-bp-container">
+              <svg viewBox="0 0 100 40" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
+                 <path d="M0,20 L20,20 L30,5 L40,35 L50,20 L100,20" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          </div>
+
+          {/* 5. Blood Oxygen */}
+          <div className="card card-teal">
+             <div className="card-content">
+              <div className="flex-between-start mb-2">
+                <span className="card-label text-teal-100">SpO2</span>
+                <Wind size={16} className="text-teal-200" />
+              </div>
+              <h3 className="title-main">95 <span className="subtitle text-teal-200 inline">%</span></h3>
+            </div>
+            {/* Circular Indicator */}
+            <div className="circular-indicator">
+               <svg style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                 <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.2)" strokeWidth="6" fill="none" />
+                 <circle cx="32" cy="32" r="28" stroke="white" strokeWidth="6" fill="none" strokeDasharray="175" strokeDashoffset="10" strokeLinecap="round" />
+               </svg>
+               <div className="pulse-dot">
+                 <div className="pulse-dot-inner"></div>
+               </div>
+            </div>
+          </div>
+
+          {/* 6. Stress */}
+          <div className="card card-amber">
+             <div className="card-content">
+              <div className="flex-between-start mb-2">
+                <span className="card-label text-amber-900">Stress</span>
+                <Zap size={16} className="text-amber-800" />
+              </div>
+              <h3 className="title-main">Average</h3>
+               <p className="mt-1 tag-amber text-amber-800">Relaxed</p>
+            </div>
+             {/* Face graphic */}
+             <div className="face-graphic">
+               <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                 <circle cx="12" cy="12" r="10"></circle>
+                 <line x1="8" y1="9" x2="10" y2="9"></line>
+                 <line x1="14" y1="9" x2="16" y2="9"></line>
+                 <path d="M8 14c1.5 1 4.5 1 6 0"></path>
+               </svg>
+             </div>
+          </div>
+
+          {/* 7. Periods */}
+          <div className="card card-pink">
+             <div className="card-content">
+              <div className="flex-between-start mb-2">
+                <span className="card-label text-pink-100">Cycles</span>
+                <CalendarHeart size={16} className="text-pink-200" />
+              </div>
+              <h3 className="title-main">Day 12</h3>
+               <p className="text-pink-100 subtitle mt-1">Follicular Phase</p>
+            </div>
+             {/* Period dots */}
+             <div className="dots-container">
+               {[1,2,3,4,5].map(d => (
+                  <div key={d} className={`dot ${d === 3 ? 'active' : ''}`}></div>
+               ))}
+             </div>
+          </div>
+
+           {/* 8. Weight (NEW LIGHT CARD) */}
+          <div className="card card-white-clean">
+             <div className="weight-header">
+               <div className="weight-icon-box">
+                 <Scale size={20} color="#0ea5e9" />
+               </div>
+               <div className="weight-title-group">
+                 <div className="weight-label">Weight</div>
+                 <div className="weight-timestamp">19/11/2025, 11:07:09</div>
+               </div>
+             </div>
+             <div className="weight-big-number">
+                77.9<span className="weight-unit-text">kg</span>
+             </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// MAIN APP COMPONENT
+export default function Dashboard() {
+  const [showSteps, setShowSteps] = useState(false);
+  // Connected/Default device to display on the dashboard
+  const [connectedDevice, setConnectedDevice] = useState(null);
+
+  React.useEffect(() => {
+    let mounted = true;
     (async () => {
       try {
-        const [devices, defaultDeviceId, storedCurrentUser, storedUsers] = await Promise.all([
-          idbGetJSON('pairedDevices', []),
+        const [storedDefaultId, storedPairedDevices] = await Promise.all([
           idbGet('defaultDeviceId'),
-          idbGetJSON('currentUser', null),
-          idbGetJSON('users', []),
+          idbGetJSON('pairedDevices', []),
         ]);
-        if (!isMounted) return;
-        setConnectedDevices(devices);
-        if (devices.length > 0) {
-          const device = devices.find(d => String(d.id) === String(defaultDeviceId)) || devices[0];
-          setSelectedDevice(device);
+
+        if (!mounted) return;
+
+        if (!storedPairedDevices || storedPairedDevices.length === 0) {
+          setConnectedDevice(null);
+          return;
         }
-        setCurrentUser(storedCurrentUser);
-        setFamilyUsers(storedUsers);
+
+        const fallbackId = String(storedPairedDevices[0].id);
+        const targetId = storedDefaultId ? String(storedDefaultId) : fallbackId;
+        const found = storedPairedDevices.find(d => String(d.id) === String(targetId));
+        setConnectedDevice(found || storedPairedDevices[0]);
       } catch (err) {
-        console.error('Failed to load dashboard data from IndexedDB', err);
+        console.error('Failed to load connected device for dashboard', err);
       }
     })();
-    return () => {
-      isMounted = false;
-    };
+
+    return () => { mounted = false; };
   }, []);
 
-  const deviceTypeLower = (selectedDevice?.deviceType || selectedDevice?.type || '').toLowerCase();
-  const isWeighingScale = deviceTypeLower.includes('scale') || deviceTypeLower.includes('weight');
-  const isWatchOrRing = deviceTypeLower.includes('watch') || deviceTypeLower.includes('ring') || deviceTypeLower.includes('band');
-
-  useEffect(() => {
-    if (!selectedDevice) return;
-    const mockMetrics = {
-      steps: {
-        count: Math.floor(Math.random() * 5000) + 2000,
-        goal: 20000,
-        distance: (Math.random() * 500 + 200).toFixed(0),
-        calories: Math.floor(Math.random() * 50) + 100,
-        time: Math.floor(Math.random() * 10) + 2,
-        timestamp: new Date().toLocaleString()
-      },
-      active: 39,
-      sleep: {
-        hours: Math.floor(Math.random() * 3) + 5,
-        minutes: Math.floor(Math.random() * 60),
-        goal: 8,
-        timestamp: new Date().toLocaleString(),
-        hasData: Math.random() > 0.3
-      },
-      heartRate: {
-        value: Math.floor(Math.random() * 30) + 70,
-        timestamp: new Date().toLocaleString(),
-        min: 52,
-        max: 118
-      },
-      bp: {
-        systolic: Math.floor(Math.random() * 20) + 110,
-        diastolic: Math.floor(Math.random() * 15) + 70,
-        timestamp: new Date().toLocaleString(),
-        min: 0,
-        max: 200
-      },
-      oxygen: {
-        value: Math.floor(Math.random() * 5) + 95,
-        timestamp: new Date().toLocaleString(),
-        min: 80,
-        max: 100
-      },
-      stress: {
-        value: Math.floor(Math.random() * 60) + 20,
-        label: 'Average Stress',
-        timestamp: new Date().toLocaleString(),
-        min: 0,
-        max: 100
-      },
-      weight: {
-        value: (Math.random() * 30 + 50).toFixed(1),
-        unit: 'kg',
-        timestamp: new Date().toLocaleString()
-      }
-    };
-
-    if (isWeighingScale) {
-      const historyBase = Number(mockMetrics.weight.value);
-      const history = [];
-      for (let i = 6; i >= 0; i--) {
-        const day = new Date();
-        day.setDate(day.getDate() - i);
-        const label = day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        const fluctuation = (Math.random() - 0.5) * 0.8;
-        const val = (historyBase + fluctuation - (i * 0.05)).toFixed(1);
-        history.push({ label, value: val });
-      }
-      mockMetrics.weight.history = history;
-    }
-
-    setMetrics(mockMetrics);
-  }, [selectedDevice]);
-
-  const handleGoToDevices = () => {
-    navigate('/devices');
-  };
-
-  if (connectedDevices.length === 0) {
-    return (
-      <div className="page-container">
-        <div className="page-content">
-          <div className="empty-state-card">
-            <div className="empty-state-icon">⌚</div>
-            <div className="empty-state-title">No devices paired</div>
-            <div className="empty-state-description">
-              You have not paired any devices yet. To get started, pair a device.
-            </div>
-            <button className="btn-connect-device" onClick={handleGoToDevices}>
-              Go to Device Management
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-
-
   return (
-    <div className="dashboard-container-light">
-      <div className="dashboard-content-light">
-        <div className="device-selector-row" style={{ justifyContent: 'flex-start', gap: '18px', background: 'none', boxShadow: 'none', padding: '0', marginBottom: '18px' }}>
-          <span style={{ fontWeight: 600, fontSize: 16, color: '#222' }}>
-            {selectedDevice?.name || selectedDevice?.deviceType || selectedDevice?.type || 'Device'}
-            {(() => {
-              const userIdentifier = selectedDevice?.assignedTo || selectedDevice?.user || selectedDevice?.owner;
-              if (!userIdentifier || userIdentifier === 'none') return ' (No user)';
-              const identifierStr = String(userIdentifier).trim();
-              // Normalize all ids for comparison
-              const normalize = v => (v === undefined || v === null) ? '' : String(v).trim();
-              if (currentUser && (normalize(currentUser.id) === identifierStr || normalize(currentUser.mobile) === identifierStr)) {
-                return ' — User: Self';
-              }
-              const matchedUser = familyUsers.find(u => normalize(u.id) === identifierStr || normalize(u.mobile) === identifierStr);
-              //
-              return matchedUser && matchedUser.name ? ` — User: ${matchedUser.name}` : ' — User: Unknown';
-            })()}
-          </span>
-        </div>
-
-        {/* Activity rings above cards */}
-        {metrics && (
-          <ActivityRings
-            steps={metrics.steps.count}
-            stepsGoal={metrics.steps.goal}
-            active={metrics.active}
-            activeGoal={100}
-            cals={metrics.steps.calories}
-            calsGoal={1000}
-          />
-        )}
-
-        {metrics ? (
-          <div className="health-cards">
-            {isWeighingScale && (
-              <div className="health-card">
-                <div className="card-header">
-                  <div className="card-icon" style={{ background: 'rgba(100, 200, 255, 0.15)' }}>
-                    <span style={{ color: '#64c8ff' }}>⚖️</span>
-                  </div>
-                  <div className="card-title-section">
-                    <h3>Weight</h3>
-                    <p className="card-timestamp">{metrics.weight.timestamp}</p>
-                  </div>
-                </div>
-                <div className="card-main-value">
-                  <span className="value-large">{metrics.weight.value}</span>
-                  <span className="value-unit">{metrics.weight.unit}</span>
-                </div>
-                {metrics.weight && metrics.weight.history && (
-                  <WeightHistory data={metrics.weight.history} />
-                )}
-              </div>
-            )}
-
-            {isWatchOrRing && (
-              <>
-                <div className="health-card">
-                  <div className="card-header">
-                    <div className="card-icon" style={{ background: 'rgba(0, 200, 200, 0.15)' }}>
-                      <span style={{ color: '#00c8c8' }}>👟</span>
-                    </div>
-                    <div className="card-title-section">
-                      <h3>Steps</h3>
-                      <p className="card-timestamp">{metrics.steps.timestamp}</p>
-                    </div>
-                  </div>
-                  <div className="card-main-value">
-                    <span className="value-large">{metrics.steps.count}</span>
-                    <span className="value-unit">Steps</span>
-                    <span className="value-goal">{metrics.steps.goal} Steps</span>
-                  </div>
-                  <div className="card-mini-stats">
-                    <div className="mini-stat">
-                      <span className="mini-icon">📍</span>
-                      <span>{metrics.steps.distance} m</span>
-                    </div>
-                    <div className="mini-stat">
-                      <span className="mini-icon">🔥</span>
-                      <span>{metrics.steps.calories} kcal</span>
-                    </div>
-                    <div className="mini-stat">
-                      <span className="mini-icon">⏱️</span>
-                      <span>{metrics.steps.time} min</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="health-card">
-                  <div className="card-header">
-                    <div className="card-icon" style={{ background: 'rgba(180, 100, 255, 0.15)' }}>
-                      <span style={{ color: '#b464ff' }}>🛏️</span>
-                    </div>
-                    <div className="card-title-section">
-                      <h3>Sleep</h3>
-                      <p className="card-timestamp">{metrics.sleep.timestamp}</p>
-                    </div>
-                  </div>
-                  {metrics.sleep.hasData ? (
-                    <div className="card-main-value">
-                      <span className="value-large">{metrics.sleep.hours}</span>
-                      <span className="value-unit">h</span>
-                      <span className="value-large">{metrics.sleep.minutes}</span>
-                      <span className="value-unit">m</span>
-                      <span className="value-goal-right">{metrics.sleep.goal} Hours</span>
-                    </div>
-                  ) : (
-                    <div className="no-data">No Data</div>
-                  )}
-                </div>
-
-                <div className="health-card">
-                  <div className="card-header">
-                    <div className="card-icon" style={{ background: 'rgba(255, 80, 120, 0.15)' }}>
-                      <span style={{ color: '#ff5078' }}>❤️</span>
-                    </div>
-                    <div className="card-title-section">
-                      <h3>Heart Rate</h3>
-                      <p className="card-timestamp">{metrics.heartRate.timestamp}</p>
-                    </div>
-                  </div>
-                  <div className="card-main-value">
-                    <span className="value-large">{metrics.heartRate.value}</span>
-                    <span className="value-unit">BPM</span>
-                  </div>
-                  <div className="metric-bar">
-                    <div
-                      className="metric-bar-fill"
-                      style={{
-                        width: `${((metrics.heartRate.value - metrics.heartRate.min) / (metrics.heartRate.max - metrics.heartRate.min)) * 100}%`,
-                        background: 'linear-gradient(to right, #ffeb3b, #ff9800, #f44336)'
-                      }}
-                    />
-                  </div>
-                  <div className="metric-scale">
-                    <span>{metrics.heartRate.min}</span>
-                    <span>82</span>
-                    <span>{metrics.heartRate.max}</span>
-                  </div>
-                </div>
-
-                <div className="health-card">
-                  <div className="card-header">
-                    <div className="card-icon" style={{ background: 'rgba(100, 150, 255, 0.15)' }}>
-                      <span style={{ color: '#6496ff' }}>💙</span>
-                    </div>
-                    <div className="card-title-section">
-                      <h3>BP</h3>
-                      <p className="card-timestamp">{metrics.bp.timestamp}</p>
-                    </div>
-                  </div>
-                  <div className="card-main-value">
-                    <span className="value-large">{metrics.bp.systolic}/{metrics.bp.diastolic}</span>
-                    <span className="value-unit">mmHg</span>
-                    <span className="value-goal-right">SBP/DBP</span>
-                  </div>
-                  <div className="metric-bar">
-                    <div
-                      className="metric-bar-fill"
-                      style={{
-                        width: `${(metrics.bp.systolic / metrics.bp.max) * 100}%`,
-                        background: 'linear-gradient(to right, #2196f3, #03a9f4)'
-                      }}
-                    />
-                  </div>
-                  <div className="metric-scale">
-                    <span>{metrics.bp.min}</span>
-                    <span>50</span>
-                    <span>100</span>
-                    <span>150</span>
-                    <span>{metrics.bp.max}</span>
-                  </div>
-                </div>
-
-                <div className="health-card">
-                  <div className="card-header">
-                    <div className="card-icon" style={{ background: 'rgba(100, 220, 180, 0.15)' }}>
-                      <span style={{ color: '#64dcb4' }}>💧</span>
-                    </div>
-                    <div className="card-title-section">
-                      <h3>Blood Oxygen</h3>
-                      <p className="card-timestamp">{metrics.oxygen.timestamp}</p>
-                    </div>
-                  </div>
-                  <div className="card-main-value">
-                    <span className="value-large">{metrics.oxygen.value}</span>
-                    <span className="value-unit">%</span>
-                  </div>
-                  <div className="metric-bar">
-                    <div
-                      className="metric-bar-fill"
-                      style={{
-                        width: `${((metrics.oxygen.value - metrics.oxygen.min) / (metrics.oxygen.max - metrics.oxygen.min)) * 100}%`,
-                        background: '#4caf50'
-                      }}
-                    />
-                  </div>
-                  <div className="metric-scale">
-                    <span>{metrics.oxygen.min}</span>
-                    <span>85</span>
-                    <span>90</span>
-                    <span>95</span>
-                    <span>{metrics.oxygen.max}</span>
-                  </div>
-                </div>
-
-                <div className="health-card">
-                  <div className="card-header">
-                    <div className="card-icon" style={{ background: 'rgba(200, 220, 100, 0.15)' }}>
-                      <span style={{ color: '#c8dc64' }}>😌</span>
-                    </div>
-                    <div className="card-title-section">
-                      <h3>Stress</h3>
-                      <p className="card-timestamp">{metrics.stress.timestamp}</p>
-                    </div>
-                  </div>
-                  <div className="stress-label">{metrics.stress.label}</div>
-                  <div className="metric-bar">
-                    <div
-                      className="metric-bar-fill"
-                      style={{
-                        width: `${(metrics.stress.value / metrics.stress.max) * 100}%`,
-                        background: '#8bc34a'
-                      }}
-                    />
-                  </div>
-                  <div className="metric-scale">
-                    <span>{metrics.stress.min}</span>
-                    <span>50</span>
-                    <span>{metrics.stress.max}</span>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="page-content" style={{ textAlign: 'center', padding: '40px 0', color: '#888' }}>Loading health data...</div>
-        )}
-      </div>
-    </div>
+    <>
+      <DashboardView onOpenSteps={() => setShowSteps(true)} connectedDevice={connectedDevice} />
+      {showSteps && <StepsModal onClose={() => setShowSteps(false)} />}
+    </>
   );
-};
-
-export default Dashboard;
+}
