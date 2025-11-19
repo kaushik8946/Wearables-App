@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MdSettings } from 'react-icons/md';
+import { idbGet, idbGetJSON, idbSet, idbSetJSON, idbRemove } from '../data/db';
 // Battery icon SVGs
 const BatteryIcon = ({ level }) => {
   let color = '#4caf50';
@@ -26,55 +27,81 @@ const deviceImageMap = {
   'weighing-scale.avif': scaleImg,
 };
 
+const getRandomBatteryLevel = () => Math.floor(Math.random() * 100) + 1;
+const randomizeBatteryLevels = (devices) =>
+  devices.map(device => ({
+    ...device,
+    batteryLevel: getRandomBatteryLevel()
+  }));
+
 const Devices = () => {
   // Default device state
-  const [defaultDeviceId, setDefaultDeviceId] = useState(() => {
-    const saved = localStorage.getItem('defaultDeviceId');
-    return saved || '';
-  });
+  const [defaultDeviceId, setDefaultDeviceId] = useState('');
   const [showDefaultModal, setShowDefaultModal] = useState(false);
-  const [pairedDevices, setPairedDevices] = useState(() => {
-    const saved = localStorage.getItem('pairedDevices');
-    if (!saved) return [];
-    // On every reload, assign a new random batteryLevel to each device
-    return JSON.parse(saved).map(device => ({
-      ...device,
-      batteryLevel: Math.floor(Math.random() * 100) + 1
-    }));
-  });
+  const [pairedDevices, setPairedDevices] = useState([]);
 
   // Removed defaultDeviceId state
 
-  const [availableDevices, setAvailableDevices] = useState(() => {
-    const saved = localStorage.getItem('pairedDevices');
-    const pairedIds = saved ? JSON.parse(saved).map(d => d.id) : [];
-    return initialAvailableDevices.filter(device => !pairedIds.includes(device.id));
-  });
+  const [availableDevices, setAvailableDevices] = useState(initialAvailableDevices);
 
   const [showModal, setShowModal] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [users, setUsers] = useState([]);
-  const [settingsModal, setSettingsModal] = useState({ open: false, device: null, newMember: '' });
+  const [settingsModal, setSettingsModal] = useState({ open: false, device: null, newUser: '' });
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [deviceToAssign, setDeviceToAssign] = useState(null);
   const [selectedUserForAssign, setSelectedUserForAssign] = useState('');
 
   useEffect(() => {
-    const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {};
-    const otherUsers = JSON.parse(localStorage.getItem('users') || '[]');
-    // Ensure all mobile values are strings
-    const normalize = m => ({ ...m, mobile: String(m.mobile) });
-    setUsers([{ ...normalize(currentUser), self: true }, ...otherUsers.map(normalize)]);
+    let isMounted = true;
+    (async () => {
+      try {
+        const [storedDefaultId, storedPairedDevices, currentUser, otherUsers] = await Promise.all([
+          idbGet('defaultDeviceId'),
+          idbGetJSON('pairedDevices', []),
+          idbGetJSON('currentUser', null),
+          idbGetJSON('users', []),
+        ]);
+        if (!isMounted) return;
+        const randomizedPaired = randomizeBatteryLevels(storedPairedDevices);
+        setPairedDevices(randomizedPaired);
+        const fallbackDefault = randomizedPaired[0] ? String(randomizedPaired[0].id) : '';
+        setDefaultDeviceId(storedDefaultId || fallbackDefault);
+        const pairedIds = storedPairedDevices.map(d => d.id);
+        setAvailableDevices(initialAvailableDevices.filter(device => !pairedIds.includes(device.id)));
+        // Ensure each user has a stable, non-empty identifier for use in selects
+        // Some users may not have a `mobile` number (added in `Family`), so we provide
+        // a fallback `id` and also use that as the select value if mobile is absent.
+        const normalizeUser = (member = {}, idx = 0) => ({
+          ...member,
+          // keep mobile as a string if available
+          mobile: member?.mobile ? String(member.mobile) : '',
+          // generate a fallback id if the user lacks one -- prefer existing id, then mobile
+          id: member?.id ? String(member.id) : (member?.mobile ? String(member.mobile) : `__user_${idx}`),
+        });
+        const hydratedUsers = [
+          ...(currentUser ? [{ ...normalizeUser(currentUser), self: true }] : []),
+          ...otherUsers.map(normalizeUser),
+        ];
+        setUsers(hydratedUsers);
+      } catch (err) {
+        console.error('Failed to load device data from IndexedDB', err);
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
     if (pairedDevices.length > 0 && !defaultDeviceId) {
-      setDefaultDeviceId(String(pairedDevices[0].id));
-      localStorage.setItem('defaultDeviceId', String(pairedDevices[0].id));
+      const fallbackId = String(pairedDevices[0].id);
+      setDefaultDeviceId(fallbackId);
+      idbSet('defaultDeviceId', fallbackId).catch(err => console.error('Failed to persist default device', err));
     }
     if (pairedDevices.length === 0 && defaultDeviceId) {
       setDefaultDeviceId('');
-      localStorage.removeItem('defaultDeviceId');
+      idbRemove('defaultDeviceId').catch(err => console.error('Failed to clear default device', err));
     }
   }, [pairedDevices, defaultDeviceId]);
 
@@ -83,19 +110,19 @@ const Devices = () => {
     setShowModal(true);
   };
 
-  const handlePairDevice = () => {
+  const handlePairDevice = async () => {
     if (selectedDevice) {
       const pairedDevice = {
         ...selectedDevice,
         assignedTo: 'none', 
         connectionStatus: 'connected',
-        batteryLevel: Math.floor(Math.random() * 100) + 1,
+        batteryLevel: getRandomBatteryLevel(),
         lastSync: new Date().toISOString()
       };
 
       const updatedPairedDevices = [...pairedDevices, pairedDevice];
       setPairedDevices(updatedPairedDevices);
-      localStorage.setItem('pairedDevices', JSON.stringify(updatedPairedDevices));
+      await idbSetJSON('pairedDevices', updatedPairedDevices);
 
       const updatedAvailableDevices = availableDevices.filter(d => d.id !== selectedDevice.id);
       setAvailableDevices(updatedAvailableDevices);
@@ -116,9 +143,10 @@ const Devices = () => {
     setSelectedDevice(null);
   };
 
-  const getAssignedUserName = (mobile) => {
-    if (!mobile || mobile === 'none') return 'User not assigned';
-    const user = users.find(m => String(m.mobile) === String(mobile));
+  // Device assignment and display: match either by mobile or fallback id
+  const getAssignedUserName = (identifier) => {
+    if (!identifier || identifier === 'none') return 'User not assigned';
+    const user = users.find(u => String(u.mobile) === String(identifier) || String(u.id) === String(identifier));
     return user ? user.name + (user.self ? ' (Self)' : '') : 'Unknown';
   };
 
@@ -132,7 +160,7 @@ const Devices = () => {
     setSettingsModal({ open: false, device: null, newMember: '' });
   };
 
-  const handleReassign = () => {
+  const handleReassign = async () => {
     if (!settingsModal.newUser) {
       alert('Please select a user to assign this device');
       return;
@@ -141,20 +169,20 @@ const Devices = () => {
       d.id === settingsModal.device.id ? { ...d, assignedTo: settingsModal.newUser } : d
     );
     setPairedDevices(updatedPairedDevices);
-    localStorage.setItem('pairedDevices', JSON.stringify(updatedPairedDevices));
+    await idbSetJSON('pairedDevices', updatedPairedDevices);
     handleCloseSettingsModal();
   };
 
-  const handleRemoveDevice = () => {
+  const handleRemoveDevice = async () => {
     // Remove from paired, add back to available
     const updatedPairedDevices = pairedDevices.filter(d => d.id !== settingsModal.device.id);
     setPairedDevices(updatedPairedDevices);
-    localStorage.setItem('pairedDevices', JSON.stringify(updatedPairedDevices));
+    await idbSetJSON('pairedDevices', updatedPairedDevices);
     setAvailableDevices([...availableDevices, settingsModal.device]);
     handleCloseSettingsModal();
   };
 
-  const handleAssignUser = () => {
+  const handleAssignUser = async () => {
     if (!selectedUserForAssign) {
       alert('Please select a user to assign this device');
       return;
@@ -164,7 +192,7 @@ const Devices = () => {
       d.id === deviceToAssign.id ? { ...d, assignedTo: selectedUserForAssign } : d
     );
     setPairedDevices(updatedPairedDevices);
-    localStorage.setItem('pairedDevices', JSON.stringify(updatedPairedDevices));
+    await idbSetJSON('pairedDevices', updatedPairedDevices);
     
     setShowAssignModal(false);
     setDeviceToAssign(null);
@@ -316,7 +344,7 @@ const Devices = () => {
               >
                 <option value="">-- Choose User --</option>
                 {users.map((user, idx) => (
-                  <option key={idx} value={user.mobile}>
+                  <option key={idx} value={user.mobile || user.id}>
                     {user.name} {user.self ? "(Self)" : ""}
                   </option>
                 ))}
@@ -343,9 +371,14 @@ const Devices = () => {
               <select
                 className="family-member-dropdown"
                 value={defaultDeviceId}
-                onChange={e => {
-                  setDefaultDeviceId(e.target.value);
-                  localStorage.setItem('defaultDeviceId', e.target.value);
+                onChange={async e => {
+                  const value = e.target.value;
+                  setDefaultDeviceId(value);
+                  if (value) {
+                    await idbSet('defaultDeviceId', value);
+                  } else {
+                    await idbRemove('defaultDeviceId');
+                  }
                 }}
               >
                 <option value="">-- Select Device --</option>
@@ -389,7 +422,7 @@ const Devices = () => {
               >
                 <option value="">-- Choose User --</option>
                 {users.map((user, idx) => (
-                  <option key={idx} value={user.mobile}>
+                  <option key={idx} value={user.mobile || user.id}>
                     {user.name} {user.self ? "(Self)" : ""}
                   </option>
                 ))}

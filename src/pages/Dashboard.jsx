@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { idbGet, idbGetJSON } from '../data/db';
 
 import { FaShoePrints } from 'react-icons/fa6';
 import { FiClock } from 'react-icons/fi';
@@ -40,7 +41,6 @@ const ActivityRings = ({ steps, stepsGoal, active, activeGoal, cals, calsGoal })
   const rotate = 'rotate(-90 100 100)';
   return (
     <div className="activity-rings-container">
-      {/* SVG for activity rings only, not for fitness icons */}
       <svg className="activity-rings-graphic" width="200" height="200" viewBox="0 0 200 200">
         {ringProps.map((ring, idx) => {
           const progress = Math.min(ring.value / ring.goal, 1);
@@ -107,15 +107,34 @@ const Dashboard = () => {
   const [metrics, setMetrics] = useState(null);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [connectedDevices, setConnectedDevices] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [familyUsers, setFamilyUsers] = useState([]);
 
   useEffect(() => {
-    const devices = JSON.parse(localStorage.getItem('pairedDevices') || '[]');
-    setConnectedDevices(devices);
-    if (devices.length > 0) {
-      const defaultDeviceId = localStorage.getItem('defaultDeviceId');
-      const device = devices.find(d => String(d.id) === String(defaultDeviceId)) || devices[0];
-      setSelectedDevice(device);
-    }
+    let isMounted = true;
+    (async () => {
+      try {
+        const [devices, defaultDeviceId, storedCurrentUser, storedUsers] = await Promise.all([
+          idbGetJSON('pairedDevices', []),
+          idbGet('defaultDeviceId'),
+          idbGetJSON('currentUser', null),
+          idbGetJSON('users', []),
+        ]);
+        if (!isMounted) return;
+        setConnectedDevices(devices);
+        if (devices.length > 0) {
+          const device = devices.find(d => String(d.id) === String(defaultDeviceId)) || devices[0];
+          setSelectedDevice(device);
+        }
+        setCurrentUser(storedCurrentUser);
+        setFamilyUsers(storedUsers);
+      } catch (err) {
+        console.error('Failed to load dashboard data from IndexedDB', err);
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const deviceTypeLower = (selectedDevice?.deviceType || selectedDevice?.type || '').toLowerCase();
@@ -214,6 +233,8 @@ const Dashboard = () => {
     );
   }
 
+
+
   return (
     <div className="dashboard-container-light">
       <div className="dashboard-content-light">
@@ -221,21 +242,17 @@ const Dashboard = () => {
           <span style={{ fontWeight: 600, fontSize: 16, color: '#222' }}>
             {selectedDevice?.name || selectedDevice?.deviceType || selectedDevice?.type || 'Device'}
             {(() => {
-              let userName = '';
-              const userId = selectedDevice?.assignedTo || selectedDevice?.user || selectedDevice?.owner;
-              if (userId) {
-                try {
-                  const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-                  if (currentUser && String(currentUser.id) === String(userId)) {
-                    userName = currentUser.name ? `${currentUser.name} (Self)` : 'Self';
-                  } else {
-                    const users = JSON.parse(localStorage.getItem('users') || '[]');
-                    const userObj = users.find(u => String(u.id) === String(userId));
-                    if (userObj && userObj.name) userName = userObj.name;
-                  }
-                } catch { }
+              const userIdentifier = selectedDevice?.assignedTo || selectedDevice?.user || selectedDevice?.owner;
+              if (!userIdentifier || userIdentifier === 'none') return ' (No user)';
+              const identifierStr = String(userIdentifier).trim();
+              // Normalize all ids for comparison
+              const normalize = v => (v === undefined || v === null) ? '' : String(v).trim();
+              if (currentUser && (normalize(currentUser.id) === identifierStr || normalize(currentUser.mobile) === identifierStr)) {
+                return ' — User: Self';
               }
-              return userName ? ` — ${userName}` : '';
+              const matchedUser = familyUsers.find(u => normalize(u.id) === identifierStr || normalize(u.mobile) === identifierStr);
+              //
+              return matchedUser && matchedUser.name ? ` — User: ${matchedUser.name}` : ' — User: Unknown';
             })()}
           </span>
         </div>

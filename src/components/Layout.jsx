@@ -3,6 +3,7 @@ import { MdMenu } from 'react-icons/md';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { idbClear } from '../data/db';
 import '../styles/components/Layout.css';
 
 
@@ -19,8 +20,12 @@ const Layout = () => {
     { id: 5, label: 'Manage Family', icon: '👨‍👩‍👧‍👦', link: '/family', active: location.pathname === '/family' },
   ];
 
-  const handleLogout = () => {
-    localStorage.clear();
+  const handleLogout = async () => {
+    try {
+      await idbClear();
+    } catch (err) {
+      console.error('Failed to clear IndexedDB during logout', err);
+    }
     sessionStorage.clear();
     setSidebarOpen(false);
     navigate('/', { replace: true });

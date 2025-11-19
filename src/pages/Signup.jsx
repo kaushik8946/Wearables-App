@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { idbGet, idbSet } from '../data/db';
 import '../styles/pages/Signup.css';
 
 const Signup = () => {
@@ -13,10 +14,20 @@ const Signup = () => {
   });
   
   useEffect(() => {
-    const userPhone = localStorage.getItem('userPhone');
-    if (userPhone) {
-      setForm((prev) => ({ ...prev, mobileNumber: userPhone }));
-    }
+    let isMounted = true;
+    (async () => {
+      try {
+        const userPhone = await idbGet('userPhone');
+        if (userPhone && isMounted) {
+          setForm((prev) => ({ ...prev, mobileNumber: userPhone }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch stored phone', err);
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
   }, []);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
@@ -40,7 +51,7 @@ const Signup = () => {
     setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const validation = validate();
     if (Object.keys(validation).length) {
@@ -48,16 +59,18 @@ const Signup = () => {
       return;
     }
     const userToSave = {
-      name: form.firstName+" "+form.lastName,
+      name: form.firstName + " " + form.lastName,
       lastName: form.lastName,
       age: form.age,
       gender: form.gender,
       email: form.email,
       mobile: form.mobileNumber,
+      id: `user_self_${Date.now()}`,
     };
-    localStorage.setItem('registeredUser', JSON.stringify(userToSave));
-    localStorage.setItem('currentUser', JSON.stringify(userToSave));
-    localStorage.setItem('isAuthenticated', 'true');
+    await idbSet('registeredUser', JSON.stringify(userToSave));
+    await idbSet('currentUser', JSON.stringify(userToSave));
+    await idbSet('isAuthenticated', 'true');
+    await idbSet('userPhone', form.mobileNumber);
     navigate('/dashboard');
   };
 

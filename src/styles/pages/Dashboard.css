@@ -87,7 +87,7 @@
 .stat-label {
   font-size: 12px;
   font-weight: 500;
-  color: #94a3b8;
+  color: #0a0a0a;
   letter-spacing: 1.1px;
 }
 
@@ -97,9 +97,8 @@
   font-weight: 500;
 }
 
-/* Activity row icons (smaller than card icons) */
 .activity-ring-icon {
-  font-size: 18px;
+  font-size: 30px !important;
   vertical-align: middle;
   margin-bottom: 0;
   display: inline-flex;
@@ -121,7 +120,7 @@
   .light-value { font-size: 24px; }
   .light-goal { font-size: 13px; }
   .stat-value { font-size: 18px; }
-  .activity-ring-icon { font-size: 16px; }
+  .activity-ring-icon { font-size: 20px; }
 }
 
 
@@ -234,7 +233,6 @@
   position: relative;
   overflow: hidden;
 }
-
 
 .health-card::before {
   content: '';

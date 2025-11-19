@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { idbGet, idbSet } from '../data/db';
 import { useNavigate } from 'react-router-dom';
 import '../styles/pages/Login.css';
 
@@ -35,14 +36,14 @@ const Login = () => {
     }
   };
 
-  const handleVerifyOtp = (e) => {
+  const handleVerifyOtp = async (e) => {
     e.preventDefault();
     const otpValue = otp.join('');
     if (otpValue !== '123456') {
       setErrors({ ...errors, otp: 'Please enter correct OTP (123456)' });
       return;
     }
-    const registeredUser = localStorage.getItem('registeredUser');
+    let registeredUser = await idbGet('registeredUser');
     const parsedUser = registeredUser ? JSON.parse(registeredUser) : null;
     const user = parsedUser || {
       name: 'User',
@@ -51,10 +52,11 @@ const Login = () => {
       gender: '',
       email: '',
       mobile: mobileNumber,
+      id: `user_${Date.now()}`,
     };
-    localStorage.setItem('currentUser', JSON.stringify(user));
-    localStorage.setItem('isAuthenticated', 'true');
-    localStorage.setItem('userPhone', mobileNumber);
+    await idbSet('currentUser', JSON.stringify(user));
+    await idbSet('isAuthenticated', 'true');
+    await idbSet('userPhone', mobileNumber);
     if (mobileNumber.endsWith('123')) {
       navigate('/signup');
     } else {

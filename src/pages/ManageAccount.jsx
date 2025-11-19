@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { idbGetJSON, idbSetJSON } from '../data/db';
 import '../styles/pages/ManageAccount.css';
+
 
 const fields = [
   { key: 'gender', label: 'Gender', type: 'select', options: ['Male', 'Female', 'Other'] },
@@ -8,6 +10,7 @@ const fields = [
   { key: 'height', label: 'Height', type: 'number', unit: 'cm' },
   { key: 'weight', label: 'Weight', type: 'number', unit: 'kg' }
 ];
+
 
 function calculateAge(birthday) {
   if (!birthday) return '';
@@ -22,6 +25,7 @@ function calculateAge(birthday) {
   return age;
 }
 
+
 function formatBirthday(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
@@ -29,31 +33,45 @@ function formatBirthday(dateStr) {
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
+
 const ManageAccount = () => {
   const [user, setUser] = useState({});
   const [editKey, setEditKey] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [error, setError] = useState('');
 
+
   useEffect(() => {
-    const u = JSON.parse(localStorage.getItem('currentUser')) || {};
-    // Always keep age in sync with birthday
-    if (u.birthday) {
-      const age = calculateAge(u.birthday);
-      if (u.age !== age) {
-        u.age = age;
-        localStorage.setItem('currentUser', JSON.stringify(u));
+    let isMounted = true;
+    (async () => {
+      try {
+        const u = await idbGetJSON('currentUser', {});
+        if (!isMounted) return;
+        if (u.birthday) {
+          const age = calculateAge(u.birthday);
+          if (u.age !== age) {
+            u.age = age;
+            await idbSetJSON('currentUser', u);
+          }
+        }
+        setUser(u);
+      } catch (err) {
+        console.error('Failed to load profile info', err);
       }
-    }
-    setUser(u);
+    })();
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
 
   const handleEdit = (key) => {
     setEditKey(key);
     setEditValue(user[key] || '');
   };
 
-  const handleSave = (key) => {
+
+  const handleSave = async (key) => {
     // Birthday validation: must be a past date
     if (key === 'birthday') {
       const today = new Date();
@@ -69,12 +87,15 @@ const ManageAccount = () => {
       updated.age = calculateAge(editValue);
     }
     setUser(updated);
-    localStorage.setItem('currentUser', JSON.stringify(updated));
+    await idbSetJSON('currentUser', updated);
     setEditKey(null);
     setEditValue('');
+    setError('');
   };
 
+
   const handleInput = (e) => setEditValue(e.target.value);
+
 
   return (
     <div className="manageaccount-bg">
@@ -174,6 +195,7 @@ const ManageAccount = () => {
       </div>
     </div>
   );
-};
+}
+
 
 export default ManageAccount;
