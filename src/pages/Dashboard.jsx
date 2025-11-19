@@ -15,7 +15,7 @@ import {
   MoreHorizontal,
   TrendingUp
 } from 'lucide-react';
-import PairDeviceModal from '../components/PairDeviceModal';
+import DevicesMenu from '../components/DevicesMenu';
 import { availableDevices as initialAvailableDevices } from '../data/mockData';
 import watchImg from '../assets/images/watch.png';
 import ringImg from '../assets/images/ring.webp';
@@ -421,109 +421,113 @@ export default function Dashboard() {
   const [connectedDevice, setConnectedDevice] = useState(null);
   const navigate = useNavigate();
 
-  const [showAssignDefaultModal, setShowAssignDefaultModal] = useState(false);
-  const [availableUnassignedDevices, setAvailableUnassignedDevices] = useState([]);
-  const [selectedAssignDevice, setSelectedAssignDevice] = useState('');
-  // For the "no paired devices/unassigned" -> show available devices to pair
-  const [showAvailableDevicesModal, setShowAvailableDevicesModal] = useState(false);
-  const [availablePairDevices, setAvailablePairDevices] = useState([]);
-  const [selectedAvailableDevice, setSelectedAvailableDevice] = useState(null);
-
+  const [pairedDevices, setPairedDevices] = useState([]);
+  const [availableDevices, setAvailableDevices] = useState(initialAvailableDevices);
+  const [showDevicesMenuModal, setShowDevicesMenuModal] = useState(false);
+  const [devicesMenuDismissed, setDevicesMenuDismissed] = useState(false);
+  const [shouldAssignDefaultInModal, setShouldAssignDefaultInModal] = useState(false);
 
   React.useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const [storedDefaultUserId, storedPairedDevices] = await Promise.all([
-          idbGet('defaultUserId'),
-          idbGetJSON('pairedDevices', []),
-        ]);
+        const storedPairedDevices = await idbGetJSON('pairedDevices', []);
+        if (!mounted) return;
+        setPairedDevices(storedPairedDevices);
+      } catch (err) {
+        console.error('Failed to load paired devices for dashboard', err);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  React.useEffect(() => {
+    const pairedIds = pairedDevices.map(device => device.id);
+    setAvailableDevices(initialAvailableDevices.filter(device => !pairedIds.includes(device.id)));
+  }, [pairedDevices]);
+
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const storedDefaultUserId = await idbGet('defaultUserId');
 
         if (!mounted) return;
 
-        if (!storedPairedDevices || storedPairedDevices.length === 0) {
+        if (!pairedDevices || pairedDevices.length === 0) {
           setConnectedDevice(null);
-          // If there are mock available devices, show the pair flow when default user exists
-          // Log debug info for troubleshooting modal visibility
-          console.log('[Dashboard] No paired devices. storedDefaultUserId:', await idbGet('defaultUserId'));
-          // Always show pair devices modal when there are zero paired devices; this lets
-          // the user add a device so they can then pick a default. Previously we only
-          // opened the modal when `defaultUserId` existed which prevented the flow.
-          setAvailablePairDevices(initialAvailableDevices.map(d => ({ ...d })));
-          setShowAvailableDevicesModal(true);
+          setShouldAssignDefaultInModal(true);
+          if (!devicesMenuDismissed) {
+            setShowDevicesMenuModal(true);
+          }
           return;
         }
 
-        // If there is a default user selected, load their mapping from users/currentUser
         const currentUser = await idbGetJSON('currentUser', null);
         const otherUsers = await idbGetJSON('users', []);
         const allUsers = [ ...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers.map(u => ({ ...u })) ];
 
         let connected = null;
-        // local flags for whether we intend to open a modal during this effect
-        let openAssignDefault = false;
-        let openPairModal = false;
+        let needsDefault = false;
+
         if (storedDefaultUserId) {
           const defUser = allUsers.find(u => String(u.id) === String(storedDefaultUserId));
           if (defUser && defUser.deviceId) {
-            connected = storedPairedDevices.find(d => String(d.id) === String(defUser.deviceId));
+            connected = pairedDevices.find(d => String(d.id) === String(defUser.deviceId)) || null;
           }
-          // if no device assigned to default user, but paired unassigned devices exist, prompt to assign
-            if (!connected) {
-            // find unassigned devices
+
+          if (!connected) {
             const assignedIds = allUsers.filter(u => u.deviceId).map(u => String(u.deviceId));
-            const unassigned = storedPairedDevices.filter(d => !assignedIds.includes(String(d.id)));
-            if (unassigned.length > 0) {
-              setAvailableUnassignedDevices(unassigned);
-                // When there is at least one unassigned paired device, prompt to pick a default device
-                setShowAssignDefaultModal(true);
-                openAssignDefault = true;
-            }
-            console.log('[Dashboard] storedDefaultUserId found; unassigned:', unassigned.length, 'openAssignDefault:', openAssignDefault);
-              // If there are no unassigned paired devices (but default user exists), let the user pair
-              if (unassigned.length === 0) {
-                // compute available devices not in paired
-                const pairedIds = storedPairedDevices.map(d => d.id);
-                const availToPair = initialAvailableDevices.filter(d => !pairedIds.includes(d.id)).map(d => ({ ...d }));
-                if (availToPair.length > 0) {
-                  setAvailablePairDevices(availToPair);
-                  setShowAvailableDevicesModal(true);
-                  openPairModal = true;
-                }
-                console.log('[Dashboard] availToPair', availToPair.length, 'openPairModal:', openPairModal);
-              }
+            const unassigned = pairedDevices.filter(d => !assignedIds.includes(String(d.id)));
+            needsDefault = unassigned.length > 0 || pairedDevices.length === 0;
           }
+        } else {
+          needsDefault = true;
         }
 
-        // fallback - only show the first paired device if none assigned AND we're not
-        // prompting the user to select/assign the device or pair a new one.
-        if (!connected && storedPairedDevices.length > 0 && !openAssignDefault && !openPairModal) {
-          connected = storedPairedDevices[0];
+        if (!connected && !needsDefault && pairedDevices.length > 0) {
+          connected = pairedDevices[0];
         }
+
         setConnectedDevice(connected);
+        setShouldAssignDefaultInModal(needsDefault || !connected);
+        if (needsDefault || !connected) {
+          if (!devicesMenuDismissed) {
+            setShowDevicesMenuModal(true);
+          }
+        } else {
+          if (devicesMenuDismissed) {
+            setDevicesMenuDismissed(false);
+          }
+          setShowDevicesMenuModal(false);
+        }
       } catch (err) {
         console.error('Failed to load connected device for dashboard', err);
       }
     })();
 
     return () => { mounted = false; };
-  }, []);
+  }, [pairedDevices, devicesMenuDismissed]);
 
-  const handleAssignDefaultDevice = async () => {
+  const assignDeviceToDefaultUser = async (deviceId) => {
     try {
       const currentUser = await idbGetJSON('currentUser', null);
       const otherUsers = await idbGetJSON('users', []);
       const allUsers = [ ...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers.map(u => ({ ...u })) ];
-      const storedDefaultUserId = await idbGet('defaultUserId');
-      if (!storedDefaultUserId) return;
-      const updatedUsers = allUsers.map(u => {
-        if (String(u.id) === String(storedDefaultUserId)) {
-          return { ...u, deviceId: selectedAssignDevice };
-        }
-        return u;
-      });
+      if (allUsers.length === 0) return false;
 
-      // Persist: update currentUser and users arrays separately
+      let storedDefaultUserId = await idbGet('defaultUserId');
+      if (!storedDefaultUserId) {
+        storedDefaultUserId = allUsers[0].id;
+        await idbSetJSON('defaultUserId', storedDefaultUserId);
+      }
+
+      const updatedUsers = allUsers.map(u => (
+        String(u.id) === String(storedDefaultUserId)
+          ? { ...u, deviceId }
+          : u
+      ));
+
       const updatedCurrent = updatedUsers.find(u => u.self);
       if (updatedCurrent) {
         const { self, ...rest } = updatedCurrent;
@@ -531,53 +535,54 @@ export default function Dashboard() {
       }
       const otherOnly = updatedUsers.filter(u => !u.self);
       await idbSetJSON('users', otherOnly);
-
-      // Update dashboard connected device
-      const pairedDevices = await idbGetJSON('pairedDevices', []);
-      const newDevice = pairedDevices.find(d => String(d.id) === String(selectedAssignDevice));
-      setConnectedDevice(newDevice || null);
-      setShowAssignDefaultModal(false);
-      setSelectedAssignDevice('');
+      return true;
     } catch (err) {
       console.error('Failed assigning default device', err);
-      // On error, close modal and show placeholders
-      setShowAssignDefaultModal(false);
-      setSelectedAssignDevice('');
-      setConnectedDevice(null);
+      return false;
     }
   };
 
-  const handleCancelAssignDefault = () => {
-    // Close modal and show placeholders only (no connected device)
-    setShowAssignDefaultModal(false);
-    setSelectedAssignDevice('');
-    setConnectedDevice(null);
+  const handleAssignDefaultFromMenu = async (device) => {
+    if (!device) return;
+    const success = await assignDeviceToDefaultUser(device.id);
+    if (!success) return;
+    setConnectedDevice(device);
+    setDevicesMenuDismissed(false);
+    setShowDevicesMenuModal(false);
   };
 
-  // Pair selected available device from mock list and then open Assign modal so it can be assigned
-  const handlePairAvailableDevice = async (device) => {
+  const handlePairDeviceFromMenu = async (device) => {
+    if (!device) return;
     try {
-      // Map image to local asset
       const mappedImage = deviceImageMap[device.image] || device.image;
       const pairDevice = { ...device, image: mappedImage, connectionStatus: 'connected', batteryLevel: 70, lastSync: new Date().toISOString() };
-
-      const existing = await idbGetJSON('pairedDevices', []);
-      const updated = [...existing, pairDevice];
+      const updated = [...pairedDevices, pairDevice];
       await idbSetJSON('pairedDevices', updated);
-
-      // Recompute unassigned devices and open assign modal
-      const currentUser = await idbGetJSON('currentUser', null);
-      const otherUsers = await idbGetJSON('users', []);
-      const allUsers = [ ...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers.map(u => ({ ...u })) ];
-      const assignedIds = allUsers.filter(u => u.deviceId).map(u => String(u.deviceId));
-      const unassigned = updated.filter(d => !assignedIds.includes(String(d.id)));
-      setAvailableUnassignedDevices(unassigned);
-      setShowAvailableDevicesModal(false);
-      setSelectedAvailableDevice(null);
-      setShowAssignDefaultModal(true);
+      setPairedDevices(updated);
+      setDevicesMenuDismissed(false);
     } catch (err) {
       console.error('Failed to pair mock available device', err);
     }
+  };
+
+  const handleUnpairDeviceFromMenu = async (device) => {
+    if (!device) return;
+    try {
+      const updated = pairedDevices.filter(d => d.id !== device.id);
+      await idbSetJSON('pairedDevices', updated);
+      setPairedDevices(updated);
+      if (connectedDevice && String(connectedDevice.id) === String(device.id)) {
+        setConnectedDevice(null);
+      }
+      setDevicesMenuDismissed(false);
+    } catch (err) {
+      console.error('Failed to unpair device', err);
+    }
+  };
+
+  const handleDismissDevicesMenu = () => {
+    setShowDevicesMenuModal(false);
+    setDevicesMenuDismissed(true);
   };
 
   return (
@@ -587,40 +592,26 @@ export default function Dashboard() {
         onNavigateDevices={() => navigate('/devices')}
         connectedDevice={connectedDevice}
       />
-      {/* Assign default device modal - rendered in Dashboard scope */}
-      {showAssignDefaultModal && (
-        <div className="modal-overlay" onClick={handleCancelAssignDefault}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Assign device to default user</h3>
-              <button className="modal-close" onClick={handleCancelAssignDefault}>✕</button>
+      {showSteps && <StepsModal onClose={() => setShowSteps(false)} />}
+      {showDevicesMenuModal && (
+        <div className="devices-menu-overlay" onClick={handleDismissDevicesMenu}>
+          <div className="devices-menu-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="devices-menu-modal-header">
+              <h3>{shouldAssignDefaultInModal ? 'Choose a device to connect' : 'Manage devices'}</h3>
+              <button className="devices-menu-modal-close" onClick={handleDismissDevicesMenu}>✕</button>
             </div>
-            <div className="modal-body">
-              <p className="modal-message">Choose a device to assign to the default user so dashboard metrics show.</p>
-              <select className="family-member-dropdown" value={selectedAssignDevice} onChange={e => setSelectedAssignDevice(e.target.value)}>
-                <option value="">-- Choose device --</option>
-                {availableUnassignedDevices.map(d => (
-                  <option key={d.id} value={d.id}>{d.name} ({d.model})</option>
-                ))}
-              </select>
-            </div>
-              <div className="modal-footer">
-              <button className="btn-pair" onClick={handleAssignDefaultDevice} disabled={!selectedAssignDevice}>Assign</button>
-              <button className="btn-cancel" onClick={handleCancelAssignDefault}>Cancel</button>
+            <div className="devices-menu-modal-body">
+              <DevicesMenu
+                variant="modal"
+                pairedDevices={pairedDevices}
+                availableDevices={availableDevices}
+                onPairDevice={handlePairDeviceFromMenu}
+                onUnpairDevice={handleUnpairDeviceFromMenu}
+                onCardClick={shouldAssignDefaultInModal ? handleAssignDefaultFromMenu : undefined}
+              />
             </div>
           </div>
         </div>
-      )}
-      {showSteps && <StepsModal onClose={() => setShowSteps(false)} />}
-      {/* If there are no paired/unassigned devices, show available devices for pairing */}
-      {showAvailableDevicesModal && (
-        <PairDeviceModal
-          availableDevices={availablePairDevices}
-          device={selectedAvailableDevice ? { ...selectedAvailableDevice, image: deviceImageMap[selectedAvailableDevice.image] || selectedAvailableDevice.image } : null}
-          onClose={() => { setShowAvailableDevicesModal(false); setSelectedAvailableDevice(null); setConnectedDevice(null); }}
-          onPair={(dev) => handlePairAvailableDevice(dev)}
-          onOpenDevice={(dev) => setSelectedAvailableDevice(dev)}
-        />
       )}
     </>
   );

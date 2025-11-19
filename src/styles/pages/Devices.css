@@ -258,7 +258,7 @@ h1 {
   margin-top: 12px;
 }
 
-/* Modal moved to src/components/PairDeviceModal + styles in src/styles/components */
+/* Devices menu overlay handled via src/components/DevicesMenu */
 
 /* Responsive */
 @media (max-width: 480px) {
