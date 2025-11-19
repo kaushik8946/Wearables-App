@@ -20,7 +20,6 @@
   padding: 32px 28px 28px 28px;
   display: flex;
   flex-direction: column;
-  /* Ensure card does not exceed screen height */
   max-height: calc(100vh - 42px);
   overflow-y: auto;
 }
@@ -50,7 +49,7 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
-  margin-bottom: 0;
+  margin-bottom: 20px;
 }
 
 .input-group label {

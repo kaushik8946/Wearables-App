@@ -231,7 +231,7 @@ const DashboardView = ({ onOpenSteps, onNavigateDevices, connectedDevice }) => {
         {/* Show connected device name near the top */}
         {connectedDevice && (
           <div className="connected-device-row">
-            <div className="connected-label">Connected</div>
+            {/* <div className="connected-label">Connected</div> */}
             <div className="connected-device-name">
               <span className="connected-device-icon" style={{ marginRight: 8 }}>{getDeviceTypeIcon(connectedDevice.deviceType)}</span>
               {connectedDevice.name}
@@ -241,6 +241,8 @@ const DashboardView = ({ onOpenSteps, onNavigateDevices, connectedDevice }) => {
         )}
         {/* Removed large placeholder; dashboards will show placeholder values when no device is connected */}
         <>
+          {/* Quick access: Pair device (same style as Devices page) */}
+          {/* pair device button removed; modal will auto-open based on default user + paired/unpaired device logic */}
           {/* Activity Rings */}
           <ActivityRings
             steps={connectedDevice ? 4784 : null}
@@ -427,6 +429,7 @@ export default function Dashboard() {
   const [availablePairDevices, setAvailablePairDevices] = useState([]);
   const [selectedAvailableDevice, setSelectedAvailableDevice] = useState(null);
 
+
   React.useEffect(() => {
     let mounted = true;
     (async () => {
@@ -441,12 +444,13 @@ export default function Dashboard() {
         if (!storedPairedDevices || storedPairedDevices.length === 0) {
           setConnectedDevice(null);
           // If there are mock available devices, show the pair flow when default user exists
-          const storedDefaultUserId = await idbGet('defaultUserId');
-          if (storedDefaultUserId) {
-            // Take availableDevices not present in paired list (all of them when paired list empty)
-            setAvailablePairDevices(initialAvailableDevices.map(d => ({ ...d })));
-            setShowAvailableDevicesModal(true);
-          }
+          // Log debug info for troubleshooting modal visibility
+          console.log('[Dashboard] No paired devices. storedDefaultUserId:', await idbGet('defaultUserId'));
+          // Always show pair devices modal when there are zero paired devices; this lets
+          // the user add a device so they can then pick a default. Previously we only
+          // opened the modal when `defaultUserId` existed which prevented the flow.
+          setAvailablePairDevices(initialAvailableDevices.map(d => ({ ...d })));
+          setShowAvailableDevicesModal(true);
           return;
         }
 
@@ -456,6 +460,9 @@ export default function Dashboard() {
         const allUsers = [ ...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers.map(u => ({ ...u })) ];
 
         let connected = null;
+        // local flags for whether we intend to open a modal during this effect
+        let openAssignDefault = false;
+        let openPairModal = false;
         if (storedDefaultUserId) {
           const defUser = allUsers.find(u => String(u.id) === String(storedDefaultUserId));
           if (defUser && defUser.deviceId) {
@@ -468,8 +475,11 @@ export default function Dashboard() {
             const unassigned = storedPairedDevices.filter(d => !assignedIds.includes(String(d.id)));
             if (unassigned.length > 0) {
               setAvailableUnassignedDevices(unassigned);
-              setShowAssignDefaultModal(true);
+                // When there is at least one unassigned paired device, prompt to pick a default device
+                setShowAssignDefaultModal(true);
+                openAssignDefault = true;
             }
+            console.log('[Dashboard] storedDefaultUserId found; unassigned:', unassigned.length, 'openAssignDefault:', openAssignDefault);
               // If there are no unassigned paired devices (but default user exists), let the user pair
               if (unassigned.length === 0) {
                 // compute available devices not in paired
@@ -478,13 +488,16 @@ export default function Dashboard() {
                 if (availToPair.length > 0) {
                   setAvailablePairDevices(availToPair);
                   setShowAvailableDevicesModal(true);
+                  openPairModal = true;
                 }
+                console.log('[Dashboard] availToPair', availToPair.length, 'openPairModal:', openPairModal);
               }
           }
         }
 
-        // fallback - show first paired device if none assigned or not found
-        if (!connected && storedPairedDevices.length > 0) {
+        // fallback - only show the first paired device if none assigned AND we're not
+        // prompting the user to select/assign the device or pair a new one.
+        if (!connected && storedPairedDevices.length > 0 && !openAssignDefault && !openPairModal) {
           connected = storedPairedDevices[0];
         }
         setConnectedDevice(connected);
@@ -520,12 +533,17 @@ export default function Dashboard() {
       await idbSetJSON('users', otherOnly);
 
       // Update dashboard connected device
-      const newDevice = (await idbGetJSON('pairedDevices', [])).find(d => String(d.id) === String(selectedAssignDevice));
+      const pairedDevices = await idbGetJSON('pairedDevices', []);
+      const newDevice = pairedDevices.find(d => String(d.id) === String(selectedAssignDevice));
       setConnectedDevice(newDevice || null);
       setShowAssignDefaultModal(false);
       setSelectedAssignDevice('');
     } catch (err) {
       console.error('Failed assigning default device', err);
+      // On error, close modal and show placeholders
+      setShowAssignDefaultModal(false);
+      setSelectedAssignDevice('');
+      setConnectedDevice(null);
     }
   };
 
