@@ -213,12 +213,14 @@ const Users = () => {
       {modalOpen && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close-btn" onClick={closeModal} aria-label="Close">
-              ×
-            </button>
             <div className="modal-header">
-              <h3>{modalMode === 'add' ? 'Add New User' : 'Edit User'}</h3>
-              <p className="modal-subtitle">Fill in the details below</p>
+              <div className="modal-title-group">
+                <h3>{modalMode === 'add' ? 'Add New User' : 'Edit User'}</h3>
+                <p className="modal-subtitle">Fill in the details below</p>
+              </div>
+              <button className="modal-close-btn" onClick={closeModal} aria-label="Close">
+                ×
+              </button>
             </div>
             
             <div className="form-group">
