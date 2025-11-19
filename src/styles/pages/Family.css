@@ -341,6 +341,7 @@
 
 .modal-header {
   margin-bottom: 28px;
+  padding-right: 64px; /* keep copy clear of the floating close button */
 }
 
 .modal-content h3 {
