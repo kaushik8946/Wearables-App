@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Heart, 
   Footprints, 
@@ -211,28 +212,43 @@ const StepsModal = ({ onClose }) => {
 }
 
 // 1. MAIN DASHBOARD (Light Mode)
-const DashboardView = ({ onOpenSteps, connectedDevice }) => {
+const DashboardView = ({ onOpenSteps, onNavigateDevices, connectedDevice }) => {
   return (
     <div className="app-container">
       <div className="max-w-wrapper">
         {/* Show connected device name near the top */}
-        <div className="connected-device-row">
-          <div className="connected-label">Connected</div>
-          <div className="connected-device-name">
-            {connectedDevice ? (
-              <>
-                <span className="connected-device-icon" style={{ marginRight: 8 }}>{ getDeviceTypeIcon(connectedDevice.deviceType) }</span>
-                {connectedDevice.name}
-              </>
-            ) : 'No device connected'}
+        {connectedDevice && (
+          <div className="connected-device-row">
+            <div className="connected-label">Connected</div>
+            <div className="connected-device-name">
+              <span className="connected-device-icon" style={{ marginRight: 8 }}>{ getDeviceTypeIcon(connectedDevice.deviceType) }</span>
+              {connectedDevice.name}
+            </div>
+            <div className="connected-device-model">{connectedDevice.model}</div>
           </div>
-          {connectedDevice && <div className="connected-device-model">{connectedDevice.model}</div>}
-        </div>
-        {/* Activity Rings */}
-        <ActivityRings steps={4784} stepsGoal={8000} active={45} activeGoal={60} cals={512} calsGoal={800} />
-      
-        {/* Cards Grid (2 Columns) */}
-        <div className="grid-2">
+        )}
+        {!connectedDevice && (
+          <div className="no-device-placeholder">
+            <div>
+              <p className="placeholder-title">No devices connected</p>
+              <p className="placeholder-copy">Pair a wearable to unlock live health stats.</p>
+            </div>
+            <button
+              type="button"
+              className="placeholder-cta"
+              onClick={onNavigateDevices}
+            >
+              Go to device management
+            </button>
+          </div>
+        )}
+        {connectedDevice && (
+          <>
+            {/* Activity Rings */}
+            <ActivityRings steps={4784} stepsGoal={8000} active={45} activeGoal={60} cals={512} calsGoal={800} />
+        
+            {/* Cards Grid (2 Columns) */}
+            <div className="grid-2">
           
           {/* 1. Steps - CLICKABLE */}
           <div 
@@ -380,7 +396,9 @@ const DashboardView = ({ onOpenSteps, connectedDevice }) => {
              </div>
           </div>
 
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -391,6 +409,7 @@ export default function Dashboard() {
   const [showSteps, setShowSteps] = useState(false);
   // Connected/Default device to display on the dashboard
   const [connectedDevice, setConnectedDevice] = useState(null);
+  const navigate = useNavigate();
 
   React.useEffect(() => {
     let mounted = true;
@@ -422,7 +441,11 @@ export default function Dashboard() {
 
   return (
     <>
-      <DashboardView onOpenSteps={() => setShowSteps(true)} connectedDevice={connectedDevice} />
+      <DashboardView
+        onOpenSteps={() => setShowSteps(true)}
+        onNavigateDevices={() => navigate('/devices')}
+        connectedDevice={connectedDevice}
+      />
       {showSteps && <StepsModal onClose={() => setShowSteps(false)} />}
     </>
   );

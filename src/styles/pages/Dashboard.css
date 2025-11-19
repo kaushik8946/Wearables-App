@@ -220,6 +220,49 @@ p { margin: 0; }
 .connected-device-model { font-size: 0.75rem; color: var(--color-text-sub); font-weight: 500; }
 .connected-device-icon { font-size: 1.125rem; vertical-align: middle; }
 
+.no-device-placeholder {
+  width: 100%;
+  max-width: 28rem;
+  border: 1px dashed #cbd5f5;
+  background: #fff;
+  border-radius: 20px;
+  padding: 1rem 1.25rem;
+  margin: 0 auto 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 12px 25px -15px rgba(15, 23, 42, 0.4);
+}
+.placeholder-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
+}
+.placeholder-copy {
+  font-size: 0.85rem;
+  color: #475569;
+}
+.placeholder-cta {
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
+}
+.placeholder-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -10px rgba(99, 102, 241, 0.8);
+}
+.placeholder-cta:active {
+  transform: translateY(0);
+}
+
 .activity-rings-graphic {
   display: block;
   margin-bottom: 18px;
@@ -330,6 +373,10 @@ p { margin: 0; }
   .activity-rings-graphic {
     width: 140px;
     height: 140px;
+  }
+  .no-device-placeholder {
+    flex-direction: column;
+    align-items: flex-start;
   }
   .activity-rings-stats-row { gap: 18px; max-width: 98vw; }
   .light-metrics-row { gap: 24px; }
