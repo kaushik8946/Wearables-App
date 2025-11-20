@@ -397,7 +397,7 @@ const DashboardView = ({ onOpenSteps, onNavigateDevices, connectedDevice }) => {
 };
 
 // MAIN APP COMPONENT
-export default function Dashboard() {
+const Dashboard = () => {
   const [showSteps, setShowSteps] = useState(false);
   // Connected/Default device to display on the dashboard
   const [connectedDevice, setConnectedDevice] = useState(null);
@@ -411,6 +411,11 @@ export default function Dashboard() {
   const [userVersion, setUserVersion] = useState(0);
   const [currentUserDeviceMap, setCurrentUserDeviceMap] = useState({});
   const [activeDefaultUserId, setActiveDefaultUserId] = useState('');
+
+  // Modal for 'no device assigned to default user'
+  const [showNoDeviceAssignedModal, setShowNoDeviceAssignedModal] = useState(false);
+  // Default user name shown in the 'no device assigned' modal
+  const [defaultUserName, setDefaultUserName] = useState('');
 
   const sanitizeUserForStorage = (user) => {
     if (!user) return null;
@@ -475,12 +480,30 @@ export default function Dashboard() {
         const allUsers = [...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers.map(u => ({ ...u }))];
 
         // If no paired devices at all, show modal to pair devices
+        // But if a default user is set and they have NO assigned device, show the "No device assigned" modal first.
         if (!pairedDevices || pairedDevices.length === 0) {
           setConnectedDevice(null);
           setShouldAssignDefaultInModal(false);
+
           if (!devicesMenuDismissed) {
-            setShowDevicesMenuModal(true);
+            // If there's a default user with no device, show the informative modal first.
+            if (storedDefaultUserId) {
+              const defUser = allUsers.find(u => String(u.id) === String(storedDefaultUserId));
+              const hasDevice = defUser && defUser.deviceId && String(defUser.deviceId) !== '';
+              if (!hasDevice) {
+                setDefaultUserName(defUser?.name || 'user');
+                setShowNoDeviceAssignedModal(true);
+                setShowDevicesMenuModal(false);
+              } else {
+                setShowNoDeviceAssignedModal(false);
+                setShowDevicesMenuModal(true);
+              }
+            } else {
+              setShowNoDeviceAssignedModal(false);
+              setShowDevicesMenuModal(true);
+            }
           }
+
           return;
         }
 
@@ -542,14 +565,29 @@ export default function Dashboard() {
         debugLog('Connected device resolved', { connectedId: connected ? connected.id : null, needsDefault });
         setShouldAssignDefaultInModal(needsDefault || !connected);
         if (needsDefault || !connected) {
-          if (!devicesMenuDismissed) {
+          // Find default user name and save to state
+          let foundDefaultUserName = '';
+          if (storedDefaultUserId) {
+            const defUser = allUsers.find(u => String(u.id) === String(storedDefaultUserId));
+            if (defUser) foundDefaultUserName = defUser.name || 'User';
+          }
+          setDefaultUserName(foundDefaultUserName);
+          // Only show the 'no device assigned' modal if there are paired devices to assign
+          if (!devicesMenuDismissed && pairedDevices.length > 0) {
+            setShowNoDeviceAssignedModal(true);
+            setShowDevicesMenuModal(false);
+          } else if (!devicesMenuDismissed) {
             setShowDevicesMenuModal(true);
+            setShowNoDeviceAssignedModal(false);
+          } else {
+            setShowNoDeviceAssignedModal(false);
           }
         } else {
           if (devicesMenuDismissed) {
             setDevicesMenuDismissed(false);
           }
           setShowDevicesMenuModal(false);
+          setShowNoDeviceAssignedModal(false);
         }
       } catch (err) {
         console.error('Failed to load connected device for dashboard', err);
@@ -679,6 +717,23 @@ export default function Dashboard() {
         connectedDevice={connectedDevice}
       />
       {showSteps && <StepsModal onClose={() => setShowSteps(false)} />}
+      {showNoDeviceAssignedModal && (
+        <div className="modal-overlay" onClick={() => setShowNoDeviceAssignedModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 400, textAlign: 'center' }}>
+            <h3 style={{ marginBottom: 16 }}>{defaultUserName || 'User'} has no assigned device</h3>
+            <button
+              className="btn-primary btn-submit"
+              style={{ width: '100%', marginTop: 12 }}
+              onClick={() => {
+                setShowNoDeviceAssignedModal(false);
+                setShowDevicesMenuModal(true);
+              }}
+            >
+              Assign Device
+            </button>
+          </div>
+        </div>
+      )}
       {showDevicesMenuModal && (
         <div className="devices-menu-overlay" onClick={handleDismissDevicesMenu}>
           <div className="devices-menu-modal" onClick={(e) => e.stopPropagation()}>
@@ -707,3 +762,5 @@ export default function Dashboard() {
     </>
   );
 }
+
+export default Dashboard;

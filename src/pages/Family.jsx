@@ -339,12 +339,8 @@ const Users = () => {
                             </>
                           );
                         }
-                        return (
-                          <>
-                            {getDeviceIcon()}
-                            <span>Device not found</span>
-                          </>
-                        );
+                        // Device id is set but device not found in pairedDevices (likely unpaired)
+                        return <span style={{ color: '#94a3b8' }}>No device assigned</span>;
                       }
                       return <span style={{ color: '#94a3b8' }}>No device assigned</span>;
                     })()}
@@ -481,15 +477,17 @@ const Users = () => {
 
             {modalMode === 'edit' && users[editingIndex] && (
               <div className="form-group">
-                {users[editingIndex].deviceId ? (
-                  <>
-                    <label>Assigned Device</label>
-                    {(() => {
-                      const assignedDevice = pairedDevices.find(d => String(d.id) === String(users[editingIndex].deviceId));
-                      return (
+                {(() => {
+                  const deviceId = users[editingIndex].deviceId;
+                  const assignedDevice = deviceId ? pairedDevices.find(d => String(d.id) === String(deviceId)) : null;
+                  if (deviceId && assignedDevice) {
+                    // Device assigned and found
+                    return (
+                      <>
+                        <label>Assigned Device</label>
                         <div className="device-action-col">
                           <span className="device-action-label">
-                            {assignedDevice ? `${assignedDevice.name} (${assignedDevice.model})` : 'Assigned device not found'}
+                            {`${assignedDevice.name} (${assignedDevice.model})`}
                           </span>
                           <div className="device-action-row">
                             <button
@@ -517,21 +515,24 @@ const Users = () => {
                             </button>
                           </div>
                         </div>
-                      );
-                    })()}
-                  </>
-                ) : (
-                  <button
-                    className="btn-submit device-action-btn"
-                    onClick={() => {
-                      setPendingEditUser(users[editingIndex]);
-                      setShowDeviceAssignmentForEdit(true);
-                      setModalOpen(false);
-                    }}
-                  >
-                    Assign Device
-                  </button>
-                )}
+                      </>
+                    );
+                  } else {
+                    // No device assigned or device not found
+                    return (
+                      <button
+                        className="btn-submit device-action-btn"
+                        onClick={() => {
+                          setPendingEditUser(users[editingIndex]);
+                          setShowDeviceAssignmentForEdit(true);
+                          setModalOpen(false);
+                        }}
+                      >
+                        Assign Device
+                      </button>
+                    );
+                  }
+                })()}
               </div>
             )}
 
