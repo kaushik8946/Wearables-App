@@ -87,6 +87,7 @@ const Devices = () => {
           availableDevices={availableDevices}
           onPairDevice={handlePairDevice}
           onUnpairDevice={handleRemoveDevice}
+          isCloseButtonRequired={false}
         />
       </div>
     </div>

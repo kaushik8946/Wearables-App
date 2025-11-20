@@ -1,7 +1,11 @@
-import { useEffect, useState } from 'react';
-import { MdPerson, MdPersonOutline, MdEdit, MdDelete, MdAdd } from 'react-icons/md';
-import { idbGet, idbGetJSON, idbSet, idbSetJSON } from '../data/db';
-import { idbGetJSON as idbGetJSONDevices, idbSetJSON as idbSetJSONDevices } from '../data/db';
+import { useEffect, useMemo, useState } from 'react';
+import { MdPerson, MdPersonOutline, MdEdit, MdDelete, MdAdd, MdWatch } from 'react-icons/md';
+import { GiRing } from 'react-icons/gi';
+import { FaWeight } from 'react-icons/fa';
+import { idbGet, idbGetJSON, idbSet, idbSetJSON, emitUserChange } from '../data/db';
+import { idbGetJSON as idbGetJSONDevices } from '../data/db';
+import { availableDevices as mockAvailableDevices } from '../data/mockData';
+import DevicesMenu from '../components/DevicesMenu';
 import '../styles/pages/Family.css';
 
 const Users = () => {
@@ -18,6 +22,40 @@ const Users = () => {
     gender: '',
   });
   const [errors, setErrors] = useState({});
+  const [showDeviceSelectionModal, setShowDeviceSelectionModal] = useState(false);
+  const [pendingNewUser, setPendingNewUser] = useState(null);
+
+  const sanitizeUserForStorage = (user) => {
+    if (!user) return null;
+    const { self, ...rest } = user;
+    return rest;
+  };
+
+  const persistDefaultUserSelection = async (userList, candidateId = defaultUserId) => {
+    let resolvedId = '';
+    if (userList.length === 1) {
+      resolvedId = userList[0].id;
+    } else if (candidateId && userList.some(u => u.id === candidateId)) {
+      resolvedId = candidateId;
+    }
+
+    setDefaultUserId(resolvedId);
+    await idbSet('defaultUserId', resolvedId);
+    const defaultUserData = resolvedId ? sanitizeUserForStorage(userList.find(u => u.id === resolvedId)) : null;
+    await idbSetJSON('defaultUser', defaultUserData);
+    return resolvedId;
+  };
+
+  const unassignedDevices = useMemo(() => {
+    const assignedIds = new Set(
+      users
+        .map(u => (u.deviceId ? String(u.deviceId) : ''))
+        .filter(Boolean)
+    );
+    // If no paired devices, show all available devices for pairing
+    const sourceDevices = pairedDevices.length === 0 ? mockAvailableDevices : pairedDevices;
+    return sourceDevices.filter(device => !assignedIds.has(String(device.id)));
+  }, [users, pairedDevices]);
 
   useEffect(() => {
     let isMounted = true;
@@ -45,15 +83,8 @@ const Users = () => {
         if (currentUser) await idbSetJSON('currentUser', { ...currentUser });
         await idbSetJSON('users', otherUsers);
 
-        // Default user logic
-        if (hydratedUsers.length === 1) {
-          setDefaultUserId(hydratedUsers[0].id);
-          await idbSet('defaultUserId', hydratedUsers[0].id);
-        } else if (storedDefaultUserId && hydratedUsers.some(u => u.id === storedDefaultUserId)) {
-          setDefaultUserId(storedDefaultUserId);
-        } else {
-          setDefaultUserId('');
-        }
+        // Default user logic persisted
+        await persistDefaultUserSelection(hydratedUsers, storedDefaultUserId);
 
         // Load paired devices
         const devices = await idbGetJSONDevices('pairedDevices', []);
@@ -67,19 +98,37 @@ const Users = () => {
     };
   }, []);
 
+  const getDeviceIcon = (deviceType) => {
+    switch (deviceType?.toLowerCase()) {
+      case 'watch':
+        return <MdWatch size={16} />;
+      case 'ring':
+        return <GiRing size={16} />;
+      case 'scale':
+        return <FaWeight size={16} />;
+      default:
+        return <MdWatch size={16} />;
+    }
+  };
+
   const saveUsers = async (updatedUsers) => {
     try {
       const onlyUsers = updatedUsers.filter(u => !u.self);
       await idbSetJSON('users', onlyUsers);
       setUsers(updatedUsers);
-      // If only one user left, set as default
-      if (updatedUsers.length === 1) {
-        setDefaultUserId(updatedUsers[0].id);
-        await idbSet('defaultUserId', updatedUsers[0].id);
-      } else if (!updatedUsers.some(u => u.id === defaultUserId)) {
-        setDefaultUserId('');
-        await idbSet('defaultUserId', '');
-      }
+      await persistDefaultUserSelection(updatedUsers);
+
+      // Persist user-device mapping in IndexedDB
+      // Build mapping: { [userId]: deviceId }
+      const userDeviceMap = {};
+      updatedUsers.forEach(u => {
+        if (u.deviceId) {
+          userDeviceMap[u.id] = u.deviceId;
+        }
+      });
+      await idbSetJSON('userDeviceMap', userDeviceMap);
+
+      emitUserChange();
     } catch (err) {
       console.error('Failed to persist users list', err);
     }
@@ -146,9 +195,47 @@ const Users = () => {
       self: false, 
       id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}` 
     };
-    const updatedUsers = [...users, newUser];
-    await saveUsers(updatedUsers);
+    
+    // Store pending user and show device selection
+    setPendingNewUser(newUser);
     closeModal();
+    setShowDeviceSelectionModal(true);
+  };
+
+  const handleDeviceSelected = async (device) => {
+    if (!pendingNewUser) return;
+
+    // Check if device is already paired
+    const isPaired = pairedDevices.some(d => String(d.id) === String(device.id));
+    let newPairedDevices = pairedDevices;
+    if (!isPaired) {
+      // Pair the device (add to pairedDevices and persist)
+      newPairedDevices = [...pairedDevices, device];
+      setPairedDevices(newPairedDevices);
+      await idbSetJSON('pairedDevices', newPairedDevices);
+    }
+
+    // Assign device to the new user
+    const newUserWithDevice = { ...pendingNewUser, deviceId: String(device.id) };
+
+    // Remove this device from any other user
+    const updatedUsers = users.map(u =>
+      String(u.deviceId) === String(device.id) ? { ...u, deviceId: '' } : u
+    );
+    updatedUsers.push(newUserWithDevice);
+
+    await saveUsers(updatedUsers);
+    setShowDeviceSelectionModal(false);
+    setPendingNewUser(null);
+  };
+
+  const handleSkipDeviceSelection = async () => {
+    if (!pendingNewUser) return;
+    
+    const updatedUsers = [...users, pendingNewUser];
+    await saveUsers(updatedUsers);
+    setShowDeviceSelectionModal(false);
+    setPendingNewUser(null);
   };
 
   const handleSaveEdit = async () => {
@@ -239,6 +326,28 @@ const Users = () => {
                   <p className="user-meta">
                     {user.age ? `${user.age} years` : 'Age not set'} • {user.gender || 'Gender not set'}
                   </p>
+                  <p className="user-device">
+                    {(() => {
+                      if (user.deviceId) {
+                        const device = pairedDevices.find(d => String(d.id) === String(user.deviceId));
+                        if (device) {
+                          return (
+                            <>
+                              {getDeviceIcon(device.deviceType)}
+                              <span>{device.name}</span>
+                            </>
+                          );
+                        }
+                        return (
+                          <>
+                            {getDeviceIcon()}
+                            <span>Device not found</span>
+                          </>
+                        );
+                      }
+                      return <span style={{ color: '#94a3b8' }}>No device assigned</span>;
+                    })()}
+                  </p>
                 </div>
                 <div className="user-actions">
                   <button
@@ -286,8 +395,8 @@ const Users = () => {
                 className="form-input"
                 value={defaultUserId}
                 onChange={async e => {
-                  setDefaultUserId(e.target.value);
-                  await idbSet('defaultUserId', e.target.value);
+                  await persistDefaultUserSelection(users, e.target.value);
+                  emitUserChange();
                 }}
               >
                 <option value="">-- Select User --</option>
@@ -395,14 +504,7 @@ const Users = () => {
                             const updatedUsers = users.map((u, idx) => (
                               idx === editingIndex ? { ...u, deviceId: '' } : u
                             ));
-                            setUsers(updatedUsers);
-                            // Persist
-                            const onlyUsers = updatedUsers.filter(u => !u.self);
-                            await idbSetJSON('users', onlyUsers);
-                            if (users[editingIndex].self) {
-                              const { self, ...rest } = updatedUsers[editingIndex];
-                              await idbSetJSON('currentUser', rest);
-                            }
+                            await saveUsers(updatedUsers);
                           }}
                         >
                           Remove
@@ -442,6 +544,7 @@ const Users = () => {
                         const { self, ...rest } = updatedUsers[editingIndex];
                         await idbSetJSON('currentUser', rest);
                       }
+                      emitUserChange();
                     }}
                   >
                     <option value="">-- None --</option>
@@ -472,6 +575,49 @@ const Users = () => {
           </div>
         </div>
       )}
+
+      {/* Device Selection Modal for New User */}
+      {showDeviceSelectionModal && pendingNewUser && (() => {
+        // Devices already paired but not assigned to any user
+        const assignedIds = new Set(users.map(u => u.deviceId).filter(Boolean).map(String));
+        const unassignedPairedDevices = pairedDevices.filter(d => !assignedIds.has(String(d.id)));
+        // Devices in mockAvailableDevices that are not yet paired (not in pairedDevices by id)
+        const pairedIds = new Set(pairedDevices.map(d => String(d.id)));
+        const unpairedAvailableDevices = mockAvailableDevices.filter(d => !pairedIds.has(String(d.id)));
+        return (
+          <div className="modal-overlay" onClick={handleSkipDeviceSelection}>
+            <div className="modal-content" style={{ maxWidth: 600 }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <div className="modal-title-group">
+                  <h3>Assign Device (Optional)</h3>
+                  <p className="modal-subtitle">Select a device for {pendingNewUser.name}</p>
+                </div>
+                <button className="modal-close-btn" onClick={handleSkipDeviceSelection} aria-label="Skip">
+                  X
+                </button>
+              </div>
+              <DevicesMenu
+                pairedDevices={unassignedPairedDevices}
+                availableDevices={unpairedAvailableDevices}
+                onPairDevice={handleDeviceSelected}
+                variant="modal"
+                isCloseButtonRequired={false}
+                showPairedSection={true}
+                showAvailableSection={true}
+              />
+              <div className="modal-buttons">
+                <button 
+                  className="btn-primary btn-submit" 
+                  style={{ background: '#94a3b8' }}
+                  onClick={handleSkipDeviceSelection}
+                >
+                  Skip & Add User
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

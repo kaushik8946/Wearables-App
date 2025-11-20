@@ -20,7 +20,7 @@
 
 /* Header Section */
 .header-section {
-  margin-bottom: 32px;
+  margin-bottom: 10px;
   text-align: center;
 }
 
@@ -216,6 +216,16 @@
   color: #64748b;
   margin: 0;
   font-weight: 500;
+}
+
+.user-device {
+  font-size: 13px;
+  color: #667eea;
+  margin: 4px 0 0 0;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* User Actions */

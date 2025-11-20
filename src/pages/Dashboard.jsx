@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Heart,
@@ -21,7 +21,7 @@ import watchImg from '../assets/images/watch.png';
 import ringImg from '../assets/images/ring.webp';
 import scaleImg from '../assets/images/weighing-scale.avif';
 import '../styles/pages/Dashboard.css';
-import { idbGet, idbGetJSON, idbSetJSON } from '../data/db';
+import { idbGet, idbGetJSON, idbSet, idbSetJSON, emitUserChange, onUserChange } from '../data/db';
 import { getDeviceTypeIcon } from '../data/mockData';
 
 // Helper for SVG Curved Lines (Heart Rate) - Now accepting hex color
@@ -239,10 +239,7 @@ const DashboardView = ({ onOpenSteps, onNavigateDevices, connectedDevice }) => {
             <div className="connected-device-model">{connectedDevice.model}</div>
           </div>
         )}
-        {/* Removed large placeholder; dashboards will show placeholder values when no device is connected */}
         <>
-          {/* Quick access: Pair device (same style as Devices page) */}
-          {/* pair device button removed; modal will auto-open based on default user + paired/unpaired device logic */}
           {/* Activity Rings */}
           <ActivityRings
             steps={connectedDevice ? 4784 : null}
@@ -426,6 +423,31 @@ export default function Dashboard() {
   const [showDevicesMenuModal, setShowDevicesMenuModal] = useState(false);
   const [devicesMenuDismissed, setDevicesMenuDismissed] = useState(false);
   const [shouldAssignDefaultInModal, setShouldAssignDefaultInModal] = useState(false);
+  const [userVersion, setUserVersion] = useState(0);
+  const [currentUserDeviceMap, setCurrentUserDeviceMap] = useState({});
+  const [activeDefaultUserId, setActiveDefaultUserId] = useState('');
+
+  const sanitizeUserForStorage = (user) => {
+    if (!user) return null;
+    const { self, ...rest } = user;
+    return rest;
+  };
+
+  const debugLog = (...args) => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[Dashboard]', ...args);
+    }
+  };
+
+  const persistUserDeviceMap = async (usersSnapshot) => {
+    const map = {};
+    usersSnapshot.forEach(u => {
+      if (u.deviceId) {
+        map[u.id] = String(u.deviceId);
+      }
+    });
+    await idbSetJSON('userDeviceMap', map);
+  };
 
   React.useEffect(() => {
     let mounted = true;
@@ -447,49 +469,92 @@ export default function Dashboard() {
   }, [pairedDevices]);
 
   React.useEffect(() => {
+    const unsubscribe = onUserChange(() => {
+      setUserVersion(prev => prev + 1);
+    });
+    return unsubscribe;
+  }, []);
+
+  React.useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         const storedDefaultUserId = await idbGet('defaultUserId');
+        const userDeviceMap = await idbGetJSON('userDeviceMap', {});
+        debugLog('Evaluating default user', { storedDefaultUserId, userDeviceMap, pairedCount: pairedDevices?.length });
 
         if (!mounted) return;
 
+        const currentUser = await idbGetJSON('currentUser', null);
+        const otherUsers = await idbGetJSON('users', []);
+        const allUsers = [...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers.map(u => ({ ...u }))];
+
+        // If no paired devices at all, show modal to pair devices
         if (!pairedDevices || pairedDevices.length === 0) {
           setConnectedDevice(null);
-          setShouldAssignDefaultInModal(true);
+          setShouldAssignDefaultInModal(false);
           if (!devicesMenuDismissed) {
             setShowDevicesMenuModal(true);
           }
           return;
         }
 
-        const currentUser = await idbGetJSON('currentUser', null);
-        const otherUsers = await idbGetJSON('users', []);
-        const allUsers = [ ...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers.map(u => ({ ...u })) ];
-
         let connected = null;
         let needsDefault = false;
 
+        setActiveDefaultUserId(storedDefaultUserId || '');
+        const derivedDeviceMap = {};
+        allUsers.forEach(u => {
+          if (u.deviceId) {
+            derivedDeviceMap[u.id] = String(u.deviceId);
+          }
+        });
+        setCurrentUserDeviceMap(derivedDeviceMap);
+
         if (storedDefaultUserId) {
-          const defUser = allUsers.find(u => String(u.id) === String(storedDefaultUserId));
-          if (defUser && defUser.deviceId) {
-            connected = pairedDevices.find(d => String(d.id) === String(defUser.deviceId)) || null;
+          const mappedDeviceId = userDeviceMap ? userDeviceMap[storedDefaultUserId] : null;
+          if (mappedDeviceId) {
+            const mappedDevice = pairedDevices.find(d => String(d.id) === String(mappedDeviceId));
+            if (mappedDevice) {
+              connected = mappedDevice;
+            } else {
+              needsDefault = true;
+              debugLog('Mapped device missing from paired list', { mappedDeviceId });
+            }
+          }
+
+          if (!connected) {
+            // Find the DEFAULT user (not necessarily the current user)
+            const defUser = allUsers.find(u => String(u.id) === String(storedDefaultUserId));
+            debugLog('Fallback to default user record', { defUserExists: Boolean(defUser) });
+
+            // Use DEFAULT user's deviceId
+            if (defUser && defUser.deviceId && String(defUser.deviceId) !== '') {
+              connected = pairedDevices.find(d => String(d.id) === String(defUser.deviceId)) || null;
+
+              if (!connected) {
+                needsDefault = true;
+                debugLog('User had deviceId but not in paired list', { deviceId: defUser.deviceId });
+              }
+            } else {
+              needsDefault = true;
+              debugLog('Default user missing device assignment');
+            }
           }
 
           if (!connected) {
             const assignedIds = allUsers.filter(u => u.deviceId).map(u => String(u.deviceId));
             const unassigned = pairedDevices.filter(d => !assignedIds.includes(String(d.id)));
-            needsDefault = unassigned.length > 0 || pairedDevices.length === 0;
+            needsDefault = true;
+            debugLog('Default user lacks device; unassigned pool size', { unassignedCount: unassigned.length });
           }
         } else {
           needsDefault = true;
-        }
-
-        if (!connected && !needsDefault && pairedDevices.length > 0) {
-          connected = pairedDevices[0];
+          debugLog('No stored default user id');
         }
 
         setConnectedDevice(connected);
+        debugLog('Connected device resolved', { connectedId: connected ? connected.id : null, needsDefault });
         setShouldAssignDefaultInModal(needsDefault || !connected);
         if (needsDefault || !connected) {
           if (!devicesMenuDismissed) {
@@ -507,19 +572,43 @@ export default function Dashboard() {
     })();
 
     return () => { mounted = false; };
-  }, [pairedDevices, devicesMenuDismissed]);
+  }, [pairedDevices, devicesMenuDismissed, userVersion]);
+
+  const deviceOwnerMap = useMemo(() => {
+    const entries = Object.entries(currentUserDeviceMap || {});
+    const map = new Map();
+    entries.forEach(([userId, deviceId]) => {
+      if (deviceId) {
+        map.set(String(deviceId), String(userId));
+      }
+    });
+    return map;
+  }, [currentUserDeviceMap]);
+
+  const pairedDevicesForModal = useMemo(() => {
+    if (!shouldAssignDefaultInModal) return pairedDevices;
+    return pairedDevices.filter(device => {
+      const ownerId = deviceOwnerMap.get(String(device.id));
+      return !ownerId || ownerId === activeDefaultUserId;
+    });
+  }, [pairedDevices, deviceOwnerMap, shouldAssignDefaultInModal, activeDefaultUserId]);
 
   const assignDeviceToDefaultUser = async (deviceId) => {
     try {
       const currentUser = await idbGetJSON('currentUser', null);
       const otherUsers = await idbGetJSON('users', []);
-      const allUsers = [ ...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers.map(u => ({ ...u })) ];
+      const allUsers = [...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers.map(u => ({ ...u }))];
       if (allUsers.length === 0) return false;
 
       let storedDefaultUserId = await idbGet('defaultUserId');
-      if (!storedDefaultUserId) {
-        storedDefaultUserId = allUsers[0].id;
-        await idbSetJSON('defaultUserId', storedDefaultUserId);
+      let defaultUser = storedDefaultUserId
+        ? allUsers.find(u => String(u.id) === String(storedDefaultUserId))
+        : null;
+
+      if (!defaultUser) {
+        defaultUser = allUsers[0];
+        storedDefaultUserId = defaultUser.id;
+        await idbSet('defaultUserId', storedDefaultUserId);
       }
 
       const updatedUsers = allUsers.map(u => (
@@ -535,6 +624,11 @@ export default function Dashboard() {
       }
       const otherOnly = updatedUsers.filter(u => !u.self);
       await idbSetJSON('users', otherOnly);
+      const defaultUserRecord = updatedUsers.find(u => String(u.id) === String(storedDefaultUserId));
+      await idbSetJSON('defaultUser', sanitizeUserForStorage(defaultUserRecord));
+      await persistUserDeviceMap(updatedUsers);
+      debugLog('Assigned device to default user', { deviceId, defaultUserId: storedDefaultUserId });
+      emitUserChange();
       return true;
     } catch (err) {
       console.error('Failed assigning default device', err);
@@ -597,17 +691,25 @@ export default function Dashboard() {
         <div className="devices-menu-overlay" onClick={handleDismissDevicesMenu}>
           <div className="devices-menu-modal" onClick={(e) => e.stopPropagation()}>
             <div className="devices-menu-modal-header">
-              <h3>{shouldAssignDefaultInModal ? 'Choose a device to connect' : 'Manage devices'}</h3>
+              <h3>
+                {pairedDevices.length === 0 
+                  ? 'Pair a device to get started' 
+                  : shouldAssignDefaultInModal 
+                    ? 'Choose a device to connect' 
+                    : 'Manage devices'}
+              </h3>
               <button className="devices-menu-modal-close" onClick={handleDismissDevicesMenu}>✕</button>
             </div>
             <div className="devices-menu-modal-body">
               <DevicesMenu
                 variant="modal"
-                pairedDevices={pairedDevices}
+                pairedDevices={pairedDevicesForModal}
                 availableDevices={availableDevices}
                 onPairDevice={handlePairDeviceFromMenu}
                 onUnpairDevice={handleUnpairDeviceFromMenu}
                 onCardClick={shouldAssignDefaultInModal ? handleAssignDefaultFromMenu : undefined}
+                isCloseButtonRequired={true}
+                onClose={handleDismissDevicesMenu}
               />
             </div>
           </div>

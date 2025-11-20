@@ -24,7 +24,11 @@ const DevicesMenu = ({
   onCardClick,
   variant = 'page',
   pairedTitle = 'Paired Devices',
-  availableTitle = 'Available Devices'
+  availableTitle = 'Available Devices',
+  showPairedSection = true,
+  showAvailableSection = true,
+  isCloseButtonRequired = false,
+  onClose
 }) => {
   const [connectingAvailableId, setConnectingAvailableId] = useState(null);
   const [connectingPairedId, setConnectingPairedId] = useState(null);
@@ -123,29 +127,34 @@ const DevicesMenu = ({
   };
 
   return (
-    <div className={rootClass.join(' ')}>
-      <div className="devices-menu-section">
-        <div className="devices-menu-section-title">{pairedTitle}</div>
-        {isPairedSelectable && normalizedPaired.length > 0 && (
-          <span className="devices-menu-model" style={{ fontSize: 12 }}>
-            Tap a paired device to connect
-          </span>
-        )}
-        {renderList(normalizedPaired, {
-          emptyLabel: 'No paired devices',
-          clickHandler: isPairedSelectable ? handlePairedClick : null,
-          showUnpair: canUnpair,
-        })}
-      </div>
+    <div className={rootClass.join(' ')} style={{ position: 'relative' }}>
+      {/* Close button removed; handled by modal overlay/header */}
+      {showPairedSection && (
+        <div className="devices-menu-section">
+          <div className="devices-menu-section-title">{pairedTitle}</div>
+          {isPairedSelectable && normalizedPaired.length > 0 && (
+            <span className="devices-menu-model" style={{ fontSize: 12 }}>
+              Tap a paired device to connect
+            </span>
+          )}
+          {renderList(normalizedPaired, {
+            emptyLabel: 'No paired devices',
+            clickHandler: isPairedSelectable ? handlePairedClick : null,
+            showUnpair: canUnpair,
+          })}
+        </div>
+      )}
 
-      <div className="devices-menu-section">
-        <div className="devices-menu-section-title">{availableTitle}</div>
-        {renderList(normalizedAvailable, {
-          emptyLabel: 'No devices available to pair',
-          clickHandler: canPair ? handleAvailableClick : null,
-          showUnpair: false,
-        })}
-      </div>
+      {showAvailableSection && (
+        <div className="devices-menu-section">
+          <div className="devices-menu-section-title">{availableTitle}</div>
+          {renderList(normalizedAvailable, {
+            emptyLabel: 'No devices available to pair',
+            clickHandler: canPair ? handleAvailableClick : null,
+            showUnpair: false,
+          })}
+        </div>
+      )}
     </div>
   );
 };

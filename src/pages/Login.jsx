@@ -57,6 +57,8 @@ const Login = () => {
     await idbSet('currentUser', JSON.stringify(user));
     await idbSet('isAuthenticated', 'true');
     await idbSet('userPhone', mobileNumber);
+    await idbSet('defaultUserId', user.id);
+    await idbSet('defaultUser', JSON.stringify(user));
     if (mobileNumber.endsWith('123')) {
       navigate('/signup');
     } else {

@@ -84,3 +84,15 @@ export async function idbClear() {
     req.onerror = () => reject(req.error);
   });
 }
+
+// Event system for user data changes
+const USER_CHANGE_EVENT = 'user-data-changed';
+
+export function emitUserChange() {
+  window.dispatchEvent(new CustomEvent(USER_CHANGE_EVENT));
+}
+
+export function onUserChange(callback) {
+  window.addEventListener(USER_CHANGE_EVENT, callback);
+  return () => window.removeEventListener(USER_CHANGE_EVENT, callback);
+}

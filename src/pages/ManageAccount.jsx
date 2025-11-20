@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { idbGetJSON, idbSetJSON } from '../data/db';
+import { idbGetJSON, idbSetJSON, emitUserChange } from '../data/db';
 import '../styles/pages/ManageAccount.css';
 
 
@@ -88,6 +88,7 @@ const ManageAccount = () => {
     }
     setUser(updated);
     await idbSetJSON('currentUser', updated);
+    emitUserChange();
     setEditKey(null);
     setEditValue('');
     setError('');
