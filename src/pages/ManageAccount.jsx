@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { idbGetJSON, idbSetJSON, emitUserChange } from '../data/db';
+import { LogoutContext } from '../components/Layout';
+import { BsBoxArrowLeft } from 'react-icons/bs';
 import '../styles/pages/ManageAccount.css';
 
 
@@ -39,6 +41,7 @@ const ManageAccount = () => {
   const [editKey, setEditKey] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [error, setError] = useState('');
+  const handleLogout = useContext(LogoutContext);
 
 
   useEffect(() => {
@@ -182,6 +185,13 @@ const ManageAccount = () => {
               );
             })}
           </div>
+          
+          {/* Logout Button */}
+          <button className="logout-button" onClick={handleLogout}>
+            <BsBoxArrowLeft className="logout-icon" size={20} />
+            <span>Logout</span>
+          </button>
+
           {/* Error Modal Popup */}
           {error && (
             <div className="modal-overlay">

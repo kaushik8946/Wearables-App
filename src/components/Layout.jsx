@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, createContext } from 'react';
 import { Outlet } from 'react-router-dom';
 import BottomNav from './BottomNav';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { idbClear, idbGet, idbGetJSON, onUserChange } from '../data/db';
 import '../styles/components/Layout.css';
+
+export const LogoutContext = createContext();
 
 
 const Layout = () => {
@@ -54,19 +56,21 @@ const Layout = () => {
   };
 
   return (
-    <div className="layout">
-      <header className="app-header">
-        <h1 className="app-title">Welcome{defaultUserName ? ", " + defaultUserName : ''}</h1>
-      </header>
+    <LogoutContext.Provider value={handleLogout}>
+      <div className="layout">
+        <header className="app-header">
+          <h1 className="app-title">Welcome{defaultUserName ? ", " + defaultUserName : ''}</h1>
+        </header>
 
-      {/* Main Content */}
-      <main className="app-content">
-        <Outlet />
-      </main>
+        {/* Main Content */}
+        <main className="app-content">
+          <Outlet />
+        </main>
 
-      {/* Bottom Navigation */}
-      <BottomNav onLogout={handleLogout} />
-    </div>
+        {/* Bottom Navigation */}
+        <BottomNav />
+      </div>
+    </LogoutContext.Provider>
   );
 };
 
