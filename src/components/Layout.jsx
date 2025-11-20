@@ -1,11 +1,10 @@
-import { useState, useEffect, createContext } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import BottomNav from './BottomNav';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { idbClear, idbGet, idbGetJSON, onUserChange } from '../data/db';
+import { LogoutContext } from '../contexts/LogoutContext';
 import '../styles/components/Layout.css';
-
-export const LogoutContext = createContext();
 
 
 const Layout = () => {

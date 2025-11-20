@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { idbGetJSON, idbSetJSON, emitUserChange } from '../data/db';
-import { LogoutContext } from '../components/Layout';
+import { LogoutContext } from '../contexts/LogoutContext';
 import { BsBoxArrowLeft } from 'react-icons/bs';
 import '../styles/pages/ManageAccount.css';
 
