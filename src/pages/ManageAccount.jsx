@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { idbGetJSON, idbSetJSON, emitUserChange } from '../data/db';
+import { useNavigate } from 'react-router-dom';
+import { idbGetJSON, idbSetJSON, emitUserChange, idbClear } from '../data/db';
 import '../styles/pages/ManageAccount.css';
 
 
@@ -39,6 +40,7 @@ const ManageAccount = () => {
   const [editKey, setEditKey] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
 
   useEffect(() => {
@@ -97,6 +99,15 @@ const ManageAccount = () => {
 
   const handleInput = (e) => setEditValue(e.target.value);
 
+  const handleLogout = async () => {
+    try {
+      await idbClear();
+    } catch (err) {
+      console.error('Failed to clear IndexedDB during logout', err);
+    }
+    sessionStorage.clear();
+    navigate('/', { replace: true });
+  };
 
   return (
     <div className="manageaccount-bg">
@@ -182,6 +193,12 @@ const ManageAccount = () => {
               );
             })}
           </div>
+          
+          {/* Logout Button */}
+          <button className="logout-btn" onClick={handleLogout}>
+            Logout
+          </button>
+          
           {/* Error Modal Popup */}
           {error && (
             <div className="modal-overlay">

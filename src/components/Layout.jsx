@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import BottomNav from './BottomNav';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { idbClear, idbGet, idbGetJSON, onUserChange } from '../data/db';
+import { useLocation } from 'react-router-dom';
+import { idbGet, idbGetJSON, onUserChange } from '../data/db';
 import '../styles/components/Layout.css';
 
 
 const Layout = () => {
   const [defaultUserName, setDefaultUserName] = useState('');
-  const navigate = useNavigate();
   const location = useLocation();
   
   const loadDefaultUserName = async () => {
@@ -43,16 +42,6 @@ const Layout = () => {
     return unsubscribe;
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await idbClear();
-    } catch (err) {
-      console.error('Failed to clear IndexedDB during logout', err);
-    }
-    sessionStorage.clear();
-    navigate('/', { replace: true });
-  };
-
   return (
     <div className="layout">
       <header className="app-header">
@@ -65,7 +54,7 @@ const Layout = () => {
       </main>
 
       {/* Bottom Navigation */}
-      <BottomNav onLogout={handleLogout} />
+      <BottomNav />
     </div>
   );
 };

@@ -1,9 +1,8 @@
 import { NavLink } from 'react-router-dom';
 import { MdDashboard, MdWatch, MdGroup, MdFitnessCenter, MdPerson } from 'react-icons/md';
-import { BsBoxArrowLeft } from 'react-icons/bs';
 import '../styles/components/BottomNav.css';
 
-const BottomNav = ({ onLogout }) => {
+const BottomNav = () => {
   const menuItems = [
     { id: 1, path: '/dashboard', label: 'Dashboard', icon: MdDashboard },
     { id: 2, path: '/devices', label: 'Devices', icon: MdWatch },
@@ -28,10 +27,6 @@ const BottomNav = ({ onLogout }) => {
             </NavLink>
           );
         })}
-        <button className="bottom-nav-item bottom-nav-logout" onClick={onLogout}>
-          <BsBoxArrowLeft className="bottom-nav-icon" size={24} />
-          <span className="bottom-nav-label">Logout</span>
-        </button>
       </div>
     </nav>
   );
