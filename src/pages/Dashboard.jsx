@@ -228,184 +228,169 @@ const DashboardView = ({ onOpenSteps, onNavigateDevices, connectedDevice }) => {
   return (
     <div className="app-container">
       <div className="max-w-wrapper">
-        {/* Show connected device name near the top */}
-        {connectedDevice && (
-          <div className="connected-device-row">
-            {/* <div className="connected-label">Connected</div> */}
-            <div className="connected-device-name">
-              <span className="connected-device-icon" style={{ marginRight: 8 }}>{getDeviceTypeIcon(connectedDevice.deviceType)}</span>
-              {connectedDevice.name}
+        {/* Activity Rings */}
+        <ActivityRings
+          steps={connectedDevice ? 4784 : null}
+          stepsGoal={8000}
+          active={connectedDevice ? 45 : null}
+          activeGoal={60}
+          cals={connectedDevice ? 512 : null}
+          calsGoal={800}
+        />
+
+        {/* Cards Grid (2 Columns) */}
+        <div className="grid-2">
+          {/* 1. Steps - CLICKABLE */}
+          <div
+            onClick={onOpenSteps}
+            className="card card-rose"
+          >
+            <div className="card-content">
+              <div className="flex-between-start mb-2">
+                <span className="card-label text-rose-100">Steps</span>
+                <Footprints size={16} className="text-rose-200" />
+              </div>
+              <h3 className="title-main">{connectedDevice ? '4,784' : '—'} <span className="subtitle text-rose-100">steps</span></h3>
             </div>
-            <div className="connected-device-model">{connectedDevice.model}</div>
+            <div className="mt-4 width-full">
+              <BarChart />
+            </div>
           </div>
-        )}
-        <>
-          {/* Activity Rings */}
-          <ActivityRings
-            steps={connectedDevice ? 4784 : null}
-            stepsGoal={8000}
-            active={connectedDevice ? 45 : null}
-            activeGoal={60}
-            cals={connectedDevice ? 512 : null}
-            calsGoal={800}
-          />
 
-          {/* Cards Grid (2 Columns) */}
-          <div className="grid-2">
-
-            {/* 1. Steps - CLICKABLE */}
-            <div
-              onClick={onOpenSteps}
-              className="card card-rose"
-            >
-              <div className="card-content">
-                <div className="flex-between-start mb-2">
-                  <span className="card-label text-rose-100">Steps</span>
-                  <Footprints size={16} className="text-rose-200" />
-                </div>
-                <h3 className="title-main">{connectedDevice ? '4,784' : '—'} <span className="subtitle text-rose-100">steps</span></h3>
+          {/* 2. Heart Rate */}
+          <div className="card card-lime">
+            <div className="card-content">
+              <div className="flex-between-start mb-2">
+                <span className="card-label text-lime-900">Heart Rate</span>
+                <Heart size={16} className="icon-lime-bg" />
               </div>
-              <div className="mt-4 width-full">
-                <BarChart />
-              </div>
+              <h3 className="title-main">{connectedDevice ? '82' : '—'} <span className="subtitle text-lime-800">bpm</span></h3>
             </div>
 
-            {/* 2. Heart Rate */}
-            <div className="card card-lime">
-              <div className="card-content">
-                <div className="flex-between-start mb-2">
-                  <span className="card-label text-lime-900">Heart Rate</span>
-                  <Heart size={16} className="icon-lime-bg" />
-                </div>
-                <h3 className="title-main">{connectedDevice ? '82' : '—'} <span className="subtitle text-lime-800">bpm</span></h3>
-              </div>
-
-              {/* Graph Visualization */}
-              <div className="graph-container">
-                <SineWave color="#ffffff" />
-              </div>
+            {/* Graph Visualization */}
+            <div className="graph-container">
+              <SineWave color="#ffffff" />
             </div>
-
-            {/* 3. Sleep */}
-            <div className="card card-indigo">
-              <div className="card-content">
-                <div className="flex-between-start mb-2">
-                  <span className="card-label text-indigo-100">Sleep</span>
-                  <Moon size={16} className="text-indigo-200" />
-                </div>
-                <h3 className="title-main">{connectedDevice ? (
-                  <><span>5</span><span className="text-lg opacity-80 font-normal">h</span> 22<span className="text-lg opacity-80 font-normal">m</span></>
-                ) : '—'}</h3>
-                <p className="mt-1 tag-indigo text-indigo-100">Light Sleep</p>
-              </div>
-              <div className="sleep-bars mt-4">
-                <div className="bar bar-light" style={{ height: '40%' }}></div>
-                <div className="bar bar-white" style={{ height: '80%' }}></div>
-                <div className="bar bar-light" style={{ height: '60%' }}></div>
-                <div className="bar bar-light" style={{ height: '30%' }}></div>
-                <div className="bar bar-light" style={{ height: '50%' }}></div>
-              </div>
-            </div>
-
-            {/* 4. Blood Pressure (BP) */}
-            <div className="card card-sky">
-              <div className="card-content">
-                <div className="flex-between-start mb-2">
-                  <span className="card-label text-sky-100">BP</span>
-                  <Stethoscope size={16} className="text-sky-200" />
-                </div>
-                <h3 className="title-main">{connectedDevice ? (
-                  <>119<span className="subtitle text-sky-200 inline">/</span>82</>
-                ) : '—/—'}</h3>
-                <p className="text-sky-100 subtitle mt-1">mmHg</p>
-              </div>
-              {/* Line Graph */}
-              <div className="graph-bp-container">
-                <svg viewBox="0 0 100 40" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-                  <path d="M0,20 L20,20 L30,5 L40,35 L50,20 L100,20" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-            </div>
-
-            {/* 5. Blood Oxygen */}
-            <div className="card card-teal">
-              <div className="card-content">
-                <div className="flex-between-start mb-2">
-                  <span className="card-label text-teal-100">SpO2</span>
-                  <Wind size={16} className="text-teal-200" />
-                </div>
-                <h3 className="title-main">{connectedDevice ? '95' : '—'} <span className="subtitle text-teal-200 inline">%</span></h3>
-              </div>
-              {/* Circular Indicator */}
-              <div className="circular-indicator">
-                <svg style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
-                  <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.2)" strokeWidth="6" fill="none" />
-                  <circle cx="32" cy="32" r="28" stroke="white" strokeWidth="6" fill="none" strokeDasharray="175" strokeDashoffset="10" strokeLinecap="round" />
-                </svg>
-                <div className="pulse-dot">
-                  <div className="pulse-dot-inner"></div>
-                </div>
-              </div>
-            </div>
-
-            {/* 6. Stress */}
-            <div className="card card-amber">
-              <div className="card-content">
-                <div className="flex-between-start mb-2">
-                  <span className="card-label text-amber-900">Stress</span>
-                  <Zap size={16} className="text-amber-800" />
-                </div>
-                <h3 className="title-main">{connectedDevice ? 'Average' : '—'}</h3>
-                <p className="mt-1 tag-amber text-amber-800">Relaxed</p>
-              </div>
-              {/* Face graphic */}
-              <div className="face-graphic">
-                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="8" y1="9" x2="10" y2="9"></line>
-                  <line x1="14" y1="9" x2="16" y2="9"></line>
-                  <path d="M8 14c1.5 1 4.5 1 6 0"></path>
-                </svg>
-              </div>
-            </div>
-
-            {/* 7. Periods */}
-            <div className="card card-pink">
-              <div className="card-content">
-                <div className="flex-between-start mb-2">
-                  <span className="card-label text-pink-100">Cycles</span>
-                  <CalendarHeart size={16} className="text-pink-200" />
-                </div>
-                <h3 className="title-main">{connectedDevice ? 'Day 12' : '—'}</h3>
-                <p className="text-pink-100 subtitle mt-1">Follicular Phase</p>
-              </div>
-              {/* Period dots */}
-              <div className="dots-container">
-                {[1, 2, 3, 4, 5].map(d => (
-                  <div key={d} className={`dot ${d === 3 ? 'active' : ''}`}></div>
-                ))}
-              </div>
-            </div>
-
-            {/* 8. Weight (NEW LIGHT CARD) */}
-            <div className="card card-white-clean">
-              <div className="weight-header">
-                <div className="weight-icon-box">
-                  <Scale size={20} color="#0ea5e9" />
-                </div>
-                <div className="weight-title-group">
-                  <div className="weight-label">Weight</div>
-                  <div className="weight-timestamp">19/11/2025, 11:07:09</div>
-                </div>
-              </div>
-              <div className="weight-big-number">
-                {connectedDevice ? (<><span>77.9</span><span className="weight-unit-text">kg</span></>) : '— kg'}
-              </div>
-            </div>
-
           </div>
-        </>
-        {/* Assign default device modal moved to Dashboard component for correct scope */}
+
+          {/* 3. Sleep */}
+          <div className="card card-indigo">
+            <div className="card-content">
+              <div className="flex-between-start mb-2">
+                <span className="card-label text-indigo-100">Sleep</span>
+                <Moon size={16} className="text-indigo-200" />
+              </div>
+              <h3 className="title-main">{connectedDevice ? (
+                <><span>5</span><span className="text-lg opacity-80 font-normal">h</span> 22<span className="text-lg opacity-80 font-normal">m</span></>
+              ) : '—'}</h3>
+              <p className="mt-1 tag-indigo text-indigo-100">Light Sleep</p>
+            </div>
+            <div className="sleep-bars mt-4">
+              <div className="bar bar-light" style={{ height: '40%' }}></div>
+              <div className="bar bar-white" style={{ height: '80%' }}></div>
+              <div className="bar bar-light" style={{ height: '60%' }}></div>
+              <div className="bar bar-light" style={{ height: '30%' }}></div>
+              <div className="bar bar-light" style={{ height: '50%' }}></div>
+            </div>
+          </div>
+
+          {/* 4. Blood Pressure (BP) */}
+          <div className="card card-sky">
+            <div className="card-content">
+              <div className="flex-between-start mb-2">
+                <span className="card-label text-sky-100">BP</span>
+                <Stethoscope size={16} className="text-sky-200" />
+              </div>
+              <h3 className="title-main">{connectedDevice ? (
+                <>119<span className="subtitle text-sky-200 inline">/</span>82</>
+              ) : '—/—'}</h3>
+              <p className="text-sky-100 subtitle mt-1">mmHg</p>
+            </div>
+            {/* Line Graph */}
+            <div className="graph-bp-container">
+              <svg viewBox="0 0 100 40" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
+                <path d="M0,20 L20,20 L30,5 L40,35 L50,20 L100,20" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          </div>
+
+          {/* 5. Blood Oxygen */}
+          <div className="card card-teal">
+            <div className="card-content">
+              <div className="flex-between-start mb-2">
+                <span className="card-label text-teal-100">SpO2</span>
+                <Wind size={16} className="text-teal-200" />
+              </div>
+              <h3 className="title-main">{connectedDevice ? '95' : '—'} <span className="subtitle text-teal-200 inline">%</span></h3>
+            </div>
+            {/* Circular Indicator */}
+            <div className="circular-indicator">
+              <svg style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.2)" strokeWidth="6" fill="none" />
+                <circle cx="32" cy="32" r="28" stroke="white" strokeWidth="6" fill="none" strokeDasharray="175" strokeDashoffset="10" strokeLinecap="round" />
+              </svg>
+              <div className="pulse-dot">
+                <div className="pulse-dot-inner"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* 6. Stress */}
+          <div className="card card-amber">
+            <div className="card-content">
+              <div className="flex-between-start mb-2">
+                <span className="card-label text-amber-900">Stress</span>
+                <Zap size={16} className="text-amber-800" />
+              </div>
+              <h3 className="title-main">{connectedDevice ? 'Average' : '—'}</h3>
+              <p className="mt-1 tag-amber text-amber-800">Relaxed</p>
+            </div>
+            {/* Face graphic */}
+            <div className="face-graphic">
+              <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="8" y1="9" x2="10" y2="9"></line>
+                <line x1="14" y1="9" x2="16" y2="9"></line>
+                <path d="M8 14c1.5 1 4.5 1 6 0"></path>
+              </svg>
+            </div>
+          </div>
+
+          {/* 7. Periods */}
+          <div className="card card-pink">
+            <div className="card-content">
+              <div className="flex-between-start mb-2">
+                <span className="card-label text-pink-100">Cycles</span>
+                <CalendarHeart size={16} className="text-pink-200" />
+              </div>
+              <h3 className="title-main">{connectedDevice ? 'Day 12' : '—'}</h3>
+              <p className="text-pink-100 subtitle mt-1">Follicular Phase</p>
+            </div>
+            {/* Period dots */}
+            <div className="dots-container">
+              {[1, 2, 3, 4, 5].map(d => (
+                <div key={d} className={`dot ${d === 3 ? 'active' : ''}`}></div>
+              ))}
+            </div>
+          </div>
+
+          {/* 8. Weight (NEW LIGHT CARD) */}
+          <div className="card card-white-clean">
+            <div className="weight-header">
+              <div className="weight-icon-box">
+                <Scale size={20} color="#0ea5e9" />
+              </div>
+              <div className="weight-title-group">
+                <div className="weight-label">Weight</div>
+                <div className="weight-timestamp">19/11/2025, 11:07:09</div>
+              </div>
+            </div>
+            <div className="weight-big-number">
+              {connectedDevice ? (<><span>77.9</span><span className="weight-unit-text">kg</span></>) : '— kg'}
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   );
@@ -654,6 +639,13 @@ export default function Dashboard() {
       await idbSetJSON('pairedDevices', updated);
       setPairedDevices(updated);
       setDevicesMenuDismissed(false);
+
+      // If user has no paired devices, assign this device to default user and close modal
+      if (pairedDevices.length === 0) {
+        await assignDeviceToDefaultUser(pairDevice.id);
+        setConnectedDevice(pairDevice);
+        setShowDevicesMenuModal(false);
+      }
     } catch (err) {
       console.error('Failed to pair mock available device', err);
     }
@@ -702,14 +694,11 @@ export default function Dashboard() {
             </div>
             <div className="devices-menu-modal-body">
               <DevicesMenu
-                variant="modal"
                 pairedDevices={pairedDevicesForModal}
                 availableDevices={availableDevices}
                 onPairDevice={handlePairDeviceFromMenu}
                 onUnpairDevice={handleUnpairDeviceFromMenu}
                 onCardClick={shouldAssignDefaultInModal ? handleAssignDefaultFromMenu : undefined}
-                isCloseButtonRequired={true}
-                onClose={handleDismissDevicesMenu}
               />
             </div>
           </div>

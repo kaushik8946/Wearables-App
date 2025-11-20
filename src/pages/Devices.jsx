@@ -82,12 +82,9 @@ const Devices = () => {
         </div>
 
         <DevicesMenu
-          variant="page"
           pairedDevices={pairedDevices}
-          availableDevices={availableDevices}
-          onPairDevice={handlePairDevice}
           onUnpairDevice={handleRemoveDevice}
-          isCloseButtonRequired={false}
+          showAvailableSection={false}
         />
       </div>
     </div>

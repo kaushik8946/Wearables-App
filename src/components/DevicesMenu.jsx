@@ -22,13 +22,10 @@ const DevicesMenu = ({
   onPairDevice,
   onUnpairDevice,
   onCardClick,
-  variant = 'page',
   pairedTitle = 'Paired Devices',
   availableTitle = 'Available Devices',
   showPairedSection = true,
-  showAvailableSection = true,
-  isCloseButtonRequired = false,
-  onClose
+  showAvailableSection = true
 }) => {
   const [connectingAvailableId, setConnectingAvailableId] = useState(null);
   const [connectingPairedId, setConnectingPairedId] = useState(null);
@@ -77,10 +74,7 @@ const DevicesMenu = ({
     onUnpairDevice(device);
   };
 
-  const rootClass = ['devices-menu'];
-  if (variant === 'page') {
-    rootClass.push('devices-menu--page');
-  }
+  const rootClass = ['devices-menu', 'devices-menu--page'];
 
   const renderList = (devices, { emptyLabel, clickHandler, showUnpair }) => {
     if (!devices || devices.length === 0) {

@@ -21,6 +21,9 @@ const Users = () => {
     age: '',
     gender: '',
   });
+  const [showDeviceAssignmentForEdit, setShowDeviceAssignmentForEdit] = useState(false);
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [pendingEditUser, setPendingEditUser] = useState(null);
   const [errors, setErrors] = useState({});
   const [showDeviceSelectionModal, setShowDeviceSelectionModal] = useState(false);
   const [pendingNewUser, setPendingNewUser] = useState(null);
@@ -134,7 +137,6 @@ const Users = () => {
     }
   };
 
-  // Device assignment logic
   const getAssignedDeviceId = (user) => user.deviceId || '';
   const getDeviceAssignedUserId = (deviceId) => {
     // Compare as strings to avoid type mismatches
@@ -165,6 +167,7 @@ const Users = () => {
     });
     setErrors({});
     setEditingIndex(idx);
+    setEditingUserId(users[idx]?.id);
     setModalMode('edit');
     setModalOpen(true);
   };
@@ -189,7 +192,6 @@ const Users = () => {
   const handleAdd = async () => {
     if (!validateForm()) return;
 
-    // Always generate a unique id for new user
     const newUser = { 
       ...formData, 
       self: false, 
@@ -205,7 +207,6 @@ const Users = () => {
   const handleDeviceSelected = async (device) => {
     if (!pendingNewUser) return;
 
-    // Check if device is already paired
     const isPaired = pairedDevices.some(d => String(d.id) === String(device.id));
     let newPairedDevices = pairedDevices;
     if (!isPaired) {
@@ -243,15 +244,15 @@ const Users = () => {
 
     const updatedUsers = [...users];
     const isSelf = updatedUsers[editingIndex]?.self;
-    // Always ensure id exists
-    updatedUsers[editingIndex] = { 
-      ...updatedUsers[editingIndex], 
+    const editedUser = {
+      ...updatedUsers[editingIndex],
       ...formData,
       id: updatedUsers[editingIndex].id || `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
     };
+    updatedUsers[editingIndex] = editedUser;
 
     if (isSelf) {
-      const { self, ...rest } = updatedUsers[editingIndex];
+      const { self, ...rest } = editedUser;
       await idbSetJSON('currentUser', rest);
     }
     await saveUsers(updatedUsers);
@@ -416,7 +417,7 @@ const Users = () => {
         </div>
       )}
 
-      {/* Add/Edit Member Modal */}
+      {/* Add/Edit Member Modal (no device selection in edit) */}
       {modalOpen && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -429,7 +430,7 @@ const Users = () => {
                 X
               </button>
             </div>
-            
+
             <div className="form-group">
               <label htmlFor="name">Name</label>
               <input
@@ -478,85 +479,58 @@ const Users = () => {
               {errors.gender && <span className="error-message">{errors.gender}</span>}
             </div>
 
-            {/* Assign Device Dropdown (only in edit mode) */}
-            {modalMode === 'edit' && (
+            {modalMode === 'edit' && users[editingIndex] && (
               <div className="form-group">
-                {/* Only show the label if a device is assigned or there is at least one available device */}
-                {users[editingIndex] && (users[editingIndex].deviceId || (availableDevicesForEdit(users[editingIndex]?.id) || []).length > 0) && (
-                  <label htmlFor="assignDevice">
-                    {users[editingIndex] && users[editingIndex].deviceId ? 'Assigned Device' : 'Assign Device'}
-                  </label>
-                )}
-                {/* If user already has a device, show assigned device and a button to remove it */}
-                {users[editingIndex] && users[editingIndex].deviceId ? (
-                  (() => {
-                    const assignedId = users[editingIndex].deviceId;
-                    const assignedDevice = pairedDevices.find(d => String(d.id) === String(assignedId));
-                    return (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ fontSize: 14, color: '#222' }}>
-                          {assignedDevice ? `${assignedDevice.name} (${assignedDevice.model})` : 'Assigned device not found'}
-                        </div>
-                        <button
-                          className="btn-remove"
-                          title="Unassign device"
-                          onClick={async () => {
-                            // Unassign the device for this user
-                            const updatedUsers = users.map((u, idx) => (
-                              idx === editingIndex ? { ...u, deviceId: '' } : u
-                            ));
-                            await saveUsers(updatedUsers);
-                          }}
-                        >
-                          <MdDelete size={20} />
-                        </button>
-                      </div>
-                    );
-                  })()
-                ) : (
-                  (() => {
-                    const available = availableDevicesForEdit(users[editingIndex]?.id);
-                    if (!available || available.length === 0) {
+                {users[editingIndex].deviceId ? (
+                  <>
+                    <label>Assigned Device</label>
+                    {(() => {
+                      const assignedDevice = pairedDevices.find(d => String(d.id) === String(users[editingIndex].deviceId));
                       return (
-                        <div className="no-devices-placeholder">No devices to assign</div>
+                        <div className="device-action-col">
+                          <span className="device-action-label">
+                            {assignedDevice ? `${assignedDevice.name} (${assignedDevice.model})` : 'Assigned device not found'}
+                          </span>
+                          <div className="device-action-row">
+                            <button
+                              className="btn-submit device-action-btn"
+                              onClick={() => {
+                                setPendingEditUser(users[editingIndex]);
+                                setShowDeviceAssignmentForEdit(true);
+                                setModalOpen(false);
+                              }}
+                            >
+                              Switch
+                            </button>
+                            <button
+                              className="btn-delete device-action-btn"
+                              onClick={async () => {
+                                // Unassign device from user
+                                const updatedUsers = users.map((u, idx) =>
+                                  idx === editingIndex ? { ...u, deviceId: '' } : u
+                                );
+                                await saveUsers(updatedUsers);
+                                setUsers(updatedUsers);
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
                       );
-                    }
-                    return (
-                      <select
-                        id="assignDevice"
-                        className="form-input"
-                        value={getAssignedDeviceId(users[editingIndex] || {})}
-                        onChange={async e => {
-                      const deviceId = e.target.value;
-                      // Remove deviceId from any other user
-                      const updatedUsers = users.map((u, idx) => {
-                        if (idx === editingIndex) {
-                          return { ...u, deviceId };
-                        } else if (u.deviceId && String(u.deviceId) === String(deviceId)) {
-                          return { ...u, deviceId: '' };
-                        }
-                        return u;
-                      });
-                      setUsers(updatedUsers);
-                      // Persist
-                      const onlyUsers = updatedUsers.filter(u => !u.self);
-                      await idbSetJSON('users', onlyUsers);
-                      if (users[editingIndex].self) {
-                        const { self, ...rest } = updatedUsers[editingIndex];
-                        await idbSetJSON('currentUser', rest);
-                      }
-                      emitUserChange();
+                    })()}
+                  </>
+                ) : (
+                  <button
+                    className="btn-submit device-action-btn"
+                    onClick={() => {
+                      setPendingEditUser(users[editingIndex]);
+                      setShowDeviceAssignmentForEdit(true);
+                      setModalOpen(false);
                     }}
                   >
-                    <option value="">-- None --</option>
-                    {availableDevicesForEdit(users[editingIndex]?.id).map(device => (
-                      <option key={device.id} value={device.id}>
-                        {device.name} ({device.model})
-                      </option>
-                    ))}
-                      </select>
-                    );
-                  })()
+                    Assign Device
+                  </button>
                 )}
               </div>
             )}
@@ -601,6 +575,7 @@ const Users = () => {
                 pairedDevices={unassignedPairedDevices}
                 availableDevices={unpairedAvailableDevices}
                 onPairDevice={handleDeviceSelected}
+                onCardClick={handleDeviceSelected}
                 variant="modal"
                 isCloseButtonRequired={false}
                 showPairedSection={true}
@@ -613,6 +588,102 @@ const Users = () => {
                   onClick={handleSkipDeviceSelection}
                 >
                   Skip & Add User
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Device Assignment Modal for Edit User */}
+      {showDeviceAssignmentForEdit && pendingEditUser && (() => {
+        // Devices already paired but not assigned to any user (except this user)
+        const assignedIds = new Set(users.filter(u => u.id !== pendingEditUser.id).map(u => u.deviceId).filter(Boolean).map(String));
+        const unassignedPairedDevices = pairedDevices.filter(d => !assignedIds.has(String(d.id)));
+        // Devices in mockAvailableDevices that are not yet paired (not in pairedDevices by id)
+        const pairedIds = new Set(pairedDevices.map(d => String(d.id)));
+        const unpairedAvailableDevices = mockAvailableDevices.filter(d => !pairedIds.has(String(d.id)));
+
+        // Handler for assigning device to edited user
+        const handleDeviceSelectedForEdit = async (device) => {
+          if (!pendingEditUser) return;
+          // If user already had a device, unassign it
+          const prevDeviceId = pendingEditUser.deviceId;
+          let newPairedDevices = pairedDevices;
+          // If device is not already paired, add to pairedDevices
+          const isPaired = pairedDevices.some(d => String(d.id) === String(device.id));
+          if (!isPaired) {
+            newPairedDevices = [...pairedDevices, device];
+            setPairedDevices(newPairedDevices);
+            await idbSetJSON('pairedDevices', newPairedDevices);
+          }
+          // Assign device to user, unassign from any other user
+          const updatedUsers = users.map(u => {
+            if (u.id === pendingEditUser.id) {
+              return { ...u, deviceId: String(device.id) };
+            } else if (u.deviceId && String(u.deviceId) === String(device.id)) {
+              return { ...u, deviceId: '' };
+            }
+            return u;
+          });
+          await saveUsers(updatedUsers);
+          setShowDeviceAssignmentForEdit(false);
+          // Reopen edit modal for the same user
+          const idx = users.findIndex(u => u.id === pendingEditUser.id);
+          if (idx !== -1) {
+            setEditingIndex(idx);
+            setEditingUserId(users[idx]?.id);
+            setModalMode('edit');
+            setModalOpen(true);
+          }
+          setPendingEditUser(null);
+        };
+
+        // Handler for skipping device assignment in edit
+        const handleSkipDeviceAssignmentForEdit = async () => {
+          setShowDeviceAssignmentForEdit(false);
+          // Reopen edit modal for the same user
+          if (pendingEditUser) {
+            const idx = users.findIndex(u => u.id === pendingEditUser.id);
+            if (idx !== -1) {
+              setEditingIndex(idx);
+              setEditingUserId(users[idx]?.id);
+              setModalMode('edit');
+              setModalOpen(true);
+            }
+          }
+          setPendingEditUser(null);
+        };
+
+        return (
+          <div className="modal-overlay" onClick={handleSkipDeviceAssignmentForEdit}>
+            <div className="modal-content" style={{ maxWidth: 600 }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <div className="modal-title-group">
+                  <h3>Assign Device (Optional)</h3>
+                  <p className="modal-subtitle">Select a device for {pendingEditUser.name}</p>
+                </div>
+                <button className="modal-close-btn" onClick={handleSkipDeviceAssignmentForEdit} aria-label="Skip">
+                  X
+                </button>
+              </div>
+              <DevicesMenu
+                pairedDevices={unassignedPairedDevices}
+                availableDevices={unpairedAvailableDevices}
+                onPairDevice={handleDeviceSelectedForEdit}
+                onCardClick={handleDeviceSelectedForEdit}
+                variant="modal"
+                isCloseButtonRequired={false}
+                showPairedSection={true}
+                showAvailableSection={true}
+              />
+              <div className="modal-buttons">
+                <button 
+                  className="btn-primary btn-submit" 
+                  style={{ background: '#94a3b8' }}
+                  onClick={handleSkipDeviceAssignmentForEdit}
+                >
+                  Skip
                 </button>
               </div>
             </div>

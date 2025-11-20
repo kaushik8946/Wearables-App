@@ -1,3 +1,56 @@
+/* Device action row for switch/delete/assign buttons in edit modal */
+.device-action-row {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  width: 100%;
+}
+
+.device-action-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.device-action-label {
+  font-size: 14px;
+  color: #222;
+  margin-bottom: 4px;
+}
+
+.device-action-btn {
+  width: 50%;
+  margin: 0;
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  box-sizing: border-box;
+}
+
+/* Red gradient for delete button */
+.btn-delete {
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  color: white;
+  border: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.25);
+}
+.btn-delete:hover {
+  background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
+}
+
+/* Assign Device button (when no device assigned) should be full width */
+.device-action-btn:only-child {
+  width: 100%;
+}
 /* Remove Button in Assigned Device Section */
 .btn-remove {
   padding: 6px 16px;
