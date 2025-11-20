@@ -21,7 +21,7 @@ import watchImg from '../assets/images/watch.png';
 import ringImg from '../assets/images/ring.webp';
 import scaleImg from '../assets/images/weighing-scale.avif';
 import '../styles/pages/Dashboard.css';
-import { idbGet, idbGetJSON, idbSet, idbSetJSON, emitUserChange, onUserChange } from '../data/db';
+import { idbGet, idbGetJSON, idbSet, idbSetJSON, emitUserChange, onUserChange, onPairedDevicesChange, emitPairedDevicesChange } from '../data/db';
 import { getDeviceTypeIcon } from '../data/mockData';
 
 // Helper for SVG Curved Lines (Heart Rate) - Now accepting hex color
@@ -450,7 +450,19 @@ const Dashboard = () => {
         console.error('Failed to load paired devices for dashboard', err);
       }
     })();
-    return () => { mounted = false; };
+    // Subscribe to paired devices changes so dashboard reacts to pair/unpair events
+    const unsub = onPairedDevicesChange(() => {
+      (async () => {
+        try {
+          const devices = await idbGetJSON('pairedDevices', []);
+          if (!mounted) return;
+          setPairedDevices(devices);
+        } catch (err) {
+          console.error('Failed to reload paired devices after change', err);
+        }
+      })();
+    });
+    return () => { mounted = false; unsub(); };
   }, []);
 
   React.useEffect(() => {
@@ -490,7 +502,9 @@ const Dashboard = () => {
             if (storedDefaultUserId) {
               const defUser = allUsers.find(u => String(u.id) === String(storedDefaultUserId));
               const hasDevice = defUser && defUser.deviceId && String(defUser.deviceId) !== '';
-              if (!hasDevice) {
+              const mappedDevice = hasDevice ? pairedDevices.find(d => String(d.id) === String(defUser.deviceId)) : null;
+              // If default user has a deviceId but the device is not in paired list (unpaired elsewhere), treat as unassigned
+              if (!hasDevice || !mappedDevice) {
                 setDefaultUserName(defUser?.name || 'user');
                 setShowNoDeviceAssignedModal(true);
                 setShowDevicesMenuModal(false);
@@ -677,6 +691,7 @@ const Dashboard = () => {
       await idbSetJSON('pairedDevices', updated);
       setPairedDevices(updated);
       setDevicesMenuDismissed(false);
+      emitPairedDevicesChange();
 
       // If user has no paired devices, assign this device to default user and close modal
       if (pairedDevices.length === 0) {
@@ -699,6 +714,7 @@ const Dashboard = () => {
         setConnectedDevice(null);
       }
       setDevicesMenuDismissed(false);
+      emitPairedDevicesChange();
     } catch (err) {
       console.error('Failed to unpair device', err);
     }

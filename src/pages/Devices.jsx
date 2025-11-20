@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { idbGetJSON, idbSetJSON } from '../data/db';
+import { idbGetJSON, idbSetJSON, emitPairedDevicesChange } from '../data/db';
 import '../styles/pages/Devices.css';
 import { availableDevices as initialAvailableDevices } from '../data/mockData';
 import DevicesMenu from '../components/DevicesMenu';
@@ -63,6 +63,7 @@ const Devices = () => {
     const updatedPairedDevices = [...pairedDevices, pairedDevice];
     setPairedDevices(updatedPairedDevices);
     await idbSetJSON('pairedDevices', updatedPairedDevices);
+    emitPairedDevicesChange();
     setAvailableDevices(deriveAvailableDevices(updatedPairedDevices));
   };
 
@@ -71,6 +72,7 @@ const Devices = () => {
     const updatedPairedDevices = pairedDevices.filter(d => d.id !== device.id);
     setPairedDevices(updatedPairedDevices);
     await idbSetJSON('pairedDevices', updatedPairedDevices);
+    emitPairedDevicesChange();
     setAvailableDevices(deriveAvailableDevices(updatedPairedDevices));
   };
 

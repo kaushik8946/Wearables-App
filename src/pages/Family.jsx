@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { MdPerson, MdPersonOutline, MdEdit, MdDelete, MdAdd, MdWatch } from 'react-icons/md';
 import { GiRing } from 'react-icons/gi';
 import { FaWeight } from 'react-icons/fa';
-import { idbGet, idbGetJSON, idbSet, idbSetJSON, emitUserChange } from '../data/db';
+import { idbGet, idbGetJSON, idbSet, idbSetJSON, emitUserChange, emitPairedDevicesChange } from '../data/db';
 import { idbGetJSON as idbGetJSONDevices } from '../data/db';
 import { availableDevices as mockAvailableDevices } from '../data/mockData';
 import DevicesMenu from '../components/DevicesMenu';
@@ -214,6 +214,7 @@ const Users = () => {
       newPairedDevices = [...pairedDevices, device];
       setPairedDevices(newPairedDevices);
       await idbSetJSON('pairedDevices', newPairedDevices);
+        emitPairedDevicesChange();
     }
 
     // Assign device to the new user
@@ -617,6 +618,7 @@ const Users = () => {
             newPairedDevices = [...pairedDevices, device];
             setPairedDevices(newPairedDevices);
             await idbSetJSON('pairedDevices', newPairedDevices);
+            emitPairedDevicesChange();
           }
           // Assign device to user, unassign from any other user
           const updatedUsers = users.map(u => {

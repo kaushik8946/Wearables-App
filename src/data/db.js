@@ -96,3 +96,15 @@ export function onUserChange(callback) {
   window.addEventListener(USER_CHANGE_EVENT, callback);
   return () => window.removeEventListener(USER_CHANGE_EVENT, callback);
 }
+
+// Event system for paired devices changes
+const PAIRED_DEVICES_EVENT = 'paired-devices-changed';
+
+export function emitPairedDevicesChange() {
+  window.dispatchEvent(new CustomEvent(PAIRED_DEVICES_EVENT));
+}
+
+export function onPairedDevicesChange(callback) {
+  window.addEventListener(PAIRED_DEVICES_EVENT, callback);
+  return () => window.removeEventListener(PAIRED_DEVICES_EVENT, callback);
+}
