@@ -499,6 +499,7 @@ const Users = () => {
                         </div>
                         <button
                           className="btn-remove"
+                          title="Unassign device"
                           onClick={async () => {
                             // Unassign the device for this user
                             const updatedUsers = users.map((u, idx) => (
@@ -507,7 +508,7 @@ const Users = () => {
                             await saveUsers(updatedUsers);
                           }}
                         >
-                          Remove
+                          <MdDelete size={20} />
                         </button>
                       </div>
                     );

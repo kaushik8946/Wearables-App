@@ -1,3 +1,25 @@
+/* Remove Button in Assigned Device Section */
+.btn-remove {
+  padding: 6px 16px;
+  background: #f1f5f9;
+  color: #ef4444;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.2s;
+  margin-left: 8px;
+  box-sizing: border-box;
+}
+.btn-remove:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
 /* Modern Family Management UI - Enhanced Design */
 
 /* Page Container with Gradient Background */
