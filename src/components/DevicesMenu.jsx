@@ -131,6 +131,7 @@ const DevicesMenu = ({
               Tap a paired device to connect
             </span>
           )}
+          {/* eslint-disable-next-line react-hooks/refs */}
           {renderList(normalizedPaired, {
             emptyLabel: 'No paired devices',
             clickHandler: isPairedSelectable ? handlePairedClick : null,
@@ -142,6 +143,7 @@ const DevicesMenu = ({
       {showAvailableSection && (
         <div className="devices-menu-section">
           <div className="devices-menu-section-title">{availableTitle}</div>
+          {/* eslint-disable-next-line react-hooks/refs */}
           {renderList(normalizedAvailable, {
             emptyLabel: 'No devices available to pair',
             clickHandler: canPair ? handleAvailableClick : null,

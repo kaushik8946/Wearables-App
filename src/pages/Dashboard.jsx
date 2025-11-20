@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Heart,
   Footprints,
@@ -12,7 +11,6 @@ import {
   Stethoscope,
   Flame,
   X,
-  MoreHorizontal,
   TrendingUp
 } from 'lucide-react';
 import DevicesMenu from '../components/DevicesMenu';
@@ -22,7 +20,6 @@ import ringImg from '../assets/images/ring.webp';
 import scaleImg from '../assets/images/weighing-scale.avif';
 import '../styles/pages/Dashboard.css';
 import { idbGet, idbGetJSON, idbSet, idbSetJSON, emitUserChange, onUserChange, onPairedDevicesChange, emitPairedDevicesChange } from '../data/db';
-import { getDeviceTypeIcon } from '../data/mockData';
 
 // Helper for SVG Curved Lines (Heart Rate) - Now accepting hex color
 const SineWave = ({ color = "#ffffff", width = 100, height = 50 }) => (
@@ -919,7 +916,6 @@ const Dashboard = () => {
   const [showWeight, setShowWeight] = useState(false);
   // Connected/Default device to display on the dashboard
   const [connectedDevice, setConnectedDevice] = useState(null);
-  const navigate = useNavigate();
 
   const [pairedDevices, setPairedDevices] = useState([]);
   const [availableDevices, setAvailableDevices] = useState(initialAvailableDevices);
@@ -937,12 +933,13 @@ const Dashboard = () => {
 
   const sanitizeUserForStorage = (user) => {
     if (!user) return null;
+    // eslint-disable-next-line no-unused-vars
     const { self, ...rest } = user;
     return rest;
   };
 
   const debugLog = (...args) => {
-    if (process.env.NODE_ENV !== 'production') {
+    if (import.meta.env.MODE !== 'production') {
       console.log('[Dashboard]', ...args);
     }
   };
@@ -1174,6 +1171,7 @@ const Dashboard = () => {
 
       const updatedCurrent = updatedUsers.find(u => u.self);
       if (updatedCurrent) {
+        // eslint-disable-next-line no-unused-vars
         const { self, ...rest } = updatedCurrent;
         await idbSetJSON('currentUser', rest);
       }
