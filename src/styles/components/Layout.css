@@ -2,7 +2,8 @@
 .layout {
   min-height: 100vh;
   display: flex;
-  flex-direction: row-reverse;
+  flex-direction: column;
+  padding-bottom: 72px; /* Space for bottom navigation */
 }
 
 /* App Header */
@@ -16,38 +17,9 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  gap: 16px;
-  z-index: 998;
-}
-
-/* Hamburger Button */
-.hamburger-btn {
-  background: transparent;
-  border: none;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  flex-direction: column;
   justify-content: center;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.hamburger-btn:hover {
-  background: rgba(102, 126, 234, 0.08);
-}
-
-.hamburger-line {
-  width: 24px;
-  height: 3px;
-  background: #333333;
-  border-radius: 2px;
-  transition: all 0.3s ease;
+  padding: 0 16px;
+  z-index: 998;
 }
 
 .app-title {
@@ -55,6 +27,7 @@
   font-weight: 700;
   color: #333333;
   margin: 0;
+  text-align: center;
 }
 
 /* Main Content */
