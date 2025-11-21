@@ -2,6 +2,8 @@
 .classworkout-bg {
   background: linear-gradient(115deg, #f5f7fa 0%, #eaecfa 100%);
   min-height: 100vh;
+  margin-top: 60px;
+  margin-bottom: 78px;
 }
 
 /* Tabs section */

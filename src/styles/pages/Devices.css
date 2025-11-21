@@ -54,6 +54,8 @@
   background: linear-gradient(135deg, #f5f7fa 0%, #e8eaf6 100%);
   box-sizing: border-box;
   overflow-y: auto;
+  margin-top: 60px;
+  margin-bottom: 78px;
 }
 
 .devices-ui {
