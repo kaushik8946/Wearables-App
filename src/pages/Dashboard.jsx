@@ -1012,6 +1012,7 @@ const Dashboard = () => {
 
   const debugLog = (...args) => {
     // Debug logging disabled in production
+    // Note: Using Vite's import.meta.env.MODE instead of process.env.NODE_ENV
     if (import.meta.env.MODE !== 'production') {
       console.log('[Dashboard]', ...args);
     }

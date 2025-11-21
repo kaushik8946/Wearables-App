@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/rules-of-hooks */
+/* eslint-disable react-hooks/exhaustive-deps */
 /* The linter incorrectly flags renderList as accessing refs during render, but it only passes handlers that access refs in event handlers, which is correct */
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import '../styles/components/DevicesMenu.css';
