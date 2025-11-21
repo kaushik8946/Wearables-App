@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MdPerson, MdPersonOutline, MdEdit, MdDelete, MdAdd, MdWatch } from 'react-icons/md';
 import { GiRing } from 'react-icons/gi';
 import { FaWeight } from 'react-icons/fa';
@@ -22,7 +22,6 @@ const Users = () => {
     gender: '',
   });
   const [showDeviceAssignmentForEdit, setShowDeviceAssignmentForEdit] = useState(false);
-  const [editingUserId, setEditingUserId] = useState(null);
   const [pendingEditUser, setPendingEditUser] = useState(null);
   const [errors, setErrors] = useState({});
   const [showDeviceSelectionModal, setShowDeviceSelectionModal] = useState(false);
@@ -30,7 +29,7 @@ const Users = () => {
 
   const sanitizeUserForStorage = (user) => {
     if (!user) return null;
-    const { self, ...rest } = user;
+    const { self: _self, ...rest } = user;
     return rest;
   };
 
@@ -48,17 +47,6 @@ const Users = () => {
     await idbSetJSON('defaultUser', defaultUserData);
     return resolvedId;
   };
-
-  const unassignedDevices = useMemo(() => {
-    const assignedIds = new Set(
-      users
-        .map(u => (u.deviceId ? String(u.deviceId) : ''))
-        .filter(Boolean)
-    );
-    // If no paired devices, show all available devices for pairing
-    const sourceDevices = pairedDevices.length === 0 ? mockAvailableDevices : pairedDevices;
-    return sourceDevices.filter(device => !assignedIds.has(String(device.id)));
-  }, [users, pairedDevices]);
 
   useEffect(() => {
     let isMounted = true;
@@ -99,6 +87,7 @@ const Users = () => {
     return () => {
       isMounted = false;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getDeviceIcon = (deviceType) => {
@@ -137,21 +126,6 @@ const Users = () => {
     }
   };
 
-  const getAssignedDeviceId = (user) => user.deviceId || '';
-  const getDeviceAssignedUserId = (deviceId) => {
-    // Compare as strings to avoid type mismatches
-    const user = users.find(u => String(u.deviceId || '') === String(deviceId || ''));
-    return user ? String(user.id) : null;
-  };
-  const availableDevicesForEdit = (editingUserId) => {
-    // Only devices not assigned to any user, or assigned to this user
-    return pairedDevices.filter(d => {
-      const assignedUserId = getDeviceAssignedUserId(d.id);
-      // allowed if not assigned or assigned to editing user
-      return !assignedUserId || String(assignedUserId) === String(editingUserId);
-    });
-  };
-
   const openAddModal = () => {
     setFormData({ name: '', age: '', gender: '' });
     setErrors({});
@@ -167,7 +141,6 @@ const Users = () => {
     });
     setErrors({});
     setEditingIndex(idx);
-    setEditingUserId(users[idx]?.id);
     setModalMode('edit');
     setModalOpen(true);
   };
@@ -253,7 +226,7 @@ const Users = () => {
     updatedUsers[editingIndex] = editedUser;
 
     if (isSelf) {
-      const { self, ...rest } = editedUser;
+      const { self: _self, ...rest } = editedUser;
       await idbSetJSON('currentUser', rest);
     }
     await saveUsers(updatedUsers);
@@ -609,8 +582,6 @@ const Users = () => {
         // Handler for assigning device to edited user
         const handleDeviceSelectedForEdit = async (device) => {
           if (!pendingEditUser) return;
-          // If user already had a device, unassign it
-          const prevDeviceId = pendingEditUser.deviceId;
           let newPairedDevices = pairedDevices;
           // If device is not already paired, add to pairedDevices
           const isPaired = pairedDevices.some(d => String(d.id) === String(device.id));
@@ -635,7 +606,6 @@ const Users = () => {
           const idx = users.findIndex(u => u.id === pendingEditUser.id);
           if (idx !== -1) {
             setEditingIndex(idx);
-            setEditingUserId(users[idx]?.id);
             setModalMode('edit');
             setModalOpen(true);
           }
@@ -650,7 +620,6 @@ const Users = () => {
             const idx = users.findIndex(u => u.id === pendingEditUser.id);
             if (idx !== -1) {
               setEditingIndex(idx);
-              setEditingUserId(users[idx]?.id);
               setModalMode('edit');
               setModalOpen(true);
             }

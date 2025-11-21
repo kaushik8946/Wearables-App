@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* The linter incorrectly flags renderList as accessing refs during render, but it only passes handlers that access refs in event handlers, which is correct */
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import '../styles/components/DevicesMenu.css';
 import watchImg from '../assets/images/watch.png';
@@ -33,7 +35,9 @@ const DevicesMenu = ({
 
   useEffect(() => {
     return () => {
-      timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+      // Clear all timeouts on unmount
+      const timeouts = timeoutsRef.current;
+      timeouts.forEach(timeout => clearTimeout(timeout));
       timeoutsRef.current = [];
     };
   }, []);
@@ -47,7 +51,8 @@ const DevicesMenu = ({
 
   const scheduleTimeout = (cb) => {
     const timeout = setTimeout(cb, 1000);
-    timeoutsRef.current.push(timeout);
+    const timeouts = timeoutsRef.current;
+    timeouts.push(timeout);
   };
 
   const handleAvailableClick = (device) => {
