@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { idbGet, idbSet } from '../data/db';
+import FormInput from '../components/forms/FormInput';
+import FormSelect from '../components/forms/FormSelect';
 import '../styles/pages/Signup.css';
 
 const Signup = () => {
@@ -80,94 +82,76 @@ const Signup = () => {
         <h1>User Registration</h1>
         <p className="signup-subtitle">Complete your profile</p>
         <form className="signup-form" onSubmit={handleSubmit}>
-          <div className="input-group">
-            <label htmlFor="firstName">First Name<span style={{color:'red'}}>*</span></label>
-            <input
-              type="text"
-              id="firstName"
-              name="firstName"
-              maxLength={100}
-              value={form.firstName}
-              onChange={handleChange}
-              className={errors.firstName ? 'input-error' : ''}
-              autoFocus
-            />
-            {errors.firstName && <span className="error-text">{errors.firstName}</span>}
-          </div>
-          <div className="input-group">
-            <label htmlFor="lastName">Last Name<span style={{color:'red'}}>*</span></label>
-            <input
-              type="text"
-              id="lastName"
-              name="lastName"
-              maxLength={100}
-              value={form.lastName}
-              onChange={handleChange}
-              className={errors.lastName ? 'input-error' : ''}
-            />
-            {errors.lastName && <span className="error-text">{errors.lastName}</span>}
-          </div>
-          <div className="input-group">
-            <label htmlFor="mobileNumber">Mobile Number<span style={{color:'red'}}>*</span></label>
-            <input
-              type="tel"
-              id="mobileNumber"
-              name="mobileNumber"
-              maxLength={10}
-              value={form.mobileNumber}
-              onChange={handleChange}
-              className={errors.mobileNumber ? 'input-error' : ''}
-            />
-            {errors.mobileNumber && <span className="error-text">{errors.mobileNumber}</span>}
-          </div>
-          <div className="input-group">
-            <label htmlFor="age">Age<span style={{color:'red'}}>*</span></label>
-            <input
-              type="number"
-              id="age"
-              name="age"
-              min={1}
-              max={120}
-              maxLength={3}
-              value={form.age}
-              onInput={e => {
-                let v = e.target.value.replace(/[^0-9]/g, '').slice(0, 3);
-                if (v && (+v < 1 || +v > 120)) v = v.slice(0, 2);
-                setForm(prev => ({ ...prev, age: v }));
-              }}
-              onChange={handleChange}
-              className={errors.age ? 'input-error' : ''}
-            />
-            {errors.age && <span className="error-text">{errors.age}</span>}
-          </div>
-          <div className="input-group">
-            <label htmlFor="gender">Gender<span style={{color:'red'}}>*</span></label>
-            <select
-              id="gender"
-              name="gender"
-              value={form.gender}
-              onChange={handleChange}
-              className={errors.gender ? 'input-error' : ''}
-            >
-              <option value="">Select Gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Others">Others</option>
-            </select>
-            {errors.gender && <span className="error-text">{errors.gender}</span>}
-          </div>
-          <div className="input-group">
-            <label htmlFor="email">Email Id (optional)</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              className={errors.email ? 'input-error' : ''}
-            />
-            {errors.email && <span className="error-text">{errors.email}</span>}
-          </div>
+          <FormInput
+            label="First Name"
+            id="firstName"
+            name="firstName"
+            value={form.firstName}
+            onChange={handleChange}
+            error={errors.firstName}
+            required
+            maxLength={100}
+            autoFocus
+          />
+          <FormInput
+            label="Last Name"
+            id="lastName"
+            name="lastName"
+            value={form.lastName}
+            onChange={handleChange}
+            error={errors.lastName}
+            required
+            maxLength={100}
+          />
+          <FormInput
+            label="Mobile Number"
+            id="mobileNumber"
+            name="mobileNumber"
+            type="tel"
+            value={form.mobileNumber}
+            onChange={handleChange}
+            error={errors.mobileNumber}
+            required
+            maxLength={10}
+          />
+          <FormInput
+            label="Age"
+            id="age"
+            name="age"
+            type="number"
+            value={form.age}
+            onInput={e => {
+              let v = e.target.value.replace(/[^0-9]/g, '').slice(0, 3);
+              if (v && (+v < 1 || +v > 120)) v = v.slice(0, 2);
+              setForm(prev => ({ ...prev, age: v }));
+            }}
+            onChange={handleChange}
+            error={errors.age}
+            required
+            min={1}
+            max={120}
+            maxLength={3}
+          />
+          <FormSelect
+            label="Gender"
+            id="gender"
+            name="gender"
+            value={form.gender}
+            onChange={handleChange}
+            options={['Male', 'Female', 'Others']}
+            error={errors.gender}
+            required
+            placeholder="Select Gender"
+          />
+          <FormInput
+            label="Email Id (optional)"
+            id="email"
+            name="email"
+            type="email"
+            value={form.email}
+            onChange={handleChange}
+            error={errors.email}
+          />
           <button type="submit" className="btn-primary">
             Submit
           </button>

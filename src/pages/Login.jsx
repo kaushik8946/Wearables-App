@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { idbGet, idbSet } from '../data/db';
 import { useNavigate } from 'react-router-dom';
+import OtpInput from '../components/forms/OtpInput';
 import '../styles/pages/Login.css';
 
 const Login = () => {
@@ -26,14 +27,9 @@ const Login = () => {
     setOtp(['1','2','3','4','5','6']);
   };
 
-  const handleOtpInput = (e, idx) => {
-    const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 1);
-    const updatedOtp = otp.map((v, i) => (i === idx ? value : v));
+  const handleOtpChange = (updatedOtp) => {
     setOtp(updatedOtp);
     setErrors((prev) => ({ ...prev, otp: '' }));
-    if (value && idx < 5) {
-      document.getElementById(`otp-${idx + 1}`).focus();
-    }
   };
 
   const handleVerifyOtp = async (e) => {
@@ -100,22 +96,7 @@ const Login = () => {
             <form className="login-form" onSubmit={handleVerifyOtp}>
               <h2 className="form-title">Enter OTP</h2>
               <p className="subtitle">For demo purposes, your OTP is <strong>123456</strong>.</p>
-              <div className="input-group">
-                <div className="otp-input-wrapper">
-                  {otp.map((value, idx) => (
-                    <input
-                      key={idx}
-                      id={`otp-${idx}`}
-                      className="otp-box"
-                      type="text"
-                      maxLength={1}
-                      value={value}
-                      onChange={(e) => handleOtpInput(e, idx)}
-                    />
-                  ))}
-                </div>
-                {errors.otp && <span className="error-text">{errors.otp}</span>}
-              </div>
+              <OtpInput otp={otp} onChange={handleOtpChange} error={errors.otp} />
               <button type="submit" className="btn-primary">Verify & Login</button>
             </form>
           )}
