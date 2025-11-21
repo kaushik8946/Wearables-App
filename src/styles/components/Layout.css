@@ -3,7 +3,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-bottom: 72px; /* Space for bottom navigation */
+  padding-bottom: 78px; /* Space for bottom navigation */
 }
 
 /* App Header */
