@@ -13,33 +13,74 @@ const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  const loadDefaultUserName = async () => {
-    try {
-      const defaultUserId = await idbGet('defaultUserId');
-      if (!defaultUserId) {
-        setDefaultUserName('');
-        return;
-      }
-      const currentUser = await idbGetJSON('currentUser', null);
-      const otherUsers = await idbGetJSON('users', []);
-      const allUsers = [...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers];
-      const defUser = allUsers.find(u => String(u.id) === String(defaultUserId));
-      setDefaultUserName(defUser?.name || '');
-    } catch (err) {
-      setDefaultUserName('');
-    }
-  };
-
   useEffect(() => {
+    let isMounted = true;
+    
+    const loadDefaultUserName = async () => {
+      try {
+        const defaultUserId = await idbGet('defaultUserId');
+        if (!isMounted) return;
+        
+        if (!defaultUserId) {
+          setDefaultUserName('');
+          return;
+        }
+        const currentUser = await idbGetJSON('currentUser', null);
+        const otherUsers = await idbGetJSON('users', []);
+        if (!isMounted) return;
+        
+        const allUsers = [...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers];
+        const defUser = allUsers.find(u => String(u.id) === String(defaultUserId));
+        setDefaultUserName(defUser?.name || '');
+      } catch {
+        if (isMounted) {
+          setDefaultUserName('');
+        }
+      }
+    };
+    
     loadDefaultUserName();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [location.pathname]);
 
   useEffect(() => {
+    let isMounted = true;
+    
+    const loadDefaultUserName = async () => {
+      try {
+        const defaultUserId = await idbGet('defaultUserId');
+        if (!isMounted) return;
+        
+        if (!defaultUserId) {
+          setDefaultUserName('');
+          return;
+        }
+        const currentUser = await idbGetJSON('currentUser', null);
+        const otherUsers = await idbGetJSON('users', []);
+        if (!isMounted) return;
+        
+        const allUsers = [...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers];
+        const defUser = allUsers.find(u => String(u.id) === String(defaultUserId));
+        setDefaultUserName(defUser?.name || '');
+      } catch {
+        if (isMounted) {
+          setDefaultUserName('');
+        }
+      }
+    };
+    
     // Listen for user data changes
     const unsubscribe = onUserChange(() => {
       loadDefaultUserName();
     });
-    return unsubscribe;
+    
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   const menuItems = [

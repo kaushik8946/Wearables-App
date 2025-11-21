@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import '../styles/pages/Workout.css';
 import mapImage from '../assets/images/map.png';
 
 const Workout = () => {
-  const [activeTab, setActiveTab] = useState('running');
-
   return (
     <div className="workout-root">
       <div className="workout-container">
