@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState, useEffect } from 'react';
+import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import '../styles/components/DevicesMenu.css';
 import watchImg from '../assets/images/watch.png';
 import ringImg from '../assets/images/ring.webp';
@@ -45,28 +45,25 @@ const DevicesMenu = ({
   const canPair = typeof onPairDevice === 'function';
   const canUnpair = typeof onUnpairDevice === 'function';
 
-  const scheduleTimeout = (cb) => {
-    const timeout = setTimeout(cb, 1000);
-    timeoutsRef.current.push(timeout);
-  };
-
-  const handleAvailableClick = (device) => {
+  const handleAvailableClick = useCallback((device) => {
     if (!canPair || connectingPairedId || connectingAvailableId) return;
     setConnectingAvailableId(device.id);
-    scheduleTimeout(() => {
+    const timeout = setTimeout(() => {
       setConnectingAvailableId(null);
       onPairDevice(device);
-    });
-  };
+    }, 1000);
+    timeoutsRef.current.push(timeout);
+  }, [canPair, connectingPairedId, connectingAvailableId, onPairDevice]);
 
-  const handlePairedClick = (device) => {
+  const handlePairedClick = useCallback((device) => {
     if (!isPairedSelectable || connectingPairedId || connectingAvailableId) return;
     setConnectingPairedId(device.id);
-    scheduleTimeout(() => {
+    const timeout = setTimeout(() => {
       setConnectingPairedId(null);
       onCardClick(device);
-    });
-  };
+    }, 1000);
+    timeoutsRef.current.push(timeout);
+  }, [isPairedSelectable, connectingPairedId, connectingAvailableId, onCardClick]);
 
   const handleUnpair = (event, device) => {
     event.stopPropagation();
@@ -131,6 +128,7 @@ const DevicesMenu = ({
               Tap a paired device to connect
             </span>
           )}
+          {/* eslint-disable-next-line react-hooks/refs */}
           {renderList(normalizedPaired, {
             emptyLabel: 'No paired devices',
             clickHandler: isPairedSelectable ? handlePairedClick : null,
@@ -142,6 +140,7 @@ const DevicesMenu = ({
       {showAvailableSection && (
         <div className="devices-menu-section">
           <div className="devices-menu-section-title">{availableTitle}</div>
+          {/* eslint-disable-next-line react-hooks/refs */}
           {renderList(normalizedAvailable, {
             emptyLabel: 'No devices available to pair',
             clickHandler: canPair ? handleAvailableClick : null,
