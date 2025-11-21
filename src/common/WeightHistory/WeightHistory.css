@@ -1,0 +1,39 @@
+/* Minimal styling for weight history sparkline */
+.weight-history {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.wh-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.wh-title {
+  font-size: 13px;
+  color: #666;
+}
+
+.wh-stats {
+  font-size: 12px;
+  color: #888;
+}
+
+.wh-svg {
+  width: 100%;
+  height: 60px;
+  display: block;
+}
+
+.wh-dates {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.wh-date {
+  font-size: 11px;
+  color: #aaa;
+}

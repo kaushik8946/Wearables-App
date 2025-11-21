@@ -1,0 +1,227 @@
+.devices-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.devices-menu--page {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+.devices-menu-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.devices-menu-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.devices-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.devices-menu-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #f8fafc;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+  position: relative;
+}
+
+.devices-menu-card:hover {
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(102, 126, 234, 0.18);
+}
+
+.devices-menu-card.disabled {
+  cursor: default;
+  opacity: 0.7;
+  box-shadow: none;
+}
+
+.devices-menu-card-left {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.devices-menu-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.devices-menu-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.devices-menu-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.devices-menu-model {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.devices-menu-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+}
+
+.devices-menu-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.devices-menu-unpair {
+  border: none;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  background: rgba(239, 68, 68, 0.1);
+  color: #b91c1c;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.devices-menu-unpair:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.devices-menu-empty {
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px dashed rgba(107, 114, 128, 0.7);
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+  background: rgba(248, 250, 252, 0.8);
+}
+
+.devices-menu-connecting {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #3b82f6;
+}
+
+.devices-menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.devices-menu-modal {
+  width: 760px;
+  max-width: 96vw;
+  max-height: 85vh;
+  background: #ffffff;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+}
+
+.devices-menu-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.devices-menu-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+
+.devices-menu-modal-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: #f1f5f9;
+  border: none;
+  font-size: 28px;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  line-height: 1;
+  font-weight: 300;
+  box-shadow: 0 2px 8px rgba(30,41,59,0.08);
+}
+.devices-menu-modal-close:hover,
+.devices-menu-modal-close:focus {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.devices-menu-modal-body {
+  padding: 20px 22px 24px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+@media (max-width: 720px) {
+  .devices-menu-modal {
+    width: 100%;
+    max-height: 85vh;
+  }
+
+  .devices-menu-card {
+    flex-direction: row;
+  }
+
+  .devices-menu-unpair {
+    padding: 6px 12px;
+  }
+}

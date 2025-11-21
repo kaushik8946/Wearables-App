@@ -1,0 +1,256 @@
+/* Modern gradient background */
+.login-theme-bg {
+  min-height: 100vh;
+  width: 100vw;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.login-container {
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* Card with glassmorphism effect */
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  padding: 40px 28px;
+  margin: 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Logo Section */
+.logo-section {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.app-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  display: inline-block;
+}
+
+.logo-section h1 {
+  font-size: 28px;
+  color: #1a1a1a;
+  font-weight: 800;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.5px;
+}
+
+.tagline {
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* Form */
+.login-form {
+  width: 100%;
+}
+
+.form-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 6px 0;
+  color: #1a1a1a;
+  text-align: center;
+}
+
+.form-subtitle {
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 28px 0;
+  text-align: center;
+}
+
+/* Input area */
+.input-group {
+  margin-bottom: 24px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Mobile Input */
+.mobile-input-wrapper {
+  display: flex;
+  align-items: stretch;
+  border: 2px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #ffffff;
+  transition: all 0.2s;
+}
+
+.mobile-input-wrapper:focus-within {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+.country-code {
+  display: flex;
+  align-items: center;      /* vertical centering */
+  justify-content: center;  /* horizontal centering */
+  width: 56px;
+  min-width: 56px;
+  max-width: 70px;
+  color: #374151;
+  background: #f9fafb;
+  font-weight: 600;
+  font-size: 15px;
+  border-right: 2px solid #e5e7eb;
+  padding: 0;               /* remove left padding */
+  box-sizing: border-box;
+}
+
+.mobile-input-wrapper input {
+  flex: 1;
+  font-size: 16px;
+  border: none;
+  outline: none;
+  padding: 16px 14px;
+  background: transparent;
+  color: #1a1a1a;
+}
+
+.mobile-input-wrapper input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.input-error {
+  border-color: #ef4444 !important;
+}
+
+.error-text {
+  color: #ef4444;
+  font-size: 13px;
+  margin-top: 6px;
+  display: block;
+  font-weight: 500;
+}
+
+/* OTP Boxes */
+.otp-input-wrapper {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.otp-box {
+  width: 52px;
+  height: 56px;
+  font-size: 20px;
+  text-align: center;
+  font-weight: 700;
+  border: 2px solid #e5e7eb;
+  border-radius: 14px;
+  outline: none;
+  background: #ffffff;
+  color: #1a1a1a;
+  transition: all 0.2s;
+}
+
+.otp-box:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+.demo-hint {
+  text-align: center;
+  font-size: 13px;
+  color: #6b7280;
+  margin: 12px 0 0 0;
+}
+
+.demo-hint strong {
+  color: #667eea;
+  font-weight: 700;
+}
+
+.btn-primary {
+  margin-top: 8px;
+  padding: 16px 0;
+  width: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .login-card {
+    max-width: 100%;
+    padding: 32px 24px;
+    border-radius: 20px;
+  }
+
+  .logo-section {
+    margin-bottom: 32px;
+  }
+
+  .app-icon {
+    font-size: 42px;
+  }
+
+  .logo-section h1 {
+    font-size: 26px;
+  }
+
+  .form-title {
+    font-size: 22px;
+  }
+
+  .otp-box {
+    width: 46px;
+    height: 52px;
+    font-size: 18px;
+    border-radius: 12px;
+  }
+
+  .btn-primary {
+    font-size: 15px;
+    padding: 15px 0;
+  }
+}
