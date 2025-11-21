@@ -1,9 +1,15 @@
+/* Layout Variables */
+:root {
+  --app-header-height: 60px;
+  --bottom-nav-height: 78px;
+}
+
 /* Layout Container */
 .layout {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-bottom: 72px; /* Space for bottom navigation */
+  padding-bottom: var(--bottom-nav-height); /* Space for bottom navigation */
 }
 
 /* App Header */
@@ -12,7 +18,7 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 60px;
+  height: var(--app-header-height);
   background: #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   display: flex;
@@ -32,14 +38,14 @@
 
 /* Main Content */
 .app-content {
-  margin-top: 60px;
+  margin-top: var(--app-header-height);
   flex: 1;
-  min-height: calc(100vh - 60px);
+  min-height: calc(100vh - var(--app-header-height));
 }
 
 /* Page Container (Shared) */
 .page-container {
-  min-height: calc(100vh - 60px);
+  min-height: calc(100vh - var(--app-header-height));
   padding: 20px 16px;
   background: linear-gradient(135deg, #f5f7fa 0%, #e8eaf6 100%);
 }
