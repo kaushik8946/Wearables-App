@@ -1,5 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* The linter incorrectly flags renderList as accessing refs during render, but it only passes handlers that access refs in event handlers, which is correct */
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import '../styles/components/DevicesMenu.css';
 import watchImg from '../assets/images/watch.png';
@@ -49,35 +47,34 @@ const DevicesMenu = ({
   const canPair = typeof onPairDevice === 'function';
   const canUnpair = typeof onUnpairDevice === 'function';
 
-  const scheduleTimeout = (cb) => {
+  const scheduleTimeout = React.useCallback((cb) => {
     const timeout = setTimeout(cb, 1000);
-    const timeouts = timeoutsRef.current;
-    timeouts.push(timeout);
-  };
+    timeoutsRef.current.push(timeout);
+  }, []);
 
-  const handleAvailableClick = (device) => {
+  const handleAvailableClick = React.useCallback((device) => {
     if (!canPair || connectingPairedId || connectingAvailableId) return;
     setConnectingAvailableId(device.id);
     scheduleTimeout(() => {
       setConnectingAvailableId(null);
       onPairDevice(device);
     });
-  };
+  }, [canPair, connectingPairedId, connectingAvailableId, scheduleTimeout, onPairDevice]);
 
-  const handlePairedClick = (device) => {
+  const handlePairedClick = React.useCallback((device) => {
     if (!isPairedSelectable || connectingPairedId || connectingAvailableId) return;
     setConnectingPairedId(device.id);
     scheduleTimeout(() => {
       setConnectingPairedId(null);
       onCardClick(device);
     });
-  };
+  }, [isPairedSelectable, connectingPairedId, connectingAvailableId, scheduleTimeout, onCardClick]);
 
-  const handleUnpair = (event, device) => {
+  const handleUnpair = React.useCallback((event, device) => {
     event.stopPropagation();
     if (!canUnpair) return;
     onUnpairDevice(device);
-  };
+  }, [canUnpair, onUnpairDevice]);
 
   const rootClass = ['devices-menu', 'devices-menu--page'];
 
@@ -125,6 +122,10 @@ const DevicesMenu = ({
     );
   };
 
+  /* eslint-disable react-hooks/refs */
+  // The linter incorrectly flags this as accessing refs during render.
+  // The handlers only access timeoutsRef.current in event handlers (onClick),
+  // not during the render phase. This is a false positive.
   return (
     <div className={rootClass.join(' ')} style={{ position: 'relative' }}>
       {/* Close button removed; handled by modal overlay/header */}
@@ -156,6 +157,7 @@ const DevicesMenu = ({
       )}
     </div>
   );
+  /* eslint-enable react-hooks/refs */
 };
 
 export default DevicesMenu;
