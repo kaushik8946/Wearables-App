@@ -219,8 +219,593 @@ const StepsModal = ({ onClose }) => {
   );
 }
 
+// --- HEART RATE MODAL ---
+const HeartRateModal = ({ onClose }) => {
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content hide-scrollbar">
+        <button onClick={onClose} className="close-btn">
+          <X size={20} color="#4b5563" />
+        </button>
+
+        <div className="tabs-container">
+          <button className="tab-btn">Daily</button>
+          <button className="tab-btn active">Weekly</button>
+          <button className="tab-btn">Monthly</button>
+        </div>
+
+        <div className="big-stat">
+          82 <span>bpm</span>
+        </div>
+
+        <div className="modal-chart-area">
+          <div className="y-axis">
+            <span>120</span>
+            <span>90</span>
+            <span>60</span>
+            <span>30</span>
+            <span>0</span>
+          </div>
+
+          <div className="chart-bars-container">
+            {[
+              { day: 'Sun', val: 78 },
+              { day: 'Mon', val: 85 },
+              { day: 'Tue', val: 72 },
+              { day: 'Wed', val: 88 },
+              { day: 'Thu', val: 82 },
+              { day: 'Fri', val: 79 },
+              { day: 'Sat', val: 84 },
+            ].map((item, i) => (
+              <div key={i} className="chart-col">
+                <div
+                  className="chart-bar-visual bar-indigo"
+                  style={{ height: `${(item.val / 120) * 100}%` }}
+                ></div>
+                <span className="day-label">{item.day}</span>
+              </div>
+            ))}
+          </div>
+          <div className="grid-lines-container">
+            {[0, 25, 50, 75, 100].map((pos) => (
+              <div key={pos} className="grid-line" style={{ bottom: `${pos}%`, marginBottom: '1.5rem' }}></div>
+            ))}
+          </div>
+        </div>
+
+        <div className="total-card">
+          <div>
+            <p style={{ fontSize: '0.75rem', color: '#e0e7ff', marginBottom: '0.25rem' }}>Avg Heart Rate</p>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: '700' }}>81 <span style={{ fontSize: '0.75rem', fontWeight: '400', opacity: 0.6 }}>bpm</span></h3>
+          </div>
+        </div>
+
+        <div className="stats-grid">
+          <div className="stat-box bg-gray">
+            <div className="icon-circle">
+              <Heart size={20} color="#84cc16" fill="#84cc16" />
+            </div>
+            <p className="stat-title">Resting</p>
+            <h4 className="stat-val">65</h4>
+            <span style={{ fontSize: '0.625rem', color: '#9ca3af' }}>bpm</span>
+          </div>
+
+          <div className="stat-box bg-amber">
+            <div className="icon-circle">
+              <Heart size={20} color="#fbbf24" fill="#fbbf24" />
+            </div>
+            <p className="stat-title">Max</p>
+            <h4 className="stat-val">122</h4>
+            <span style={{ fontSize: '0.625rem', color: '#9ca3af' }}>bpm</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- SLEEP MODAL ---
+const SleepModal = ({ onClose }) => {
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content hide-scrollbar">
+        <button onClick={onClose} className="close-btn">
+          <X size={20} color="#4b5563" />
+        </button>
+
+        <div className="tabs-container">
+          <button className="tab-btn">Daily</button>
+          <button className="tab-btn active">Weekly</button>
+          <button className="tab-btn">Monthly</button>
+        </div>
+
+        <div className="big-stat">
+          5h 22m <span>sleep</span>
+        </div>
+
+        <div className="modal-chart-area">
+          <div className="y-axis">
+            <span>10</span>
+            <span>7.5</span>
+            <span>5</span>
+            <span>2.5</span>
+            <span>0</span>
+          </div>
+
+          <div className="chart-bars-container">
+            {[
+              { day: 'Sun', val: 7.2 },
+              { day: 'Mon', val: 6.8 },
+              { day: 'Tue', val: 5.5 },
+              { day: 'Wed', val: 7.5 },
+              { day: 'Thu', val: 5.4 },
+              { day: 'Fri', val: 6.2 },
+              { day: 'Sat', val: 8.1 },
+            ].map((item, i) => (
+              <div key={i} className="chart-col">
+                <div
+                  className="chart-bar-visual bar-indigo"
+                  style={{ height: `${(item.val / 10) * 100}%` }}
+                ></div>
+                <span className="day-label">{item.day}</span>
+              </div>
+            ))}
+          </div>
+          <div className="grid-lines-container">
+            {[0, 25, 50, 75, 100].map((pos) => (
+              <div key={pos} className="grid-line" style={{ bottom: `${pos}%`, marginBottom: '1.5rem' }}></div>
+            ))}
+          </div>
+        </div>
+
+        <div className="total-card">
+          <div>
+            <p style={{ fontSize: '0.75rem', color: '#e0e7ff', marginBottom: '0.25rem' }}>Avg Sleep</p>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: '700' }}>6.7 <span style={{ fontSize: '0.75rem', fontWeight: '400', opacity: 0.6 }}>hours</span></h3>
+          </div>
+        </div>
+
+        <div className="stats-grid">
+          <div className="stat-box bg-gray">
+            <div className="icon-circle">
+              <Moon size={20} color="#6366f1" fill="#6366f1" />
+            </div>
+            <p className="stat-title">Deep Sleep</p>
+            <h4 className="stat-val">2.1</h4>
+            <span style={{ fontSize: '0.625rem', color: '#9ca3af' }}>hrs</span>
+          </div>
+
+          <div className="stat-box bg-amber">
+            <div className="icon-circle">
+              <Moon size={20} color="#fbbf24" fill="#fbbf24" />
+            </div>
+            <p className="stat-title">Light Sleep</p>
+            <h4 className="stat-val">3.2</h4>
+            <span style={{ fontSize: '0.625rem', color: '#9ca3af' }}>hrs</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- BLOOD PRESSURE MODAL ---
+const BloodPressureModal = ({ onClose }) => {
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content hide-scrollbar">
+        <button onClick={onClose} className="close-btn">
+          <X size={20} color="#4b5563" />
+        </button>
+
+        <div className="tabs-container">
+          <button className="tab-btn">Daily</button>
+          <button className="tab-btn active">Weekly</button>
+          <button className="tab-btn">Monthly</button>
+        </div>
+
+        <div className="big-stat">
+          119/82 <span>mmHg</span>
+        </div>
+
+        <div className="modal-chart-area">
+          <div className="y-axis">
+            <span>140</span>
+            <span>105</span>
+            <span>70</span>
+            <span>35</span>
+            <span>0</span>
+          </div>
+
+          <div className="chart-bars-container">
+            {[
+              { day: 'Sun', val: 115 },
+              { day: 'Mon', val: 118 },
+              { day: 'Tue', val: 112 },
+              { day: 'Wed', val: 120 },
+              { day: 'Thu', val: 119 },
+              { day: 'Fri', val: 116 },
+              { day: 'Sat', val: 114 },
+            ].map((item, i) => (
+              <div key={i} className="chart-col">
+                <div
+                  className="chart-bar-visual bar-indigo"
+                  style={{ height: `${(item.val / 140) * 100}%` }}
+                ></div>
+                <span className="day-label">{item.day}</span>
+              </div>
+            ))}
+          </div>
+          <div className="grid-lines-container">
+            {[0, 25, 50, 75, 100].map((pos) => (
+              <div key={pos} className="grid-line" style={{ bottom: `${pos}%`, marginBottom: '1.5rem' }}></div>
+            ))}
+          </div>
+        </div>
+
+        <div className="total-card">
+          <div>
+            <p style={{ fontSize: '0.75rem', color: '#e0e7ff', marginBottom: '0.25rem' }}>Avg BP</p>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: '700' }}>117/80 <span style={{ fontSize: '0.75rem', fontWeight: '400', opacity: 0.6 }}>mmHg</span></h3>
+          </div>
+        </div>
+
+        <div className="stats-grid">
+          <div className="stat-box bg-gray">
+            <div className="icon-circle">
+              <Stethoscope size={20} color="#0ea5e9" />
+            </div>
+            <p className="stat-title">Systolic</p>
+            <h4 className="stat-val">117</h4>
+            <span style={{ fontSize: '0.625rem', color: '#9ca3af' }}>mmHg</span>
+          </div>
+
+          <div className="stat-box bg-amber">
+            <div className="icon-circle">
+              <Stethoscope size={20} color="#fbbf24" />
+            </div>
+            <p className="stat-title">Diastolic</p>
+            <h4 className="stat-val">80</h4>
+            <span style={{ fontSize: '0.625rem', color: '#9ca3af' }}>mmHg</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- SPO2 MODAL ---
+const SpO2Modal = ({ onClose }) => {
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content hide-scrollbar">
+        <button onClick={onClose} className="close-btn">
+          <X size={20} color="#4b5563" />
+        </button>
+
+        <div className="tabs-container">
+          <button className="tab-btn">Daily</button>
+          <button className="tab-btn active">Weekly</button>
+          <button className="tab-btn">Monthly</button>
+        </div>
+
+        <div className="big-stat">
+          95 <span>%</span>
+        </div>
+
+        <div className="modal-chart-area">
+          <div className="y-axis">
+            <span>100</span>
+            <span>75</span>
+            <span>50</span>
+            <span>25</span>
+            <span>0</span>
+          </div>
+
+          <div className="chart-bars-container">
+            {[
+              { day: 'Sun', val: 96 },
+              { day: 'Mon', val: 94 },
+              { day: 'Tue', val: 95 },
+              { day: 'Wed', val: 97 },
+              { day: 'Thu', val: 95 },
+              { day: 'Fri', val: 96 },
+              { day: 'Sat', val: 98 },
+            ].map((item, i) => (
+              <div key={i} className="chart-col">
+                <div
+                  className="chart-bar-visual bar-indigo"
+                  style={{ height: `${(item.val / 100) * 100}%` }}
+                ></div>
+                <span className="day-label">{item.day}</span>
+              </div>
+            ))}
+          </div>
+          <div className="grid-lines-container">
+            {[0, 25, 50, 75, 100].map((pos) => (
+              <div key={pos} className="grid-line" style={{ bottom: `${pos}%`, marginBottom: '1.5rem' }}></div>
+            ))}
+          </div>
+        </div>
+
+        <div className="total-card">
+          <div>
+            <p style={{ fontSize: '0.75rem', color: '#e0e7ff', marginBottom: '0.25rem' }}>Avg SpO2</p>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: '700' }}>96 <span style={{ fontSize: '0.75rem', fontWeight: '400', opacity: 0.6 }}>%</span></h3>
+          </div>
+        </div>
+
+        <div className="stats-grid">
+          <div className="stat-box bg-gray">
+            <div className="icon-circle">
+              <Wind size={20} color="#14b8a6" />
+            </div>
+            <p className="stat-title">Min</p>
+            <h4 className="stat-val">94</h4>
+            <span style={{ fontSize: '0.625rem', color: '#9ca3af' }}>%</span>
+          </div>
+
+          <div className="stat-box bg-amber">
+            <div className="icon-circle">
+              <Wind size={20} color="#fbbf24" />
+            </div>
+            <p className="stat-title">Max</p>
+            <h4 className="stat-val">98</h4>
+            <span style={{ fontSize: '0.625rem', color: '#9ca3af' }}>%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- STRESS MODAL ---
+const StressModal = ({ onClose }) => {
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content hide-scrollbar">
+        <button onClick={onClose} className="close-btn">
+          <X size={20} color="#4b5563" />
+        </button>
+
+        <div className="tabs-container">
+          <button className="tab-btn">Daily</button>
+          <button className="tab-btn active">Weekly</button>
+          <button className="tab-btn">Monthly</button>
+        </div>
+
+        <div className="big-stat">
+          Average <span>Stress</span>
+        </div>
+
+        <div className="modal-chart-area">
+          <div className="y-axis">
+            <span>100</span>
+            <span>75</span>
+            <span>50</span>
+            <span>25</span>
+            <span>0</span>
+          </div>
+
+          <div className="chart-bars-container">
+            {[
+              { day: 'Sun', val: 35 },
+              { day: 'Mon', val: 55 },
+              { day: 'Tue', val: 42 },
+              { day: 'Wed', val: 68 },
+              { day: 'Thu', val: 45 },
+              { day: 'Fri', val: 38 },
+              { day: 'Sat', val: 28 },
+            ].map((item, i) => (
+              <div key={i} className="chart-col">
+                <div
+                  className="chart-bar-visual bar-indigo"
+                  style={{ height: `${(item.val / 100) * 100}%` }}
+                ></div>
+                <span className="day-label">{item.day}</span>
+              </div>
+            ))}
+          </div>
+          <div className="grid-lines-container">
+            {[0, 25, 50, 75, 100].map((pos) => (
+              <div key={pos} className="grid-line" style={{ bottom: `${pos}%`, marginBottom: '1.5rem' }}></div>
+            ))}
+          </div>
+        </div>
+
+        <div className="total-card">
+          <div>
+            <p style={{ fontSize: '0.75rem', color: '#e0e7ff', marginBottom: '0.25rem' }}>Avg Stress Level</p>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: '700' }}>44 <span style={{ fontSize: '0.75rem', fontWeight: '400', opacity: 0.6 }}>/100</span></h3>
+          </div>
+        </div>
+
+        <div className="stats-grid">
+          <div className="stat-box bg-gray">
+            <div className="icon-circle">
+              <Zap size={20} color="#fbbf24" fill="#fbbf24" />
+            </div>
+            <p className="stat-title">Relaxed Days</p>
+            <h4 className="stat-val">4</h4>
+            <span style={{ fontSize: '0.625rem', color: '#9ca3af' }}>days</span>
+          </div>
+
+          <div className="stat-box bg-amber">
+            <div className="icon-circle">
+              <Zap size={20} color="#f43f5e" fill="#f43f5e" />
+            </div>
+            <p className="stat-title">Stressed Days</p>
+            <h4 className="stat-val">3</h4>
+            <span style={{ fontSize: '0.625rem', color: '#9ca3af' }}>days</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- CYCLES MODAL ---
+const CyclesModal = ({ onClose }) => {
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content hide-scrollbar">
+        <button onClick={onClose} className="close-btn">
+          <X size={20} color="#4b5563" />
+        </button>
+
+        <div className="tabs-container">
+          <button className="tab-btn active">Overview</button>
+          <button className="tab-btn">Calendar</button>
+          <button className="tab-btn">History</button>
+        </div>
+
+        <div className="big-stat">
+          Day 12 <span>Follicular</span>
+        </div>
+
+        <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
+          <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem' }}>Current Cycle Day</p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {Array.from({ length: 28 }, (_, i) => (
+              <div
+                key={i}
+                style={{
+                  width: '2rem',
+                  height: '2rem',
+                  borderRadius: '50%',
+                  backgroundColor: i === 11 ? '#ec4899' : i < 12 ? '#fbcfe8' : '#f3f4f6',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.625rem',
+                  fontWeight: i === 11 ? '700' : '500',
+                  color: i === 11 ? 'white' : '#6b7280'
+                }}
+              >
+                {i + 1}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="total-card">
+          <div>
+            <p style={{ fontSize: '0.75rem', color: '#e0e7ff', marginBottom: '0.25rem' }}>Next Period</p>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: '700' }}>16 <span style={{ fontSize: '0.75rem', fontWeight: '400', opacity: 0.6 }}>days</span></h3>
+          </div>
+        </div>
+
+        <div className="stats-grid">
+          <div className="stat-box bg-gray">
+            <div className="icon-circle">
+              <CalendarHeart size={20} color="#ec4899" fill="#ec4899" />
+            </div>
+            <p className="stat-title">Cycle Length</p>
+            <h4 className="stat-val">28</h4>
+            <span style={{ fontSize: '0.625rem', color: '#9ca3af' }}>days</span>
+          </div>
+
+          <div className="stat-box bg-amber">
+            <div className="icon-circle">
+              <CalendarHeart size={20} color="#fbbf24" fill="#fbbf24" />
+            </div>
+            <p className="stat-title">Period Length</p>
+            <h4 className="stat-val">5</h4>
+            <span style={{ fontSize: '0.625rem', color: '#9ca3af' }}>days</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- WEIGHT MODAL ---
+const WeightModal = ({ onClose }) => {
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content hide-scrollbar">
+        <button onClick={onClose} className="close-btn">
+          <X size={20} color="#4b5563" />
+        </button>
+
+        <div className="tabs-container">
+          <button className="tab-btn">Daily</button>
+          <button className="tab-btn active">Weekly</button>
+          <button className="tab-btn">Monthly</button>
+        </div>
+
+        <div className="big-stat">
+          77.9 <span>kg</span>
+        </div>
+
+        <div className="modal-chart-area">
+          <div className="y-axis">
+            <span>82</span>
+            <span>80</span>
+            <span>78</span>
+            <span>76</span>
+            <span>74</span>
+          </div>
+
+          <div className="chart-bars-container">
+            {[
+              { day: 'Sun', val: 78.5 },
+              { day: 'Mon', val: 78.2 },
+              { day: 'Tue', val: 78.0 },
+              { day: 'Wed', val: 77.8 },
+              { day: 'Thu', val: 77.9 },
+              { day: 'Fri', val: 77.7 },
+              { day: 'Sat', val: 77.5 },
+            ].map((item, i) => (
+              <div key={i} className="chart-col">
+                <div
+                  className="chart-bar-visual bar-indigo"
+                  style={{ height: `${((item.val - 74) / 8) * 100}%` }}
+                ></div>
+                <span className="day-label">{item.day}</span>
+              </div>
+            ))}
+          </div>
+          <div className="grid-lines-container">
+            {[0, 25, 50, 75, 100].map((pos) => (
+              <div key={pos} className="grid-line" style={{ bottom: `${pos}%`, marginBottom: '1.5rem' }}></div>
+            ))}
+          </div>
+        </div>
+
+        <div className="total-card">
+          <div>
+            <p style={{ fontSize: '0.75rem', color: '#e0e7ff', marginBottom: '0.25rem' }}>Weight Change</p>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: '700' }}>-1.0 <span style={{ fontSize: '0.75rem', fontWeight: '400', opacity: 0.6 }}>kg this week</span></h3>
+          </div>
+        </div>
+
+        <div className="stats-grid">
+          <div className="stat-box bg-gray">
+            <div className="icon-circle">
+              <Scale size={20} color="#0ea5e9" />
+            </div>
+            <p className="stat-title">Starting</p>
+            <h4 className="stat-val">78.5</h4>
+            <span style={{ fontSize: '0.625rem', color: '#9ca3af' }}>kg</span>
+          </div>
+
+          <div className="stat-box bg-amber">
+            <div className="icon-circle">
+              <Scale size={20} color="#fbbf24" />
+            </div>
+            <p className="stat-title">Goal</p>
+            <h4 className="stat-val">75.0</h4>
+            <span style={{ fontSize: '0.625rem', color: '#9ca3af' }}>kg</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // 1. MAIN DASHBOARD (Light Mode)
-const DashboardView = ({ onOpenSteps, connectedDevice }) => {
+const DashboardView = ({ onOpenSteps, onOpenHeartRate, onOpenSleep, onOpenBloodPressure, onOpenSpO2, onOpenStress, onOpenCycles, onOpenWeight, connectedDevice }) => {
   return (
     <div className="app-container">
       <div className="max-w-wrapper">
@@ -254,7 +839,7 @@ const DashboardView = ({ onOpenSteps, connectedDevice }) => {
           </div>
 
           {/* 2. Heart Rate */}
-          <div className="card card-lime">
+          <div onClick={onOpenHeartRate} className="card card-lime">
             <div className="card-content">
               <div className="flex-between-start mb-2">
                 <span className="card-label text-lime-900">Heart Rate</span>
@@ -270,7 +855,7 @@ const DashboardView = ({ onOpenSteps, connectedDevice }) => {
           </div>
 
           {/* 3. Sleep */}
-          <div className="card card-indigo">
+          <div onClick={onOpenSleep} className="card card-indigo">
             <div className="card-content">
               <div className="flex-between-start mb-2">
                 <span className="card-label text-indigo-100">Sleep</span>
@@ -291,7 +876,7 @@ const DashboardView = ({ onOpenSteps, connectedDevice }) => {
           </div>
 
           {/* 4. Blood Pressure (BP) */}
-          <div className="card card-sky">
+          <div onClick={onOpenBloodPressure} className="card card-sky">
             <div className="card-content">
               <div className="flex-between-start mb-2">
                 <span className="card-label text-sky-100">BP</span>
@@ -311,7 +896,7 @@ const DashboardView = ({ onOpenSteps, connectedDevice }) => {
           </div>
 
           {/* 5. Blood Oxygen */}
-          <div className="card card-teal">
+          <div onClick={onOpenSpO2} className="card card-teal">
             <div className="card-content">
               <div className="flex-between-start mb-2">
                 <span className="card-label text-teal-100">SpO2</span>
@@ -332,7 +917,7 @@ const DashboardView = ({ onOpenSteps, connectedDevice }) => {
           </div>
 
           {/* 6. Stress */}
-          <div className="card card-amber">
+          <div onClick={onOpenStress} className="card card-amber">
             <div className="card-content">
               <div className="flex-between-start mb-2">
                 <span className="card-label text-amber-900">Stress</span>
@@ -353,7 +938,7 @@ const DashboardView = ({ onOpenSteps, connectedDevice }) => {
           </div>
 
           {/* 7. Periods */}
-          <div className="card card-pink">
+          <div onClick={onOpenCycles} className="card card-pink">
             <div className="card-content">
               <div className="flex-between-start mb-2">
                 <span className="card-label text-pink-100">Cycles</span>
@@ -371,7 +956,7 @@ const DashboardView = ({ onOpenSteps, connectedDevice }) => {
           </div>
 
           {/* 8. Weight (NEW LIGHT CARD) */}
-          <div className="card card-white-clean">
+          <div onClick={onOpenWeight} className="card card-white-clean">
             <div className="weight-header">
               <div className="weight-icon-box">
                 <Scale size={20} color="#0ea5e9" />
@@ -395,6 +980,13 @@ const DashboardView = ({ onOpenSteps, connectedDevice }) => {
 // MAIN APP COMPONENT
 const Dashboard = () => {
   const [showSteps, setShowSteps] = useState(false);
+  const [showHeartRate, setShowHeartRate] = useState(false);
+  const [showSleep, setShowSleep] = useState(false);
+  const [showBloodPressure, setShowBloodPressure] = useState(false);
+  const [showSpO2, setShowSpO2] = useState(false);
+  const [showStress, setShowStress] = useState(false);
+  const [showCycles, setShowCycles] = useState(false);
+  const [showWeight, setShowWeight] = useState(false);
   // Connected/Default device to display on the dashboard
   const [connectedDevice, setConnectedDevice] = useState(null);
 
@@ -725,9 +1317,23 @@ const Dashboard = () => {
     <>
       <DashboardView
         onOpenSteps={() => setShowSteps(true)}
+        onOpenHeartRate={() => setShowHeartRate(true)}
+        onOpenSleep={() => setShowSleep(true)}
+        onOpenBloodPressure={() => setShowBloodPressure(true)}
+        onOpenSpO2={() => setShowSpO2(true)}
+        onOpenStress={() => setShowStress(true)}
+        onOpenCycles={() => setShowCycles(true)}
+        onOpenWeight={() => setShowWeight(true)}
         connectedDevice={connectedDevice}
       />
       {showSteps && <StepsModal onClose={() => setShowSteps(false)} />}
+      {showHeartRate && <HeartRateModal onClose={() => setShowHeartRate(false)} />}
+      {showSleep && <SleepModal onClose={() => setShowSleep(false)} />}
+      {showBloodPressure && <BloodPressureModal onClose={() => setShowBloodPressure(false)} />}
+      {showSpO2 && <SpO2Modal onClose={() => setShowSpO2(false)} />}
+      {showStress && <StressModal onClose={() => setShowStress(false)} />}
+      {showCycles && <CyclesModal onClose={() => setShowCycles(false)} />}
+      {showWeight && <WeightModal onClose={() => setShowWeight(false)} />}
       {showNoDeviceAssignedModal && (
         <div className="modal-overlay" onClick={() => setShowNoDeviceAssignedModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 400, textAlign: 'center' }}>
