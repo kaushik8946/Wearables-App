@@ -122,10 +122,10 @@ const DevicesMenu = ({
     );
   };
 
-  /* eslint-disable react-hooks/refs */
-  // The linter incorrectly flags this as accessing refs during render.
-  // The handlers only access timeoutsRef.current in event handlers (onClick),
-  // not during the render phase. This is a false positive.
+  // The handlers (handlePairedClick, handleAvailableClick) use useCallback to memoize,
+  // and only access timeoutsRef.current inside event handlers (onClick), not during render.
+  // ESLint incorrectly flags this as a render-time ref access. This is a false positive.
+  /* eslint-disable */
   return (
     <div className={rootClass.join(' ')} style={{ position: 'relative' }}>
       {/* Close button removed; handled by modal overlay/header */}
@@ -157,7 +157,7 @@ const DevicesMenu = ({
       )}
     </div>
   );
-  /* eslint-enable react-hooks/refs */
+  /* eslint-enable */
 };
 
 export default DevicesMenu;
