@@ -23,6 +23,7 @@
   --col-rose-500: #f43f5e;
   --col-rose-200: #fecdd3;
   --col-rose-100: #ffe4e6;
+  --col-rose-50: #fff1f2;
 
   --col-lime-500: #84cc16;
   --col-lime-200: #d9f99d;
@@ -32,14 +33,17 @@
   --col-indigo-500: #6366f1;
   --col-indigo-200: #c7d2fe;
   --col-indigo-100: #e0e7ff;
+  --col-indigo-50: #eef2ff;
 
   --col-sky-500: #0ea5e9;
   --col-sky-200: #bae6fd;
   --col-sky-100: #e0f2fe;
+  --col-sky-50: #f0f9ff;
 
   --col-teal-500: #14b8a6;
   --col-teal-200: #99f6e4;
   --col-teal-100: #ccfbf1;
+  --col-teal-50: #f0fdfa;
 
   --col-amber-400: #fbbf24;
   --col-amber-200: #fde68a;
@@ -49,6 +53,7 @@
   --col-pink-500: #ec4899;
   --col-pink-200: #fbcfe8;
   --col-pink-100: #fce7f3;
+  --col-pink-50: #fdf2f8;
 
   --col-slate-600: #475569;
   --col-slate-300: #cbd5e1;
@@ -206,11 +211,11 @@ p {
 }
 
 .text-rose-100 {
-  color: var(--col-rose-100);
+  color: var(--color-white);
 }
 
 .text-rose-200 {
-  color: var(--col-rose-200);
+  color: var(--color-white);
 }
 
 .card-lime {
@@ -237,19 +242,20 @@ p {
 }
 
 .text-indigo-100 {
-  color: var(--col-indigo-100);
+  color: var(--color-white);
 }
 
 .text-indigo-200 {
-  color: var(--col-indigo-200);
+  color: var(--color-white);
 }
 
 .tag-indigo {
-  background-color: rgba(79, 70, 229, 0.3);
+  background-color: rgba(255, 255, 255, 0.3);
   padding: 0.25rem 0.5rem;
   border-radius: 9999px;
   font-size: 0.625rem;
   display: inline-block;
+  color: var(--color-white);
 }
 
 .sleep-bars {
@@ -278,11 +284,11 @@ p {
 }
 
 .text-sky-100 {
-  color: var(--col-sky-100);
+  color: var(--color-white);
 }
 
 .text-sky-200 {
-  color: var(--col-sky-200);
+  color: var(--color-white);
 }
 
 .opacity-60 {
@@ -295,11 +301,11 @@ p {
 }
 
 .text-teal-100 {
-  color: var(--col-teal-100);
+  color: var(--color-white);
 }
 
 .text-teal-200 {
-  color: var(--col-teal-200);
+  color: var(--color-white);
 }
 
 .card-amber {
@@ -330,11 +336,11 @@ p {
 }
 
 .text-pink-100 {
-  color: var(--col-pink-100);
+  color: var(--color-white);
 }
 
 .text-pink-200 {
-  color: var(--col-pink-200);
+  color: var(--color-white);
 }
 
 .dots-container {
