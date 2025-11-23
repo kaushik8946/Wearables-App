@@ -63,8 +63,15 @@ self.addEventListener('fetch', (event) => {
             return response;
           })
           .catch(() => {
-            // If both cache and network fail, show offline page
-            return caches.match('/offline.html');
+            // If both cache and network fail, show offline page only for navigation requests
+            if (event.request.mode === 'navigate') {
+              return caches.match('/offline.html');
+            }
+            // For other requests (CSS, JS, images), just fail gracefully
+            return new Response('Network error', {
+              status: 408,
+              headers: { 'Content-Type': 'text/plain' }
+            });
           });
       })
   );
