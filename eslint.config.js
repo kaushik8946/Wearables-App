@@ -26,4 +26,21 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  // Architecture enforcement: UI components cannot import directly from data layer
+  {
+    files: ['src/pages/**/*.{js,jsx}', 'src/common/**/*.{js,jsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/data/**', '../data/**', '../../data/**'],
+              message: 'UI components must not import directly from the data layer. Use the service layer instead (import from "../../service" or "../service").',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ])
