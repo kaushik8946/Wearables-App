@@ -9,7 +9,6 @@ import './Layout.css';
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [defaultUserName, setDefaultUserName] = useState('');
   const [activeUserName, setActiveUserName] = useState('');
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [allUsers, setAllUsers] = useState([]);
@@ -44,13 +43,8 @@ const Layout = () => {
         const activeUser = users.find(u => String(u.id) === String(activeId));
         setActiveUserName(activeUser?.name || '');
         setActiveUserId(activeId || '');
-        
-        // Also set default user name for backward compatibility
-        const defUser = users.find(u => String(u.id) === String(defaultUserId));
-        setDefaultUserName(defUser?.name || '');
       } catch {
         if (isMounted) {
-          setDefaultUserName('');
           setActiveUserName('');
           setAllUsers([]);
         }
@@ -91,13 +85,8 @@ const Layout = () => {
         const activeUser = users.find(u => String(u.id) === String(activeId));
         setActiveUserName(activeUser?.name || '');
         setActiveUserId(activeId || '');
-        
-        // Also set default user name for backward compatibility
-        const defUser = users.find(u => String(u.id) === String(defaultUserId));
-        setDefaultUserName(defUser?.name || '');
       } catch {
         if (isMounted) {
-          setDefaultUserName('');
           setActiveUserName('');
           setAllUsers([]);
         }

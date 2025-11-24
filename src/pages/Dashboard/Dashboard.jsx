@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Heart,
   Footprints,
@@ -22,12 +22,12 @@ import SpO2Modal from '../../common/SpO2Modal/SpO2Modal';
 import StressModal from '../../common/StressModal/StressModal';
 import CyclesModal from '../../common/CyclesModal/CyclesModal';
 import WeightModal from '../../common/WeightModal/WeightModal';
-import { getAvailableDevices, getActiveUser, getDevicesForUser, getDefaultDeviceForUser, setDefaultDeviceForUser, getUserById } from '../../service';
+import { getAvailableDevices, getDevicesForUser, getDefaultDeviceForUser, setDefaultDeviceForUser, getUserById } from '../../service';
 import watchImg from '../../assets/images/watch.png';
 import ringImg from '../../assets/images/ring.webp';
 import scaleImg from '../../assets/images/weighing-scale.avif';
 import './Dashboard.css';
-import { getStorageItem, getStorageJSON, setStorageItem, setStorageJSON, notifyUserChange, subscribeToUserChange, subscribeToPairedDevicesChange, notifyPairedDevicesChange } from '../../service';
+import { getStorageItem, getStorageJSON, setStorageJSON, notifyUserChange, subscribeToUserChange, subscribeToPairedDevicesChange, notifyPairedDevicesChange } from '../../service';
 
 // map file names to assets (same mapping as in Devices.jsx)
 const deviceImageMap = {
@@ -49,8 +49,7 @@ const DashboardView = ({
   connectedDevice,
   userDevices,
   onDeviceSelect,
-  showDeviceSelector,
-  activeUserName
+  showDeviceSelector
 }) => {
   const [showDeviceDropdown, setShowDeviceDropdown] = useState(false);
   
@@ -165,7 +164,6 @@ const DashboardView = ({
             cals={connectedDevice ? 512 : null}
             calsGoal={800}
           />
-        )}
         )}
 
         {/* Cards Grid (2 Columns) */}
@@ -331,8 +329,8 @@ const DashboardView = ({
     </div>
   );
 };
-
-// MAIN APP COMPONENT
+// Simplified Dashboard Component
+// Main Dashboard component for wearables app
 const Dashboard = () => {
   const [showSteps, setShowSteps] = useState(false);
   const [showHeartRate, setShowHeartRate] = useState(false);
@@ -342,332 +340,237 @@ const Dashboard = () => {
   const [showStress, setShowStress] = useState(false);
   const [showCycles, setShowCycles] = useState(false);
   const [showWeight, setShowWeight] = useState(false);
-  // Connected/Default device to display on the dashboard
+  
+  // User and device state
+  const [activeUser, setActiveUser] = useState(null);
+  const [userDevices, setUserDevices] = useState([]);
   const [connectedDevice, setConnectedDevice] = useState(null);
-
+  const [showDevicesMenuModal, setShowDevicesMenuModal] = useState(false);
   const [pairedDevices, setPairedDevices] = useState([]);
   const [availableDevices, setAvailableDevices] = useState(getAvailableDevices());
-  const [showDevicesMenuModal, setShowDevicesMenuModal] = useState(false);
-  const [devicesMenuDismissed, setDevicesMenuDismissed] = useState(false);
-  const [shouldAssignDefaultInModal, setShouldAssignDefaultInModal] = useState(false);
-  const [userVersion, setUserVersion] = useState(0);
-  const [currentUserDeviceMap, setCurrentUserDeviceMap] = useState({});
-  const [activeDefaultUserId, setActiveDefaultUserId] = useState('');
 
-  // Modal for 'no device assigned to default user'
-  const [showNoDeviceAssignedModal, setShowNoDeviceAssignedModal] = useState(false);
-  // Default user name shown in the 'no device assigned' modal
-  const [defaultUserName, setDefaultUserName] = useState('');
-
-  const sanitizeUserForStorage = (user) => {
-    if (!user) return null;
-    const { self: _self, ...rest } = user;
-    return rest;
-  };
-
-  const debugLog = (...args) => {
-    // Debug logging disabled in production
-    // Note: Using Vite's import.meta.env.MODE instead of process.env.NODE_ENV
-    if (import.meta.env.MODE !== 'production') {
-      console.log('[Dashboard]', ...args);
-    }
-  };
-
-  const persistUserDeviceMap = async (usersSnapshot) => {
-    const map = {};
-    usersSnapshot.forEach(u => {
-      if (u.deviceId) {
-        map[u.id] = String(u.deviceId);
-      }
-    });
-    await setStorageJSON('userDeviceMap', map);
-  };
-
+  // Load active user and their devices
   React.useEffect(() => {
     let mounted = true;
-    (async () => {
+    
+    const loadUserAndDevices = async () => {
       try {
-        const storedPairedDevices = await getStorageJSON('pairedDevices', []);
-        if (!mounted) return;
-        setPairedDevices(storedPairedDevices);
-      } catch (err) {
-        console.error('Failed to load paired devices for dashboard', err);
-      }
-    })();
-    // Subscribe to paired devices changes so dashboard reacts to pair/unpair events
-    const unsub = subscribeToPairedDevicesChange(() => {
-      (async () => {
-        try {
-          const devices = await getStorageJSON('pairedDevices', []);
-          if (!mounted) return;
-          setPairedDevices(devices);
-        } catch (err) {
-          console.error('Failed to reload paired devices after change', err);
+        // Get active user (or fall back to default)
+        let activeId = await getStorageItem('activeUserId');
+        if (!activeId) {
+          activeId = await getStorageItem('defaultUserId');
         }
-      })();
-    });
-    return () => { mounted = false; unsub(); };
-  }, []);
-
-  React.useEffect(() => {
-    const pairedIds = pairedDevices.map(device => device.id);
-    setAvailableDevices(getAvailableDevices().filter(device => !pairedIds.includes(device.id)));
-  }, [pairedDevices]);
-
-  React.useEffect(() => {
-    const unsubscribe = subscribeToUserChange(() => {
-      setUserVersion(prev => prev + 1);
-    });
-    return unsubscribe;
-  }, []);
-
-  React.useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const storedDefaultUserId = await getStorageItem('defaultUserId');
-        const userDeviceMap = await getStorageJSON('userDeviceMap', {});
-        debugLog('Evaluating default user', { storedDefaultUserId, userDeviceMap, pairedCount: pairedDevices?.length });
-
-        if (!mounted) return;
-
-        const currentUser = await getStorageJSON('currentUser', null);
-        const otherUsers = await getStorageJSON('users', []);
-        const allUsers = [...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers.map(u => ({ ...u }))];
-
-        // If no paired devices at all, show modal to pair devices
-        // But if a default user is set and they have NO assigned device, show the "No device assigned" modal first.
-        if (!pairedDevices || pairedDevices.length === 0) {
-          setConnectedDevice(null);
-          setShouldAssignDefaultInModal(false);
-
-          if (!devicesMenuDismissed) {
-            // If there's a default user with no device, show the informative modal first.
-            if (storedDefaultUserId) {
-              const defUser = allUsers.find(u => String(u.id) === String(storedDefaultUserId));
-              const hasDevice = defUser && defUser.deviceId && String(defUser.deviceId) !== '';
-              const mappedDevice = hasDevice ? pairedDevices.find(d => String(d.id) === String(defUser.deviceId)) : null;
-              // If default user has a deviceId but the device is not in paired list (unpaired elsewhere), treat as unassigned
-              if (!hasDevice || !mappedDevice) {
-                setDefaultUserName(defUser?.name || 'user');
-                setShowNoDeviceAssignedModal(true);
-                setShowDevicesMenuModal(false);
-              } else {
-                setShowNoDeviceAssignedModal(false);
-                setShowDevicesMenuModal(true);
-              }
-            } else {
-              setShowNoDeviceAssignedModal(false);
-              setShowDevicesMenuModal(true);
-            }
+        
+        if (!activeId) {
+          // No user set yet - wait for onboarding
+          if (mounted) {
+            setActiveUser(null);
+            setUserDevices([]);
+            setConnectedDevice(null);
           }
-
           return;
         }
-
-        let connected = null;
-        let needsDefault = false;
-
-        setActiveDefaultUserId(storedDefaultUserId || '');
-        const derivedDeviceMap = {};
-        allUsers.forEach(u => {
-          if (u.deviceId) {
-            derivedDeviceMap[u.id] = String(u.deviceId);
-          }
-        });
-        setCurrentUserDeviceMap(derivedDeviceMap);
-
-        if (storedDefaultUserId) {
-          const mappedDeviceId = userDeviceMap ? userDeviceMap[storedDefaultUserId] : null;
-          if (mappedDeviceId) {
-            const mappedDevice = pairedDevices.find(d => String(d.id) === String(mappedDeviceId));
-            if (mappedDevice) {
-              connected = mappedDevice;
-            } else {
-              needsDefault = true;
-              debugLog('Mapped device missing from paired list', { mappedDeviceId });
-            }
-          }
-
-          if (!connected) {
-            // Find the DEFAULT user (not necessarily the current user)
-            const defUser = allUsers.find(u => String(u.id) === String(storedDefaultUserId));
-            debugLog('Fallback to default user record', { defUserExists: Boolean(defUser) });
-
-            // Use DEFAULT user's deviceId
-            if (defUser && defUser.deviceId && String(defUser.deviceId) !== '') {
-              connected = pairedDevices.find(d => String(d.id) === String(defUser.deviceId)) || null;
-
-              if (!connected) {
-                needsDefault = true;
-                debugLog('User had deviceId but not in paired list', { deviceId: defUser.deviceId });
-              }
-            } else {
-              needsDefault = true;
-              debugLog('Default user missing device assignment');
-            }
-          }
-
-          if (!connected) {
-            const assignedIds = allUsers.filter(u => u.deviceId).map(u => String(u.deviceId));
-            const unassigned = pairedDevices.filter(d => !assignedIds.includes(String(d.id)));
-            needsDefault = true;
-            debugLog('Default user lacks device; unassigned pool size', { unassignedCount: unassigned.length });
-          }
-        } else {
-          needsDefault = true;
-          debugLog('No stored default user id');
+        
+        const user = await getUserById(activeId);
+        if (!mounted) return;
+        
+        if (!user) {
+          setActiveUser(null);
+          setUserDevices([]);
+          setConnectedDevice(null);
+          return;
         }
-
-        setConnectedDevice(connected);
-        debugLog('Connected device resolved', { connectedId: connected ? connected.id : null, needsDefault });
-        setShouldAssignDefaultInModal(needsDefault || !connected);
-        if (needsDefault || !connected) {
-          // Find default user name and save to state
-          let foundDefaultUserName = '';
-          if (storedDefaultUserId) {
-            const defUser = allUsers.find(u => String(u.id) === String(storedDefaultUserId));
-            if (defUser) foundDefaultUserName = defUser.name || 'User';
-          }
-          setDefaultUserName(foundDefaultUserName);
-          // Only show the 'no device assigned' modal if there are paired devices to assign
-          if (!devicesMenuDismissed && pairedDevices.length > 0) {
-            setShowNoDeviceAssignedModal(true);
-            setShowDevicesMenuModal(false);
-          } else if (!devicesMenuDismissed) {
-            setShowDevicesMenuModal(true);
-            setShowNoDeviceAssignedModal(false);
-          } else {
-            setShowNoDeviceAssignedModal(false);
-          }
-        } else {
-          if (devicesMenuDismissed) {
-            setDevicesMenuDismissed(false);
-          }
-          setShowDevicesMenuModal(false);
-          setShowNoDeviceAssignedModal(false);
+        
+        setActiveUser(user);
+        
+        // Get user's devices
+        const devices = await getDevicesForUser(user.id);
+        setUserDevices(devices);
+        
+        // Get default device for user
+        const defaultDevice = await getDefaultDeviceForUser(user.id);
+        setConnectedDevice(defaultDevice);
+        
+        // If user has no devices, show assignment modal
+        if (devices.length === 0) {
+          setShowDevicesMenuModal(true);
         }
       } catch (err) {
-        console.error('Failed to load connected device for dashboard', err);
+        console.error('Failed to load user and devices', err);
       }
-    })();
+    };
+    
+    loadUserAndDevices();
+    
+    // Subscribe to user changes (from header dropdown)
+    const unsubUser = subscribeToUserChange(() => {
+      loadUserAndDevices();
+    });
+    
+    return () => {
+      mounted = false;
+      unsubUser();
+    };
+  }, []);
 
-    return () => { mounted = false; };
-  }, [pairedDevices, devicesMenuDismissed, userVersion]);
-
-  const deviceOwnerMap = useMemo(() => {
-    const entries = Object.entries(currentUserDeviceMap || {});
-    const map = new Map();
-    entries.forEach(([userId, deviceId]) => {
-      if (deviceId) {
-        map.set(String(deviceId), String(userId));
+  // Load paired devices
+  React.useEffect(() => {
+    let mounted = true;
+    
+    const loadPairedDevices = async () => {
+      try {
+        const devices = await getStorageJSON('pairedDevices', []);
+        if (mounted) {
+          setPairedDevices(devices);
+        }
+      } catch (err) {
+        console.error('Failed to load paired devices', err);
       }
+    };
+    
+    loadPairedDevices();
+    
+    const unsub = subscribeToPairedDevicesChange(() => {
+      loadPairedDevices();
     });
-    return map;
-  }, [currentUserDeviceMap]);
+    
+    return () => {
+      mounted = false;
+      unsub();
+    };
+  }, []);
 
-  const pairedDevicesForModal = useMemo(() => {
-    if (!shouldAssignDefaultInModal) return pairedDevices;
-    return pairedDevices.filter(device => {
-      const ownerId = deviceOwnerMap.get(String(device.id));
-      return !ownerId || ownerId === activeDefaultUserId;
-    });
-  }, [pairedDevices, deviceOwnerMap, shouldAssignDefaultInModal, activeDefaultUserId]);
+  // Update available devices
+  React.useEffect(() => {
+    const pairedIds = pairedDevices.map(d => d.id);
+    setAvailableDevices(getAvailableDevices().filter(d => !pairedIds.includes(d.id)));
+  }, [pairedDevices]);
 
-  const assignDeviceToDefaultUser = async (deviceId) => {
+  // Handle device selection
+  const handleDeviceSelect = async (device) => {
+    if (!activeUser) return;
+    
     try {
-      const currentUser = await getStorageJSON('currentUser', null);
-      const otherUsers = await getStorageJSON('users', []);
-      const allUsers = [...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers.map(u => ({ ...u }))];
-      if (allUsers.length === 0) return false;
-
-      let storedDefaultUserId = await getStorageItem('defaultUserId');
-      let defaultUser = storedDefaultUserId
-        ? allUsers.find(u => String(u.id) === String(storedDefaultUserId))
-        : null;
-
-      if (!defaultUser) {
-        defaultUser = allUsers[0];
-        storedDefaultUserId = defaultUser.id;
-        await setStorageItem('defaultUserId', storedDefaultUserId);
-      }
-
-      const updatedUsers = allUsers.map(u => (
-        String(u.id) === String(storedDefaultUserId)
-          ? { ...u, deviceId }
-          : u
-      ));
-
-      const updatedCurrent = updatedUsers.find(u => u.self);
-      if (updatedCurrent) {
-        const { self: _self, ...rest } = updatedCurrent;
-        await setStorageJSON('currentUser', rest);
-      }
-      const otherOnly = updatedUsers.filter(u => !u.self);
-      await setStorageJSON('users', otherOnly);
-      const defaultUserRecord = updatedUsers.find(u => String(u.id) === String(storedDefaultUserId));
-      await setStorageJSON('defaultUser', sanitizeUserForStorage(defaultUserRecord));
-      await persistUserDeviceMap(updatedUsers);
-      debugLog('Assigned device to default user', { deviceId, defaultUserId: storedDefaultUserId });
-      notifyUserChange();
-      return true;
+      // Set as default device for active user
+      await setDefaultDeviceForUser(activeUser.id, device.id);
+      setConnectedDevice(device);
     } catch (err) {
-      console.error('Failed assigning default device', err);
-      return false;
+      console.error('Failed to set device as default', err);
     }
   };
 
-  const handleAssignDefaultFromMenu = async (device) => {
-    if (!device) return;
-    const success = await assignDeviceToDefaultUser(device.id);
-    if (!success) return;
-    setConnectedDevice(device);
-    setDevicesMenuDismissed(false);
-    setShowDevicesMenuModal(false);
-  };
-
-  const handlePairDeviceFromMenu = async (device) => {
-    if (!device) return;
+  // Handle pairing device
+  const handlePairDevice = async (device) => {
     try {
       const mappedImage = deviceImageMap[device.image] || device.image;
-      const pairDevice = { ...device, image: mappedImage, connectionStatus: 'connected', batteryLevel: 70, lastSync: new Date().toISOString() };
+      const pairDevice = {
+        ...device,
+        image: mappedImage,
+        connectionStatus: 'connected',
+        batteryLevel: 70,
+        lastSync: new Date().toISOString()
+      };
+      
       const updated = [...pairedDevices, pairDevice];
       await setStorageJSON('pairedDevices', updated);
       setPairedDevices(updated);
-      setDevicesMenuDismissed(false);
       notifyPairedDevicesChange();
-
-      // If user has no paired devices, assign this device to default user and close modal
-      if (pairedDevices.length === 0) {
-        await assignDeviceToDefaultUser(pairDevice.id);
+      
+      // If active user has no devices, assign this one
+      if (activeUser && userDevices.length === 0) {
+        // Add device to user's devices
+        const currentUser = await getStorageJSON('currentUser', null);
+        const otherUsers = await getStorageJSON('users', []);
+        
+        if (currentUser && String(currentUser.id) === String(activeUser.id)) {
+          const updatedUser = {
+            ...currentUser,
+            devices: [String(pairDevice.id)],
+            defaultDevice: String(pairDevice.id)
+          };
+          await setStorageJSON('currentUser', updatedUser);
+        } else {
+          const updatedOthers = otherUsers.map(u =>
+            String(u.id) === String(activeUser.id)
+              ? {
+                  ...u,
+                  devices: [String(pairDevice.id)],
+                  defaultDevice: String(pairDevice.id)
+                }
+              : u
+          );
+          await setStorageJSON('users', updatedOthers);
+        }
+        
+        notifyUserChange();
         setConnectedDevice(pairDevice);
+        setUserDevices([pairDevice]);
         setShowDevicesMenuModal(false);
       }
     } catch (err) {
-      console.error('Failed to pair mock available device', err);
+      console.error('Failed to pair device', err);
     }
   };
 
-  const handleUnpairDeviceFromMenu = async (device) => {
-    if (!device) return;
+  // Handle unpairing device
+  const handleUnpairDevice = async (device) => {
     try {
       const updated = pairedDevices.filter(d => d.id !== device.id);
       await setStorageJSON('pairedDevices', updated);
       setPairedDevices(updated);
+      
       if (connectedDevice && String(connectedDevice.id) === String(device.id)) {
         setConnectedDevice(null);
       }
-      setDevicesMenuDismissed(false);
+      
       notifyPairedDevicesChange();
     } catch (err) {
       console.error('Failed to unpair device', err);
     }
   };
 
-  const handleDismissDevicesMenu = () => {
-    setShowDevicesMenuModal(false);
-    setDevicesMenuDismissed(true);
-  };
+  // Show empty state if user has no devices
+  if (activeUser && userDevices.length === 0 && !showDevicesMenuModal) {
+    return (
+      <div className="app-container" style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: 'calc(100vh - 60px)',
+        padding: '40px 20px'
+      }}>
+        <div style={{ 
+          textAlign: 'center', 
+          maxWidth: '400px',
+          background: 'white',
+          padding: '40px',
+          borderRadius: '16px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+        }}>
+          <h2 style={{ marginBottom: '16px', fontSize: '24px' }}>
+            {activeUser.name} has no device assigned
+          </h2>
+          <button
+            className="btn-primary"
+            style={{ 
+              width: '100%', 
+              marginTop: '20px',
+              padding: '12px 24px',
+              fontSize: '16px',
+              borderRadius: '8px',
+              border: 'none',
+              background: '#667eea',
+              color: 'white',
+              cursor: 'pointer'
+            }}
+            onClick={() => setShowDevicesMenuModal(true)}
+          >
+            Assign Device
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -681,7 +584,12 @@ const Dashboard = () => {
         onOpenCycles={() => setShowCycles(true)}
         onOpenWeight={() => setShowWeight(true)}
         connectedDevice={connectedDevice}
+        userDevices={userDevices}
+        onDeviceSelect={handleDeviceSelect}
+        showDeviceSelector={userDevices.length > 1}
       />
+      
+      {/* Modals */}
       {showSteps && <StepsModal onClose={() => setShowSteps(false)} />}
       {showHeartRate && <HeartRateModal onClose={() => setShowHeartRate(false)} />}
       {showSleep && <SleepModal onClose={() => setShowSleep(false)} />}
@@ -690,43 +598,27 @@ const Dashboard = () => {
       {showStress && <StressModal onClose={() => setShowStress(false)} />}
       {showCycles && <CyclesModal onClose={() => setShowCycles(false)} />}
       {showWeight && <WeightModal onClose={() => setShowWeight(false)} />}
-      {showNoDeviceAssignedModal && (
-        <div className="modal-overlay" onClick={() => setShowNoDeviceAssignedModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 400, textAlign: 'center' }}>
-            <h3 style={{ marginBottom: 16 }}>{defaultUserName || 'User'} has no assigned device</h3>
-            <button
-              className="btn-primary btn-submit"
-              style={{ width: '100%', marginTop: 12 }}
-              onClick={() => {
-                setShowNoDeviceAssignedModal(false);
-                setShowDevicesMenuModal(true);
-              }}
-            >
-              Assign Device
-            </button>
-          </div>
-        </div>
-      )}
+      
+      {/* Device Assignment Modal */}
       {showDevicesMenuModal && (
-        <div className="devices-menu-overlay" onClick={handleDismissDevicesMenu}>
+        <div className="devices-menu-overlay" onClick={() => setShowDevicesMenuModal(false)}>
           <div className="devices-menu-modal" onClick={(e) => e.stopPropagation()}>
             <div className="devices-menu-modal-header">
-              <h3>
-                {pairedDevices.length === 0 
-                  ? 'Pair a device to get started' 
-                  : shouldAssignDefaultInModal 
-                    ? 'Choose a device to connect' 
-                    : 'Manage devices'}
-              </h3>
-              <button className="devices-menu-modal-close" onClick={handleDismissDevicesMenu}>✕</button>
+              <h3>{pairedDevices.length === 0 ? 'Pair a device to get started' : 'Assign a device'}</h3>
+              <button 
+                className="devices-menu-modal-close" 
+                onClick={() => setShowDevicesMenuModal(false)}
+              >
+                ✕
+              </button>
             </div>
             <div className="devices-menu-modal-body">
               <DevicesMenu
-                pairedDevices={pairedDevicesForModal}
+                pairedDevices={pairedDevices}
                 availableDevices={availableDevices}
-                onPairDevice={handlePairDeviceFromMenu}
-                onUnpairDevice={handleUnpairDeviceFromMenu}
-                onCardClick={shouldAssignDefaultInModal ? handleAssignDefaultFromMenu : undefined}
+                onPairDevice={handlePairDevice}
+                onUnpairDevice={handleUnpairDevice}
+                onCardClick={handlePairDevice}
               />
             </div>
           </div>
@@ -734,6 +626,6 @@ const Dashboard = () => {
       )}
     </>
   );
-}
+};
 
 export default Dashboard;

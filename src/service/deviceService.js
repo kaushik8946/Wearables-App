@@ -2,7 +2,7 @@
 // Service layer for device-related operations
 
 import { availableDevices } from '../data/mockData';
-import { getStorageJSON, setStorageJSON, notifyPairedDevicesChange, notifyUserChange } from './storageService';
+import { getStorageJSON, setStorageJSON, getStorageItem, setStorageItem, notifyPairedDevicesChange, notifyUserChange } from './storageService';
 
 // Helper functions for device information
 export const getSignalStrengthText = (rssi) => {
