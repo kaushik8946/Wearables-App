@@ -4,6 +4,7 @@ import './ManageAccount.css';
 
 
 const fields = [
+  { key: 'name', label: 'Name', type: 'text' },
   { key: 'gender', label: 'Gender', type: 'select', options: ['Male', 'Female', 'Other'] },
   { key: 'birthday', label: 'Birthday', type: 'date' },
   { key: 'age', label: 'Age', type: 'readonly' },
@@ -72,6 +73,12 @@ const ManageAccount = () => {
 
 
   const handleSave = async (key) => {
+    // Name validation
+    if (key === 'name' && !editValue.trim()) {
+      setError('Name cannot be empty.');
+      return;
+    }
+    
     // Birthday validation: must be a past date
     if (key === 'birthday') {
       const today = new Date();
@@ -81,6 +88,7 @@ const ManageAccount = () => {
         return;
       }
     }
+    
     let updated = { ...user, [key]: editValue };
     // If birthday is updated, recalculate age
     if (key === 'birthday') {
@@ -88,6 +96,17 @@ const ManageAccount = () => {
     }
     setUser(updated);
     await setStorageJSON('currentUser', updated);
+    
+    // If name is updated, also update in users list if user is there
+    if (key === 'name' && user.id) {
+      const otherUsers = await getStorageJSON('users', []);
+      const userIndex = otherUsers.findIndex(u => u.id === user.id);
+      if (userIndex !== -1) {
+        otherUsers[userIndex] = { ...otherUsers[userIndex], name: editValue };
+        await setStorageJSON('users', otherUsers);
+      }
+    }
+    
     notifyUserChange();
     setEditKey(null);
     setEditValue('');
@@ -162,6 +181,14 @@ const ManageAccount = () => {
                         </select>
                       ) : type === 'date' ? (
                         <input type="date" value={editValue} onChange={handleInput} className="profile-input modern-input" />
+                      ) : type === 'text' ? (
+                        <input
+                          type="text"
+                          value={editValue}
+                          onChange={handleInput}
+                          className="profile-input modern-input"
+                          placeholder="Enter name"
+                        />
                       ) : (
                         <input
                           type="number"
