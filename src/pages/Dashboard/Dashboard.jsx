@@ -7,7 +7,8 @@ import {
   Zap,
   Scale,
   CalendarHeart,
-  Stethoscope
+  Stethoscope,
+  ChevronDown
 } from 'lucide-react';
 import DevicesMenu from '../../common/DevicesMenu/DevicesMenu';
 import SineWave from '../../common/SineWave/SineWave';
@@ -21,7 +22,7 @@ import SpO2Modal from '../../common/SpO2Modal/SpO2Modal';
 import StressModal from '../../common/StressModal/StressModal';
 import CyclesModal from '../../common/CyclesModal/CyclesModal';
 import WeightModal from '../../common/WeightModal/WeightModal';
-import { getAvailableDevices } from '../../service';
+import { getAvailableDevices, getActiveUser, getDevicesForUser, getDefaultDeviceForUser, setDefaultDeviceForUser, getUserById } from '../../service';
 import watchImg from '../../assets/images/watch.png';
 import ringImg from '../../assets/images/ring.webp';
 import scaleImg from '../../assets/images/weighing-scale.avif';
@@ -36,172 +37,295 @@ const deviceImageMap = {
 };
 
 // 1. MAIN DASHBOARD (Light Mode)
-const DashboardView = ({ onOpenSteps, onOpenHeartRate, onOpenSleep, onOpenBloodPressure, onOpenSpO2, onOpenStress, onOpenCycles, onOpenWeight, connectedDevice }) => {
+const DashboardView = ({ 
+  onOpenSteps, 
+  onOpenHeartRate, 
+  onOpenSleep, 
+  onOpenBloodPressure, 
+  onOpenSpO2, 
+  onOpenStress, 
+  onOpenCycles, 
+  onOpenWeight, 
+  connectedDevice,
+  userDevices,
+  onDeviceSelect,
+  showDeviceSelector,
+  activeUserName
+}) => {
+  const [showDeviceDropdown, setShowDeviceDropdown] = useState(false);
+  
+  // Determine which cards to show based on device type
+  const isScale = connectedDevice?.deviceType === 'scale';
+  const showWeightOnly = isScale;
+  const showAllExceptWeight = !isScale && connectedDevice;
+  
   return (
     <div className="app-container">
       <div className="max-w-wrapper">
-        {/* Activity Rings */}
-        <ActivityRings
-          steps={connectedDevice ? 4784 : null}
-          stepsGoal={8000}
-          active={connectedDevice ? 45 : null}
-          activeGoal={60}
-          cals={connectedDevice ? 512 : null}
-          calsGoal={800}
-        />
+        {/* Device Selector */}
+        {showDeviceSelector && connectedDevice && userDevices && userDevices.length > 0 && (
+          <div style={{ 
+            marginBottom: '24px', 
+            padding: '16px', 
+            background: 'white', 
+            borderRadius: '12px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              gap: '12px'
+            }}>
+              <span style={{ fontSize: '14px', color: '#666', fontWeight: '500' }}>
+                Active Device:
+              </span>
+              <div style={{ position: 'relative', flex: 1, maxWidth: '300px' }}>
+                <div
+                  onClick={() => setShowDeviceDropdown(!showDeviceDropdown)}
+                  style={{
+                    padding: '10px 14px',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: 'white',
+                    fontSize: '14px',
+                    fontWeight: '500'
+                  }}
+                >
+                  <span>{connectedDevice.name}</span>
+                  <ChevronDown size={18} style={{ 
+                    transition: 'transform 0.2s',
+                    transform: showDeviceDropdown ? 'rotate(180deg)' : 'rotate(0deg)'
+                  }} />
+                </div>
+                
+                {showDeviceDropdown && userDevices.length > 1 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    marginTop: '4px',
+                    background: 'white',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    zIndex: 100,
+                    overflow: 'hidden'
+                  }}>
+                    {userDevices.map(device => (
+                      <div
+                        key={device.id}
+                        onClick={() => {
+                          onDeviceSelect(device);
+                          setShowDeviceDropdown(false);
+                        }}
+                        style={{
+                          padding: '12px 14px',
+                          cursor: 'pointer',
+                          background: String(device.id) === String(connectedDevice.id) ? '#f0f0f0' : 'white',
+                          borderBottom: '1px solid #f0f0f0',
+                          fontSize: '14px',
+                          fontWeight: String(device.id) === String(connectedDevice.id) ? '600' : '400'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (String(device.id) !== String(connectedDevice.id)) {
+                            e.target.style.background = '#f8f8f8';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (String(device.id) !== String(connectedDevice.id)) {
+                            e.target.style.background = 'white';
+                          }
+                        }}
+                      >
+                        {device.name}
+                        <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+                          {device.brand} • {device.model}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Activity Rings - only show if not scale */}
+        {!showWeightOnly && (
+          <ActivityRings
+            steps={connectedDevice ? 4784 : null}
+            stepsGoal={8000}
+            active={connectedDevice ? 45 : null}
+            activeGoal={60}
+            cals={connectedDevice ? 512 : null}
+            calsGoal={800}
+          />
+        )}
+        )}
 
         {/* Cards Grid (2 Columns) */}
         <div className="grid-2">
-          {/* 1. Steps - CLICKABLE */}
-          <div
-            onClick={onOpenSteps}
-            className="card card-rose"
-          >
-            <div className="card-content">
-              <div className="flex-between-start mb-2">
-                <span className="card-label text-rose-100">Steps</span>
-                <Footprints size={16} className="text-rose-200" />
+          {/* Show only Weight card for scale */}
+          {showWeightOnly && (
+            <div onClick={onOpenWeight} className="card card-white-clean">
+              <div className="weight-header">
+                <div className="weight-icon-box">
+                  <Scale size={20} color="#0ea5e9" />
+                </div>
+                <div className="weight-title-group">
+                  <div className="weight-label">Weight</div>
+                  <div className="weight-timestamp">19/11/2025, 11:07:09</div>
+                </div>
               </div>
-              <h3 className="title-main">{connectedDevice ? '4,784' : '—'} <span className="subtitle text-rose-100">steps</span></h3>
+              <div className="weight-big-number">
+                {connectedDevice ? (<><span>77.9</span><span className="weight-unit-text">kg</span></>) : '— kg'}
+              </div>
             </div>
-            <div className="mt-4 width-full">
-              <BarChart />
-            </div>
-          </div>
+          )}
 
-          {/* 2. Heart Rate */}
-          <div onClick={onOpenHeartRate} className="card card-lime">
-            <div className="card-content">
-              <div className="flex-between-start mb-2">
-                <span className="card-label text-lime-900">Heart Rate</span>
-                <Heart size={16} className="icon-lime-bg" />
+          {/* Show all cards except Weight for other devices */}
+          {showAllExceptWeight && (
+            <>
+              {/* 1. Steps - CLICKABLE */}
+              <div
+                onClick={onOpenSteps}
+                className="card card-rose"
+              >
+                <div className="card-content">
+                  <div className="flex-between-start mb-2">
+                    <span className="card-label text-rose-100">Steps</span>
+                    <Footprints size={16} className="text-rose-200" />
+                  </div>
+                  <h3 className="title-main">{connectedDevice ? '4,784' : '—'} <span className="subtitle text-rose-100">steps</span></h3>
+                </div>
+                <div className="mt-4 width-full">
+                  <BarChart />
+                </div>
               </div>
-              <h3 className="title-main">{connectedDevice ? '82' : '—'} <span className="subtitle text-lime-800">bpm</span></h3>
-            </div>
 
-            {/* Graph Visualization */}
-            <div className="graph-container">
-              <SineWave color="#ffffff" />
-            </div>
-          </div>
+              {/* 2. Heart Rate */}
+              <div onClick={onOpenHeartRate} className="card card-lime">
+                <div className="card-content">
+                  <div className="flex-between-start mb-2">
+                    <span className="card-label text-lime-900">Heart Rate</span>
+                    <Heart size={16} className="icon-lime-bg" />
+                  </div>
+                  <h3 className="title-main">{connectedDevice ? '82' : '—'} <span className="subtitle text-lime-800">bpm</span></h3>
+                </div>
 
-          {/* 3. Sleep */}
-          <div onClick={onOpenSleep} className="card card-indigo">
-            <div className="card-content">
-              <div className="flex-between-start mb-2">
-                <span className="card-label text-indigo-100">Sleep</span>
-                <Moon size={16} className="text-indigo-200" />
+                {/* Graph Visualization */}
+                <div className="graph-container">
+                  <SineWave color="#ffffff" />
+                </div>
               </div>
-              <h3 className="title-main">{connectedDevice ? (
-                <><span>5</span><span className="text-lg opacity-80 font-normal">h</span> 22<span className="text-lg opacity-80 font-normal">m</span></>
-              ) : '—'}</h3>
-              <p className="mt-1 tag-indigo text-indigo-100">Light Sleep</p>
-            </div>
-            <div className="sleep-bars mt-4">
-              <div className="bar bar-light" style={{ height: '40%' }}></div>
-              <div className="bar bar-white" style={{ height: '80%' }}></div>
-              <div className="bar bar-light" style={{ height: '60%' }}></div>
-              <div className="bar bar-light" style={{ height: '30%' }}></div>
-              <div className="bar bar-light" style={{ height: '50%' }}></div>
-            </div>
-          </div>
 
-          {/* 4. Blood Pressure (BP) */}
-          <div onClick={onOpenBloodPressure} className="card card-sky">
-            <div className="card-content">
-              <div className="flex-between-start mb-2">
-                <span className="card-label text-sky-100">BP</span>
-                <Stethoscope size={16} className="text-sky-200" />
+              {/* 3. Sleep */}
+              <div onClick={onOpenSleep} className="card card-indigo">
+                <div className="card-content">
+                  <div className="flex-between-start mb-2">
+                    <span className="card-label text-indigo-100">Sleep</span>
+                    <Moon size={16} className="text-indigo-200" />
+                  </div>
+                  <h3 className="title-main">{connectedDevice ? (
+                    <><span>5</span><span className="text-lg opacity-80 font-normal">h</span> 22<span className="text-lg opacity-80 font-normal">m</span></>
+                  ) : '—'}</h3>
+                  <p className="mt-1 tag-indigo text-indigo-100">Light Sleep</p>
+                </div>
+                <div className="sleep-bars mt-4">
+                  <div className="bar bar-light" style={{ height: '40%' }}></div>
+                  <div className="bar bar-white" style={{ height: '80%' }}></div>
+                  <div className="bar bar-light" style={{ height: '60%' }}></div>
+                  <div className="bar bar-light" style={{ height: '30%' }}></div>
+                  <div className="bar bar-light" style={{ height: '50%' }}></div>
+                </div>
               </div>
-              <h3 className="title-main">{connectedDevice ? (
-                <>119<span className="subtitle text-sky-200 inline">/</span>82</>
-              ) : '—/—'}</h3>
-              <p className="text-sky-100 subtitle mt-1">mmHg</p>
-            </div>
-            {/* Line Graph */}
-            <div className="graph-bp-container">
-              <svg viewBox="0 0 100 40" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-                <path d="M0,20 L20,20 L30,5 L40,35 L50,20 L100,20" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          </div>
 
-          {/* 5. Blood Oxygen */}
-          <div onClick={onOpenSpO2} className="card card-teal">
-            <div className="card-content">
-              <div className="flex-between-start mb-2">
-                <span className="card-label text-teal-100">SpO2</span>
-                <Wind size={16} className="text-teal-200" />
+              {/* 4. Blood Pressure (BP) */}
+              <div onClick={onOpenBloodPressure} className="card card-sky">
+                <div className="card-content">
+                  <div className="flex-between-start mb-2">
+                    <span className="card-label text-sky-100">BP</span>
+                    <Stethoscope size={16} className="text-sky-200" />
+                  </div>
+                  <h3 className="title-main">{connectedDevice ? (
+                    <>119<span className="subtitle text-sky-200 inline">/</span>82</>
+                  ) : '—/—'}</h3>
+                  <p className="text-sky-100 subtitle mt-1">mmHg</p>
+                </div>
+                {/* Line Graph */}
+                <div className="graph-bp-container">
+                  <svg viewBox="0 0 100 40" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
+                    <path d="M0,20 L20,20 L30,5 L40,35 L50,20 L100,20" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
               </div>
-              <h3 className="title-main">{connectedDevice ? '95' : '—'} <span className="subtitle text-teal-200 inline">%</span></h3>
-            </div>
-            {/* Circular Indicator */}
-            <div className="circular-indicator">
-              <svg style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
-                <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.2)" strokeWidth="6" fill="none" />
-                <circle cx="32" cy="32" r="28" stroke="white" strokeWidth="6" fill="none" strokeDasharray="175" strokeDashoffset="10" strokeLinecap="round" />
-              </svg>
-              <div className="pulse-dot">
-                <div className="pulse-dot-inner"></div>
-              </div>
-            </div>
-          </div>
 
-          {/* 6. Stress */}
-          <div onClick={onOpenStress} className="card card-amber">
-            <div className="card-content">
-              <div className="flex-between-start mb-2">
-                <span className="card-label text-amber-900">Stress</span>
-                <Zap size={16} className="text-amber-800" />
+              {/* 5. Blood Oxygen */}
+              <div onClick={onOpenSpO2} className="card card-teal">
+                <div className="card-content">
+                  <div className="flex-between-start mb-2">
+                    <span className="card-label text-teal-100">SpO2</span>
+                    <Wind size={16} className="text-teal-200" />
+                  </div>
+                  <h3 className="title-main">{connectedDevice ? '95' : '—'} <span className="subtitle text-teal-200 inline">%</span></h3>
+                </div>
+                {/* Circular Indicator */}
+                <div className="circular-indicator">
+                  <svg style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                    <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.2)" strokeWidth="6" fill="none" />
+                    <circle cx="32" cy="32" r="28" stroke="white" strokeWidth="6" fill="none" strokeDasharray="175" strokeDashoffset="10" strokeLinecap="round" />
+                  </svg>
+                  <div className="pulse-dot">
+                    <div className="pulse-dot-inner"></div>
+                  </div>
+                </div>
               </div>
-              <h3 className="title-main">{connectedDevice ? 'Average' : '—'}</h3>
-              <p className="mt-1 tag-amber text-amber-800">Relaxed</p>
-            </div>
-            {/* Face graphic */}
-            <div className="face-graphic">
-              <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="8" y1="9" x2="10" y2="9"></line>
-                <line x1="14" y1="9" x2="16" y2="9"></line>
-                <path d="M8 14c1.5 1 4.5 1 6 0"></path>
-              </svg>
-            </div>
-          </div>
 
-          {/* 7. Periods */}
-          <div onClick={onOpenCycles} className="card card-pink">
-            <div className="card-content">
-              <div className="flex-between-start mb-2">
-                <span className="card-label text-pink-100">Cycles</span>
-                <CalendarHeart size={16} className="text-pink-200" />
+              {/* 6. Stress */}
+              <div onClick={onOpenStress} className="card card-amber">
+                <div className="card-content">
+                  <div className="flex-between-start mb-2">
+                    <span className="card-label text-amber-900">Stress</span>
+                    <Zap size={16} className="text-amber-800" />
+                  </div>
+                  <h3 className="title-main">{connectedDevice ? 'Average' : '—'}</h3>
+                  <p className="mt-1 tag-amber text-amber-800">Relaxed</p>
+                </div>
+                {/* Face graphic */}
+                <div className="face-graphic">
+                  <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="8" y1="9" x2="10" y2="9"></line>
+                    <line x1="14" y1="9" x2="16" y2="9"></line>
+                    <path d="M8 14c1.5 1 4.5 1 6 0"></path>
+                  </svg>
+                </div>
               </div>
-              <h3 className="title-main">{connectedDevice ? 'Day 12' : '—'}</h3>
-              <p className="text-pink-100 subtitle mt-1">Follicular Phase</p>
-            </div>
-            {/* Period dots */}
-            <div className="dots-container">
-              {[1, 2, 3, 4, 5].map(d => (
-                <div key={d} className={`dot ${d === 3 ? 'active' : ''}`}></div>
-              ))}
-            </div>
-          </div>
 
-          {/* 8. Weight (NEW LIGHT CARD) */}
-          <div onClick={onOpenWeight} className="card card-white-clean">
-            <div className="weight-header">
-              <div className="weight-icon-box">
-                <Scale size={20} color="#0ea5e9" />
+              {/* 7. Periods */}
+              <div onClick={onOpenCycles} className="card card-pink">
+                <div className="card-content">
+                  <div className="flex-between-start mb-2">
+                    <span className="card-label text-pink-100">Cycles</span>
+                    <CalendarHeart size={16} className="text-pink-200" />
+                  </div>
+                  <h3 className="title-main">{connectedDevice ? 'Day 12' : '—'}</h3>
+                  <p className="text-pink-100 subtitle mt-1">Follicular Phase</p>
+                </div>
+                {/* Period dots */}
+                <div className="dots-container">
+                  {[1, 2, 3, 4, 5].map(d => (
+                    <div key={d} className={`dot ${d === 3 ? 'active' : ''}`}></div>
+                  ))}
+                </div>
               </div>
-              <div className="weight-title-group">
-                <div className="weight-label">Weight</div>
-                <div className="weight-timestamp">19/11/2025, 11:07:09</div>
-              </div>
-            </div>
-            <div className="weight-big-number">
-              {connectedDevice ? (<><span>77.9</span><span className="weight-unit-text">kg</span></>) : '— kg'}
-            </div>
-          </div>
-
+            </>
+          )}
         </div>
       </div>
     </div>

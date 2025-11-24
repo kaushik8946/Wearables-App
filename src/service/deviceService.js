@@ -249,3 +249,73 @@ export const unassignDevice = async (deviceId) => {
   
   return { success: true };
 };
+
+// Get the active user (used for dashboard context)
+export const getActiveUser = async () => {
+  const activeUserId = await getStorageItem('activeUserId');
+  
+  if (!activeUserId) {
+    // Fallback to default user
+    const defaultUserId = await getStorageItem('defaultUserId');
+    if (defaultUserId) {
+      return await getUserById(defaultUserId);
+    }
+    return null;
+  }
+  
+  return await getUserById(activeUserId);
+};
+
+// Set the active user (used for dashboard context)
+export const setActiveUser = async (userId) => {
+  await setStorageItem('activeUserId', String(userId));
+  notifyUserChange();
+};
+
+// Get user by ID
+export const getUserById = async (userId) => {
+  const users = await getAllUsers();
+  return users.find(u => String(u.id) === String(userId)) || null;
+};
+
+// Get devices for a specific user
+export const getDevicesForUser = async (userId) => {
+  const user = await getUserById(userId);
+  if (!user) return [];
+  
+  const pairedDevices = await getPairedDevices();
+  const userDeviceIds = user.devices || [];
+  
+  return pairedDevices.filter(device => 
+    userDeviceIds.some(id => String(id) === String(device.id))
+  );
+};
+
+// Get default device for a user
+export const getDefaultDeviceForUser = async (userId) => {
+  const user = await getUserById(userId);
+  if (!user || !user.defaultDevice) return null;
+  
+  const pairedDevices = await getPairedDevices();
+  return pairedDevices.find(d => String(d.id) === String(user.defaultDevice)) || null;
+};
+
+// Set default device for a user
+export const setDefaultDeviceForUser = async (userId, deviceId) => {
+  const currentUser = await getStorageJSON('currentUser', null);
+  const otherUsers = await getStorageJSON('users', []);
+  
+  const userIdStr = String(userId);
+  const deviceIdStr = String(deviceId);
+  
+  if (currentUser && String(currentUser.id) === userIdStr) {
+    await setStorageJSON('currentUser', { ...currentUser, defaultDevice: deviceIdStr });
+  } else {
+    const updatedOtherUsers = otherUsers.map(u => 
+      String(u.id) === userIdStr ? { ...u, defaultDevice: deviceIdStr } : u
+    );
+    await setStorageJSON('users', updatedOtherUsers);
+  }
+  
+  notifyUserChange();
+};
