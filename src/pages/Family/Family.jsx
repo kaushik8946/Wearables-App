@@ -724,10 +724,12 @@ const Users = () => {
                           )}
                           <button
                             className="btn-delete"
-                            style={{ padding: '6px 12px', fontSize: '14px' }}
+                            style={{ padding: '6px 12px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             onClick={() => handleRemoveDevice(device.id)}
+                            title="Remove device"
+                            aria-label="Remove device"
                           >
-                            Remove
+                            <MdDelete size={16} />
                           </button>
                         </div>
                       </div>
