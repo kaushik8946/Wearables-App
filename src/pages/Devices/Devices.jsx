@@ -160,20 +160,10 @@ const Devices = () => {
         <div className="devices-header">
           <h1>Devices</h1>
           <button
-            className="btn-primary"
-            style={{ 
-              padding: '10px 20px',
-              fontSize: '14px',
-              borderRadius: '8px',
-              border: 'none',
-              background: '#667eea',
-              color: 'white',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
+            className="btn-pair-new"
             onClick={() => setShowPairDeviceModal(true)}
+            title="Pair new device"
+            aria-label="Pair new device"
           >
             + Pair New Device
           </button>

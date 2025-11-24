@@ -544,7 +544,7 @@ const Dashboard = () => {
           boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
         }}>
           <h2 style={{ marginBottom: '16px', fontSize: '24px', color: '#334155' }}>
-            no devices paired for: {activeUser.name}
+            No devices paired for: {activeUser.name}
           </h2>
           <button
             className="btn-primary"
@@ -561,7 +561,7 @@ const Dashboard = () => {
             }}
             onClick={() => setShowDevicesMenuModal(true)}
           >
-            pair device
+            Pair Device
           </button>
         </div>
       </div>

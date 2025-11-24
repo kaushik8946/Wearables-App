@@ -559,10 +559,11 @@ const Users = () => {
           setManagingUserIndex(null);
         };
 
-        // Available paired devices to add (not already assigned to this user)
-        const availablePairedDevices = pairedDevices.filter(d => 
-          !(user.devices || []).includes(String(d.id))
-        );
+        // Available paired devices to add.
+        // Exclude any devices already assigned to any user — we must not
+        // show devices that belong to another user when assigning to this one.
+        const assignedDeviceIds = new Set((users || []).flatMap(u => (u.devices || []).map(id => String(id))));
+        const availablePairedDevices = pairedDevices.filter(d => !assignedDeviceIds.has(String(d.id)));
 
         return (
           <div className="modal-overlay" onClick={handleCloseManageDevices}>
@@ -680,7 +681,7 @@ const Users = () => {
                           </div>
                         </div>
                         <button
-                          className="btn-primary"
+                          className="btn-primary btn-compact"
                           style={{ padding: '6px 12px', fontSize: '14px' }}
                           onClick={(e) => {
                             e.stopPropagation();
