@@ -20,11 +20,12 @@ const Users = () => {
     age: '',
     gender: '',
   });
-  const [showDeviceAssignmentForEdit, setShowDeviceAssignmentForEdit] = useState(false);
-  const [pendingEditUser, setPendingEditUser] = useState(null);
   const [errors, setErrors] = useState({});
   const [showDeviceSelectionModal, setShowDeviceSelectionModal] = useState(false);
   const [pendingNewUser, setPendingNewUser] = useState(null);
+  const [showManageDevicesModal, setShowManageDevicesModal] = useState(false);
+  const [managingUserIndex, setManagingUserIndex] = useState(null);
+  const [showAddDeviceSection, setShowAddDeviceSection] = useState(false);
 
   const sanitizeUserForStorage = (user) => {
     if (!user) return null;
@@ -47,6 +48,29 @@ const Users = () => {
     return resolvedId;
   };
 
+  // Helper to migrate old user data structure to new one
+  const migrateUserData = (user) => {
+    if (!user) return user;
+    
+    // If user already has devices array, return as-is
+    if (Array.isArray(user.devices)) {
+      return user;
+    }
+    
+    // Migrate from old deviceId to new devices array structure
+    const devices = [];
+    if (user.deviceId) {
+      devices.push(String(user.deviceId));
+    }
+    
+    const { deviceId: _deviceId, ...rest } = user;
+    return {
+      ...rest,
+      devices,
+      defaultDevice: devices.length > 0 ? devices[0] : null
+    };
+  };
+
   useEffect(() => {
     let isMounted = true;
     (async () => {
@@ -65,13 +89,16 @@ const Users = () => {
         currentUser = currentUser ? ensureId(currentUser) : null;
         otherUsers = Array.isArray(otherUsers) ? otherUsers.map(ensureId) : [];
         if (!isMounted) return;
+        
+        // Migrate users to new data structure
         const hydratedUsers = (currentUser
-          ? [{ ...currentUser, self: true }, ...otherUsers]
-          : otherUsers).map(u => ({ ...u, deviceId: String(u.deviceId || '') }));
+          ? [{ ...migrateUserData(currentUser), self: true }, ...otherUsers.map(migrateUserData)]
+          : otherUsers.map(migrateUserData));
+        
         setUsers(hydratedUsers);
         // Persist any id changes
-        if (currentUser) await setStorageJSON('currentUser', { ...currentUser });
-        await setStorageJSON('users', otherUsers);
+        if (currentUser) await setStorageJSON('currentUser', { ...migrateUserData(currentUser) });
+        await setStorageJSON('users', otherUsers.map(migrateUserData));
 
         // Default user logic persisted
         await persistDefaultUserSelection(hydratedUsers, storedDefaultUserId);
@@ -108,16 +135,6 @@ const Users = () => {
       await setStorageJSON('users', onlyUsers);
       setUsers(updatedUsers);
       await persistDefaultUserSelection(updatedUsers);
-
-      // Persist user-device mapping in IndexedDB
-      // Build mapping: { [userId]: deviceId }
-      const userDeviceMap = {};
-      updatedUsers.forEach(u => {
-        if (u.deviceId) {
-          userDeviceMap[u.id] = u.deviceId;
-        }
-      });
-      await setStorageJSON('userDeviceMap', userDeviceMap);
 
       notifyUserChange();
     } catch (err) {
@@ -167,7 +184,9 @@ const Users = () => {
     const newUser = { 
       ...formData, 
       self: false, 
-      id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}` 
+      id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      devices: [],
+      defaultDevice: null
     };
     
     // Store pending user and show device selection
@@ -189,15 +208,15 @@ const Users = () => {
         notifyPairedDevicesChange();
     }
 
-    // Assign device to the new user
-    const newUserWithDevice = { ...pendingNewUser, deviceId: String(device.id) };
+    // Assign device to the new user with new structure
+    const deviceIdStr = String(device.id);
+    const newUserWithDevice = { 
+      ...pendingNewUser, 
+      devices: [deviceIdStr],
+      defaultDevice: deviceIdStr
+    };
 
-    // Remove this device from any other user
-    const updatedUsers = users.map(u =>
-      String(u.deviceId) === String(device.id) ? { ...u, deviceId: '' } : u
-    );
-    updatedUsers.push(newUserWithDevice);
-
+    const updatedUsers = [...users, newUserWithDevice];
     await saveUsers(updatedUsers);
     setShowDeviceSelectionModal(false);
     setPendingNewUser(null);
@@ -302,8 +321,9 @@ const Users = () => {
                   </p>
                   <p className="user-device">
                     {(() => {
-                      if (user.deviceId) {
-                        const device = pairedDevices.find(d => String(d.id) === String(user.deviceId));
+                      const defaultDeviceId = user.defaultDevice;
+                      if (defaultDeviceId) {
+                        const device = pairedDevices.find(d => String(d.id) === String(defaultDeviceId));
                         if (device) {
                           return (
                             <>
@@ -312,8 +332,6 @@ const Users = () => {
                             </>
                           );
                         }
-                        // Device id is set but device not found in pairedDevices (likely unpaired)
-                        return <span style={{ color: '#94a3b8' }}>No device assigned</span>;
                       }
                       return <span style={{ color: '#94a3b8' }}>No device assigned</span>;
                     })()}
@@ -450,61 +468,39 @@ const Users = () => {
 
             {modalMode === 'edit' && users[editingIndex] && (
               <div className="form-group">
+                <label>Default Device</label>
                 {(() => {
-                  const deviceId = users[editingIndex].deviceId;
-                  const assignedDevice = deviceId ? pairedDevices.find(d => String(d.id) === String(deviceId)) : null;
-                  if (deviceId && assignedDevice) {
-                    // Device assigned and found
-                    return (
-                      <>
-                        <label>Assigned Device</label>
-                        <div className="device-action-col">
-                          <span className="device-action-label">
-                            {`${assignedDevice.name} (${assignedDevice.model})`}
+                  const user = users[editingIndex];
+                  const defaultDeviceId = user.defaultDevice;
+                  const defaultDevice = defaultDeviceId 
+                    ? pairedDevices.find(d => String(d.id) === String(defaultDeviceId)) 
+                    : null;
+                  
+                  return (
+                    <>
+                      <div style={{ marginBottom: '12px', padding: '10px', background: '#f8fafc', borderRadius: '8px' }}>
+                        {defaultDevice ? (
+                          <span style={{ color: '#334155', fontWeight: 500 }}>
+                            {defaultDevice.name}
                           </span>
-                          <div className="device-action-row">
-                            <button
-                              className="btn-submit device-action-btn"
-                              onClick={() => {
-                                setPendingEditUser(users[editingIndex]);
-                                setShowDeviceAssignmentForEdit(true);
-                                setModalOpen(false);
-                              }}
-                            >
-                              Switch
-                            </button>
-                            <button
-                              className="btn-delete device-action-btn"
-                              onClick={async () => {
-                                // Unassign device from user
-                                const updatedUsers = users.map((u, idx) =>
-                                  idx === editingIndex ? { ...u, deviceId: '' } : u
-                                );
-                                await saveUsers(updatedUsers);
-                                setUsers(updatedUsers);
-                              }}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      </>
-                    );
-                  } else {
-                    // No device assigned or device not found
-                    return (
+                        ) : (
+                          <span style={{ color: '#94a3b8' }}>No default device set</span>
+                        )}
+                      </div>
                       <button
-                        className="btn-submit device-action-btn"
+                        type="button"
+                        className="btn-primary"
+                        style={{ width: '100%', marginTop: '8px' }}
                         onClick={() => {
-                          setPendingEditUser(users[editingIndex]);
-                          setShowDeviceAssignmentForEdit(true);
+                          setManagingUserIndex(editingIndex);
+                          setShowManageDevicesModal(true);
                           setModalOpen(false);
                         }}
                       >
-                        Assign Device
+                        Manage Devices
                       </button>
-                    );
-                  }
+                    </>
+                  );
                 })()}
               </div>
             )}
@@ -527,9 +523,6 @@ const Users = () => {
 
       {/* Device Selection Modal for New User */}
       {showDeviceSelectionModal && pendingNewUser && (() => {
-        // Devices already paired but not assigned to any user
-        const assignedIds = new Set(users.map(u => u.deviceId).filter(Boolean).map(String));
-        const unassignedPairedDevices = pairedDevices.filter(d => !assignedIds.has(String(d.id)));
         // Devices in getAvailableDevices() that are not yet paired (not in pairedDevices by id)
         const pairedIds = new Set(pairedDevices.map(d => String(d.id)));
         const unpairedAvailableDevices = getAvailableDevices().filter(d => !pairedIds.has(String(d.id)));
@@ -546,7 +539,7 @@ const Users = () => {
                 </button>
               </div>
               <DevicesMenu
-                pairedDevices={unassignedPairedDevices}
+                pairedDevices={pairedDevices}
                 availableDevices={unpairedAvailableDevices}
                 onPairDevice={handleDeviceSelected}
                 onCardClick={handleDeviceSelected}
@@ -569,92 +562,211 @@ const Users = () => {
         );
       })()}
 
-      {/* Device Assignment Modal for Edit User */}
-      {showDeviceAssignmentForEdit && pendingEditUser && (() => {
-        // Devices already paired but not assigned to any user (except this user)
-        const assignedIds = new Set(users.filter(u => u.id !== pendingEditUser.id).map(u => u.deviceId).filter(Boolean).map(String));
-        const unassignedPairedDevices = pairedDevices.filter(d => !assignedIds.has(String(d.id)));
-        // Devices in getAvailableDevices() that are not yet paired (not in pairedDevices by id)
-        const pairedIds = new Set(pairedDevices.map(d => String(d.id)));
-        const unpairedAvailableDevices = getAvailableDevices().filter(d => !pairedIds.has(String(d.id)));
+      {/* Manage Devices Modal */}
+      {showManageDevicesModal && managingUserIndex !== null && (() => {
+        const user = users[managingUserIndex];
+        if (!user) return null;
 
-        // Handler for assigning device to edited user
-        const handleDeviceSelectedForEdit = async (device) => {
-          if (!pendingEditUser) return;
-          let newPairedDevices = pairedDevices;
-          // If device is not already paired, add to pairedDevices
+        const userDevices = (user.devices || [])
+          .map(deviceId => pairedDevices.find(d => String(d.id) === String(deviceId)))
+          .filter(Boolean);
+
+        const handleAddDevice = async (device) => {
           const isPaired = pairedDevices.some(d => String(d.id) === String(device.id));
+          let newPairedDevices = pairedDevices;
           if (!isPaired) {
             newPairedDevices = [...pairedDevices, device];
             setPairedDevices(newPairedDevices);
             await setStorageJSON('pairedDevices', newPairedDevices);
             notifyPairedDevicesChange();
           }
-          // Assign device to user, unassign from any other user
-          const updatedUsers = users.map(u => {
-            if (u.id === pendingEditUser.id) {
-              return { ...u, deviceId: String(device.id) };
-            } else if (u.deviceId && String(u.deviceId) === String(device.id)) {
-              return { ...u, deviceId: '' };
+
+          const deviceIdStr = String(device.id);
+          const updatedUsers = users.map((u, idx) => {
+            if (idx === managingUserIndex) {
+              const newDevices = [...(u.devices || [])];
+              if (!newDevices.includes(deviceIdStr)) {
+                newDevices.push(deviceIdStr);
+              }
+              return {
+                ...u,
+                devices: newDevices,
+                defaultDevice: u.defaultDevice || deviceIdStr
+              };
             }
             return u;
           });
+
           await saveUsers(updatedUsers);
-          setShowDeviceAssignmentForEdit(false);
-          // Reopen edit modal for the same user
-          const idx = users.findIndex(u => u.id === pendingEditUser.id);
-          if (idx !== -1) {
-            setEditingIndex(idx);
+        };
+
+        const handleRemoveDevice = async (deviceId) => {
+          if (!window.confirm('Remove this device from the user?')) return;
+
+          const updatedUsers = users.map((u, idx) => {
+            if (idx === managingUserIndex) {
+              const newDevices = (u.devices || []).filter(id => String(id) !== String(deviceId));
+              let newDefaultDevice = u.defaultDevice;
+              
+              // If removing the default device, set new default
+              if (String(u.defaultDevice) === String(deviceId)) {
+                newDefaultDevice = newDevices.length > 0 ? newDevices[0] : null;
+              }
+              
+              return {
+                ...u,
+                devices: newDevices,
+                defaultDevice: newDefaultDevice
+              };
+            }
+            return u;
+          });
+
+          await saveUsers(updatedUsers);
+        };
+
+        const handleSetDefaultDevice = async (deviceId) => {
+          const updatedUsers = users.map((u, idx) => {
+            if (idx === managingUserIndex) {
+              return { ...u, defaultDevice: String(deviceId) };
+            }
+            return u;
+          });
+
+          await saveUsers(updatedUsers);
+        };
+
+        const handleCloseManageDevices = () => {
+          setShowManageDevicesModal(false);
+          setShowAddDeviceSection(false);
+          // Reopen edit modal
+          if (managingUserIndex !== null) {
+            setEditingIndex(managingUserIndex);
             setModalMode('edit');
             setModalOpen(true);
           }
-          setPendingEditUser(null);
+          setManagingUserIndex(null);
         };
 
-        // Handler for skipping device assignment in edit
-        const handleSkipDeviceAssignmentForEdit = async () => {
-          setShowDeviceAssignmentForEdit(false);
-          // Reopen edit modal for the same user
-          if (pendingEditUser) {
-            const idx = users.findIndex(u => u.id === pendingEditUser.id);
-            if (idx !== -1) {
-              setEditingIndex(idx);
-              setModalMode('edit');
-              setModalOpen(true);
-            }
-          }
-          setPendingEditUser(null);
-        };
+        // Available devices to add
+        const pairedIds = new Set(pairedDevices.map(d => String(d.id)));
+        const unpairedAvailableDevices = getAvailableDevices().filter(d => !pairedIds.has(String(d.id)));
 
         return (
-          <div className="modal-overlay" onClick={handleSkipDeviceAssignmentForEdit}>
+          <div className="modal-overlay" onClick={handleCloseManageDevices}>
             <div className="modal-content" style={{ maxWidth: 600 }} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <div className="modal-title-group">
-                  <h3>Assign Device (Optional)</h3>
-                  <p className="modal-subtitle">Select a device for {pendingEditUser.name}</p>
+                  <h3>Manage Devices</h3>
+                  <p className="modal-subtitle">Devices for {user.name}</p>
                 </div>
-                <button className="modal-close-btn" onClick={handleSkipDeviceAssignmentForEdit} aria-label="Skip">
+                <button className="modal-close-btn" onClick={handleCloseManageDevices} aria-label="Close">
                   X
                 </button>
               </div>
-              <DevicesMenu
-                pairedDevices={unassignedPairedDevices}
-                availableDevices={unpairedAvailableDevices}
-                onPairDevice={handleDeviceSelectedForEdit}
-                onCardClick={handleDeviceSelectedForEdit}
-                variant="modal"
-                isCloseButtonRequired={false}
-                showPairedSection={true}
-                showAvailableSection={true}
-              />
-              <div className="modal-buttons">
-                <button 
-                  className="btn-primary btn-submit" 
-                  style={{ background: '#94a3b8' }}
-                  onClick={handleSkipDeviceAssignmentForEdit}
+
+              {/* Current devices list */}
+              <div style={{ marginBottom: '20px' }}>
+                {userDevices.length === 0 ? (
+                  <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>
+                    No devices assigned to this user
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {userDevices.map(device => (
+                      <div
+                        key={device.id}
+                        style={{
+                          padding: '16px',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          background: String(device.id) === String(user.defaultDevice) ? '#f0f9ff' : '#fff'
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 500, marginBottom: '4px' }}>
+                            {device.name}
+                            {String(device.id) === String(user.defaultDevice) && (
+                              <span style={{ 
+                                marginLeft: '8px', 
+                                padding: '2px 8px', 
+                                background: '#667eea', 
+                                color: 'white', 
+                                borderRadius: '4px', 
+                                fontSize: '12px' 
+                              }}>
+                                Default
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '14px', color: '#64748b' }}>
+                            {device.model} • {device.brand}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          {String(device.id) !== String(user.defaultDevice) && (
+                            <button
+                              className="btn-primary"
+                              style={{ padding: '6px 12px', fontSize: '14px' }}
+                              onClick={() => handleSetDefaultDevice(device.id)}
+                            >
+                              Set Default
+                            </button>
+                          )}
+                          <button
+                            className="btn-delete"
+                            style={{ padding: '6px 12px', fontSize: '14px' }}
+                            onClick={() => handleRemoveDevice(device.id)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Add device section */}
+              {!showAddDeviceSection ? (
+                <button
+                  className="btn-primary"
+                  style={{ width: '100%' }}
+                  onClick={() => setShowAddDeviceSection(true)}
                 >
-                  Skip
+                  <MdAdd size={20} />
+                  Add Device
+                </button>
+              ) : (
+                <>
+                  <DevicesMenu
+                    pairedDevices={pairedDevices.filter(d => 
+                      !(user.devices || []).includes(String(d.id))
+                    )}
+                    availableDevices={unpairedAvailableDevices}
+                    onPairDevice={handleAddDevice}
+                    onCardClick={handleAddDevice}
+                    variant="modal"
+                    isCloseButtonRequired={false}
+                    showPairedSection={true}
+                    showAvailableSection={true}
+                  />
+                  <button
+                    className="btn-primary"
+                    style={{ width: '100%', marginTop: '12px', background: '#94a3b8' }}
+                    onClick={() => setShowAddDeviceSection(false)}
+                  >
+                    Cancel
+                  </button>
+                </>
+              )}
+
+              <div className="modal-buttons" style={{ marginTop: '16px' }}>
+                <button className="btn-primary btn-submit" onClick={handleCloseManageDevices}>
+                  Done
                 </button>
               </div>
             </div>
