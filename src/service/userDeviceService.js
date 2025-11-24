@@ -158,7 +158,8 @@ export const reassignDevice = async (deviceId, newUserId) => {
   const newUserDevices = userDevices[newUserId] || [];
   const isFirstDevice = newUserDevices.length === 0;
   
-  if (isFirstDevice) {
+  // Clear default flag from other devices only if there are existing devices
+  if (!isFirstDevice) {
     newUserDevices.forEach(d => {
       d.isDefault = false;
     });
@@ -166,7 +167,7 @@ export const reassignDevice = async (deviceId, newUserId) => {
   
   newUserDevices.push({
     ...deviceToReassign,
-    isDefault: isFirstDevice
+    isDefault: true  // Always set as default when reassigning (or if first device)
   });
   
   userDevices[newUserId] = newUserDevices;

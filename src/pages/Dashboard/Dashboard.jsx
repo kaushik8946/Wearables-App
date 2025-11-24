@@ -363,6 +363,16 @@ const Dashboard = () => {
     setSelectedDevice(device);
   };
 
+  const reloadUserDevices = async () => {
+    if (!currentUser) return;
+    try {
+      const devices = await getUserDevices(currentUser.id);
+      setUserDevices(devices);
+    } catch (err) {
+      console.error('Failed to reload user devices', err);
+    }
+  };
+
   const handleAssignDevice = () => {
     setShowDevicesMenuModal(true);
   };
@@ -387,8 +397,7 @@ const Dashboard = () => {
       
       // Add to user's devices
       await addUserDevice(currentUser.id, pairDevice, userDevices.length === 0);
-      const devices = await getUserDevices(currentUser.id);
-      setUserDevices(devices);
+      await reloadUserDevices();
       
       // Set as selected device if it's the first one
       if (userDevices.length === 0) {
@@ -414,8 +423,7 @@ const Dashboard = () => {
       const existingDevice = userDevices.find(d => String(d.id) === String(device.id));
       if (!existingDevice) {
         await addUserDevice(currentUser.id, device, userDevices.length === 0);
-        const devices = await getUserDevices(currentUser.id);
-        setUserDevices(devices);
+        await reloadUserDevices();
       }
       
       setSelectedDevice(device);

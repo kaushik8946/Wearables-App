@@ -44,7 +44,31 @@ const Devices = () => {
   };
 
   useEffect(() => {
-    loadData();
+    const loadInitialData = async () => {
+      try {
+        const storedPairedDevices = await getStorageJSON('pairedDevices', []);
+        const randomizedPaired = randomizeBatteryLevels(storedPairedDevices);
+        setPairedDevices(randomizedPaired);
+
+        // Get device owners
+        const owners = {};
+        for (const device of randomizedPaired) {
+          const ownerId = await getDeviceOwner(device.id);
+          if (ownerId) {
+            owners[device.id] = ownerId;
+          }
+        }
+        setDeviceOwners(owners);
+
+        // Get all users
+        const users = await getAllUsers();
+        setAllUsers(users);
+      } catch (err) {
+        console.error('Failed to load device data from IndexedDB', err);
+      }
+    };
+    
+    loadInitialData();
   }, []);
 
   const handleRemoveDevice = async (device) => {
