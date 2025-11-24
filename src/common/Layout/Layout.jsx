@@ -1,45 +1,57 @@
 import { useState, useEffect } from 'react';
-import { MdMenu } from 'react-icons/md';
+import { MdMenu, MdKeyboardArrowDown } from 'react-icons/md';
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../Sidebar/Sidebar';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getStorageItem, getStorageJSON, clearStorage, subscribeToUserChange } from '../../service';
+import { getStorageItem, getStorageJSON, clearStorage, subscribeToUserChange, setStorageItem } from '../../service';
 import './Layout.css';
 
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [defaultUserName, setDefaultUserName] = useState('');
+  const [activeUserName, setActiveUserName] = useState('');
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
+  const [activeUserId, setActiveUserId] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
   
   useEffect(() => {
     let isMounted = true;
     
-    const loadDefaultUserName = async () => {
+    const loadUsers = async () => {
       try {
+        // Get active user ID (or fall back to default)
+        let activeId = await getStorageItem('activeUserId');
         const defaultUserId = await getStorageItem('defaultUserId');
+        
+        if (!activeId) {
+          activeId = defaultUserId;
+        }
+        
         if (!isMounted) return;
         
-        if (!defaultUserId) {
-          setDefaultUserName('');
-          return;
-        }
+        // Get all users
         const currentUser = await getStorageJSON('currentUser', null);
         const otherUsers = await getStorageJSON('users', []);
         if (!isMounted) return;
         
-        const allUsers = [...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers];
-        const defUser = allUsers.find(u => String(u.id) === String(defaultUserId));
-        setDefaultUserName(defUser?.name || '');
+        const users = [...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers];
+        setAllUsers(users);
+        
+        // Find active user
+        const activeUser = users.find(u => String(u.id) === String(activeId));
+        setActiveUserName(activeUser?.name || '');
+        setActiveUserId(activeId || '');
       } catch {
         if (isMounted) {
-          setDefaultUserName('');
+          setActiveUserName('');
+          setAllUsers([]);
         }
       }
     };
     
-    loadDefaultUserName();
+    loadUsers();
     
     return () => {
       isMounted = false;
@@ -49,32 +61,41 @@ const Layout = () => {
   useEffect(() => {
     let isMounted = true;
     
-    const loadDefaultUserName = async () => {
+    const loadUsers = async () => {
       try {
+        // Get active user ID (or fall back to default)
+        let activeId = await getStorageItem('activeUserId');
         const defaultUserId = await getStorageItem('defaultUserId');
+        
+        if (!activeId) {
+          activeId = defaultUserId;
+        }
+        
         if (!isMounted) return;
         
-        if (!defaultUserId) {
-          setDefaultUserName('');
-          return;
-        }
+        // Get all users
         const currentUser = await getStorageJSON('currentUser', null);
         const otherUsers = await getStorageJSON('users', []);
         if (!isMounted) return;
         
-        const allUsers = [...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers];
-        const defUser = allUsers.find(u => String(u.id) === String(defaultUserId));
-        setDefaultUserName(defUser?.name || '');
+        const users = [...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers];
+        setAllUsers(users);
+        
+        // Find active user
+        const activeUser = users.find(u => String(u.id) === String(activeId));
+        setActiveUserName(activeUser?.name || '');
+        setActiveUserId(activeId || '');
       } catch {
         if (isMounted) {
-          setDefaultUserName('');
+          setActiveUserName('');
+          setAllUsers([]);
         }
       }
     };
     
     // Listen for user data changes
     const unsubscribe = subscribeToUserChange(() => {
-      loadDefaultUserName();
+      loadUsers();
     });
     
     return () => {
@@ -82,6 +103,23 @@ const Layout = () => {
       unsubscribe();
     };
   }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (showUserDropdown && !e.target.closest('.user-dropdown-wrapper')) {
+        setShowUserDropdown(false);
+      }
+    };
+    
+    if (showUserDropdown) {
+      document.addEventListener('click', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [showUserDropdown]);
 
   const menuItems = [
     { id: 1, label: 'Home', icon: '🏠', link: '/dashboard', active: location.pathname === '/dashboard' },
@@ -106,10 +144,89 @@ const Layout = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
+  const handleUserSelect = async (userId) => {
+    try {
+      await setStorageItem('activeUserId', String(userId));
+      const selectedUser = allUsers.find(u => String(u.id) === String(userId));
+      setActiveUserName(selectedUser?.name || '');
+      setActiveUserId(String(userId));
+      setShowUserDropdown(false);
+      
+      // Trigger a user change event to update dashboard
+      window.dispatchEvent(new CustomEvent('user-data-changed'));
+    } catch (err) {
+      console.error('Failed to set active user', err);
+    }
+  };
+
   return (
     <div className="layout">
       <header className="app-header">
-        <h1 className="app-title">Welcome{", " + defaultUserName || ' '}</h1>
+        <div 
+          className="user-dropdown-wrapper"
+          style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', cursor: allUsers.length > 0 ? 'pointer' : 'default' }}
+          onClick={() => allUsers.length > 0 && setShowUserDropdown(!showUserDropdown)}
+        >
+          <h1 className="app-title">Welcome{activeUserName ? `, ${activeUserName}` : ''}</h1>
+          {allUsers.length > 0 && (
+            <MdKeyboardArrowDown 
+              size={24} 
+              style={{ 
+                color: '#333', 
+                transition: 'transform 0.2s',
+                transform: showUserDropdown ? 'rotate(180deg)' : 'rotate(0deg)'
+              }} 
+            />
+          )}
+          
+          {showUserDropdown && allUsers.length > 0 && (
+            <div 
+              className="user-dropdown"
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                marginTop: '8px',
+                background: 'white',
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                minWidth: '200px',
+                zIndex: 1000,
+                overflow: 'hidden'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {allUsers.map(user => (
+                <div
+                  key={user.id}
+                  onClick={() => handleUserSelect(user.id)}
+                  style={{
+                    padding: '12px 16px',
+                    cursor: 'pointer',
+                    background: String(user.id) === String(activeUserId) ? '#f0f0f0' : 'white',
+                    borderBottom: '1px solid #f0f0f0',
+                    transition: 'background 0.2s',
+                    fontSize: '14px',
+                    fontWeight: String(user.id) === String(activeUserId) ? '600' : '400'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (String(user.id) !== String(activeUserId)) {
+                      e.target.style.background = '#f8f8f8';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (String(user.id) !== String(activeUserId)) {
+                      e.target.style.background = 'white';
+                    }
+                  }}
+                >
+                  {user.name || 'Unnamed'}
+                  {user.self && <span style={{ marginLeft: '8px', color: '#667eea', fontSize: '12px' }}>(Self)</span>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         <button className="sidebar-toggle" onClick={toggleSidebar} style={{ background: 'none', border: 'none', boxShadow: 'none', padding: 0, margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <MdMenu size={32} style={{ fontWeight: 'bold', color: '#222', filter: 'none' }} />
         </button>

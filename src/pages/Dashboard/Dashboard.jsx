@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Heart,
   Footprints,
@@ -7,7 +7,8 @@ import {
   Zap,
   Scale,
   CalendarHeart,
-  Stethoscope
+  Stethoscope,
+  ChevronDown
 } from 'lucide-react';
 import DevicesMenu from '../../common/DevicesMenu/DevicesMenu';
 import SineWave from '../../common/SineWave/SineWave';
@@ -21,12 +22,12 @@ import SpO2Modal from '../../common/SpO2Modal/SpO2Modal';
 import StressModal from '../../common/StressModal/StressModal';
 import CyclesModal from '../../common/CyclesModal/CyclesModal';
 import WeightModal from '../../common/WeightModal/WeightModal';
-import { getAvailableDevices } from '../../service';
+import { getAvailableDevices, getDevicesForUser, getDefaultDeviceForUser, setDefaultDeviceForUser, getUserById } from '../../service';
 import watchImg from '../../assets/images/watch.png';
 import ringImg from '../../assets/images/ring.webp';
 import scaleImg from '../../assets/images/weighing-scale.avif';
 import './Dashboard.css';
-import { getStorageItem, getStorageJSON, setStorageItem, setStorageJSON, notifyUserChange, subscribeToUserChange, subscribeToPairedDevicesChange, notifyPairedDevicesChange } from '../../service';
+import { getStorageItem, getStorageJSON, setStorageJSON, notifyUserChange, subscribeToUserChange, subscribeToPairedDevicesChange, notifyPairedDevicesChange } from '../../service';
 
 // map file names to assets (same mapping as in Devices.jsx)
 const deviceImageMap = {
@@ -36,179 +37,299 @@ const deviceImageMap = {
 };
 
 // 1. MAIN DASHBOARD (Light Mode)
-const DashboardView = ({ onOpenSteps, onOpenHeartRate, onOpenSleep, onOpenBloodPressure, onOpenSpO2, onOpenStress, onOpenCycles, onOpenWeight, connectedDevice }) => {
+const DashboardView = ({ 
+  onOpenSteps, 
+  onOpenHeartRate, 
+  onOpenSleep, 
+  onOpenBloodPressure, 
+  onOpenSpO2, 
+  onOpenStress, 
+  onOpenCycles, 
+  onOpenWeight, 
+  connectedDevice,
+  userDevices,
+  onDeviceSelect
+}) => {
+  const [showDeviceDropdown, setShowDeviceDropdown] = useState(false);
+  
+  // Determine which cards to show based on device type
+  const isScale = connectedDevice?.deviceType === 'scale';
+  const showWeightOnly = isScale;
+  const showAllExceptWeight = !isScale && connectedDevice;
+  
   return (
     <div className="app-container">
       <div className="max-w-wrapper">
-        {/* Activity Rings */}
-        <ActivityRings
-          steps={connectedDevice ? 4784 : null}
-          stepsGoal={8000}
-          active={connectedDevice ? 45 : null}
-          activeGoal={60}
-          cals={connectedDevice ? 512 : null}
-          calsGoal={800}
-        />
+        {/* Device Selector */}
+        {connectedDevice && userDevices && userDevices.length > 0 && (
+          <div style={{ 
+            marginBottom: '24px', 
+            padding: '16px', 
+            background: 'white', 
+            borderRadius: '12px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              gap: '12px'
+            }}>
+              <span style={{ fontSize: '14px', color: '#666', fontWeight: '500' }}>
+                Active Device:
+              </span>
+              <div style={{ position: 'relative', flex: 1, maxWidth: '300px' }}>
+                <div
+                  onClick={() => setShowDeviceDropdown(!showDeviceDropdown)}
+                  style={{
+                    padding: '10px 14px',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: 'white',
+                    fontSize: '14px',
+                    fontWeight: '500'
+                  }}
+                >
+                  <span>{connectedDevice.name}</span>
+                  <ChevronDown size={18} style={{ 
+                    transition: 'transform 0.2s',
+                    transform: showDeviceDropdown ? 'rotate(180deg)' : 'rotate(0deg)'
+                  }} />
+                </div>
+                
+                {showDeviceDropdown && userDevices.length > 1 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    marginTop: '4px',
+                    background: 'white',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    zIndex: 100,
+                    overflow: 'hidden'
+                  }}>
+                    {userDevices.map(device => (
+                      <div
+                        key={device.id}
+                        onClick={() => {
+                          onDeviceSelect(device);
+                          setShowDeviceDropdown(false);
+                        }}
+                        style={{
+                          padding: '12px 14px',
+                          cursor: 'pointer',
+                          background: String(device.id) === String(connectedDevice.id) ? '#f0f0f0' : 'white',
+                          borderBottom: '1px solid #f0f0f0',
+                          fontSize: '14px',
+                          fontWeight: String(device.id) === String(connectedDevice.id) ? '600' : '400'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (String(device.id) !== String(connectedDevice.id)) {
+                            e.target.style.background = '#f8f8f8';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (String(device.id) !== String(connectedDevice.id)) {
+                            e.target.style.background = 'white';
+                          }
+                        }}
+                      >
+                        {device.name}
+                        <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+                          {device.brand} • {device.model}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Activity Rings - only show if not scale */}
+        {!showWeightOnly && (
+          <ActivityRings
+            steps={connectedDevice ? 4784 : null}
+            stepsGoal={8000}
+            active={connectedDevice ? 45 : null}
+            activeGoal={60}
+            cals={connectedDevice ? 512 : null}
+            calsGoal={800}
+          />
+        )}
 
         {/* Cards Grid (2 Columns) */}
         <div className="grid-2">
-          {/* 1. Steps - CLICKABLE */}
-          <div
-            onClick={onOpenSteps}
-            className="card card-rose"
-          >
-            <div className="card-content">
-              <div className="flex-between-start mb-2">
-                <span className="card-label text-rose-100">Steps</span>
-                <Footprints size={16} className="text-rose-200" />
+          {/* Show only Weight card for scale */}
+          {showWeightOnly && (
+            <div onClick={onOpenWeight} className="card card-white-clean">
+              <div className="weight-header">
+                <div className="weight-icon-box">
+                  <Scale size={20} color="#0ea5e9" />
+                </div>
+                <div className="weight-title-group">
+                  <div className="weight-label">Weight</div>
+                  <div className="weight-timestamp">19/11/2025, 11:07:09</div>
+                </div>
               </div>
-              <h3 className="title-main">{connectedDevice ? '4,784' : '—'} <span className="subtitle text-rose-100">steps</span></h3>
+              <div className="weight-big-number">
+                {connectedDevice ? (<><span>77.9</span><span className="weight-unit-text">kg</span></>) : '— kg'}
+              </div>
             </div>
-            <div className="mt-4 width-full">
-              <BarChart />
-            </div>
-          </div>
+          )}
 
-          {/* 2. Heart Rate */}
-          <div onClick={onOpenHeartRate} className="card card-lime">
-            <div className="card-content">
-              <div className="flex-between-start mb-2">
-                <span className="card-label text-lime-900">Heart Rate</span>
-                <Heart size={16} className="icon-lime-bg" />
+          {/* Show all cards except Weight for other devices */}
+          {showAllExceptWeight && (
+            <>
+              {/* 1. Steps - CLICKABLE */}
+              <div
+                onClick={onOpenSteps}
+                className="card card-rose"
+              >
+                <div className="card-content">
+                  <div className="flex-between-start mb-2">
+                    <span className="card-label text-rose-100">Steps</span>
+                    <Footprints size={16} className="text-rose-200" />
+                  </div>
+                  <h3 className="title-main">{connectedDevice ? '4,784' : '—'} <span className="subtitle text-rose-100">steps</span></h3>
+                </div>
+                <div className="mt-4 width-full">
+                  <BarChart />
+                </div>
               </div>
-              <h3 className="title-main">{connectedDevice ? '82' : '—'} <span className="subtitle text-lime-800">bpm</span></h3>
-            </div>
 
-            {/* Graph Visualization */}
-            <div className="graph-container">
-              <SineWave color="#ffffff" />
-            </div>
-          </div>
+              {/* 2. Heart Rate */}
+              <div onClick={onOpenHeartRate} className="card card-lime">
+                <div className="card-content">
+                  <div className="flex-between-start mb-2">
+                    <span className="card-label text-lime-900">Heart Rate</span>
+                    <Heart size={16} className="icon-lime-bg" />
+                  </div>
+                  <h3 className="title-main">{connectedDevice ? '82' : '—'} <span className="subtitle text-lime-800">bpm</span></h3>
+                </div>
 
-          {/* 3. Sleep */}
-          <div onClick={onOpenSleep} className="card card-indigo">
-            <div className="card-content">
-              <div className="flex-between-start mb-2">
-                <span className="card-label text-indigo-100">Sleep</span>
-                <Moon size={16} className="text-indigo-200" />
+                {/* Graph Visualization */}
+                <div className="graph-container">
+                  <SineWave color="#ffffff" />
+                </div>
               </div>
-              <h3 className="title-main">{connectedDevice ? (
-                <><span>5</span><span className="text-lg opacity-80 font-normal">h</span> 22<span className="text-lg opacity-80 font-normal">m</span></>
-              ) : '—'}</h3>
-              <p className="mt-1 tag-indigo text-indigo-100">Light Sleep</p>
-            </div>
-            <div className="sleep-bars mt-4">
-              <div className="bar bar-light" style={{ height: '40%' }}></div>
-              <div className="bar bar-white" style={{ height: '80%' }}></div>
-              <div className="bar bar-light" style={{ height: '60%' }}></div>
-              <div className="bar bar-light" style={{ height: '30%' }}></div>
-              <div className="bar bar-light" style={{ height: '50%' }}></div>
-            </div>
-          </div>
 
-          {/* 4. Blood Pressure (BP) */}
-          <div onClick={onOpenBloodPressure} className="card card-sky">
-            <div className="card-content">
-              <div className="flex-between-start mb-2">
-                <span className="card-label text-sky-100">BP</span>
-                <Stethoscope size={16} className="text-sky-200" />
+              {/* 3. Sleep */}
+              <div onClick={onOpenSleep} className="card card-indigo">
+                <div className="card-content">
+                  <div className="flex-between-start mb-2">
+                    <span className="card-label text-indigo-100">Sleep</span>
+                    <Moon size={16} className="text-indigo-200" />
+                  </div>
+                  <h3 className="title-main">{connectedDevice ? (
+                    <><span>5</span><span className="text-lg opacity-80 font-normal">h</span> 22<span className="text-lg opacity-80 font-normal">m</span></>
+                  ) : '—'}</h3>
+                  <p className="mt-1 tag-indigo text-indigo-100">Light Sleep</p>
+                </div>
+                <div className="sleep-bars mt-4">
+                  <div className="bar bar-light" style={{ height: '40%' }}></div>
+                  <div className="bar bar-white" style={{ height: '80%' }}></div>
+                  <div className="bar bar-light" style={{ height: '60%' }}></div>
+                  <div className="bar bar-light" style={{ height: '30%' }}></div>
+                  <div className="bar bar-light" style={{ height: '50%' }}></div>
+                </div>
               </div>
-              <h3 className="title-main">{connectedDevice ? (
-                <>119<span className="subtitle text-sky-200 inline">/</span>82</>
-              ) : '—/—'}</h3>
-              <p className="text-sky-100 subtitle mt-1">mmHg</p>
-            </div>
-            {/* Line Graph */}
-            <div className="graph-bp-container">
-              <svg viewBox="0 0 100 40" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-                <path d="M0,20 L20,20 L30,5 L40,35 L50,20 L100,20" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          </div>
 
-          {/* 5. Blood Oxygen */}
-          <div onClick={onOpenSpO2} className="card card-teal">
-            <div className="card-content">
-              <div className="flex-between-start mb-2">
-                <span className="card-label text-teal-100">SpO2</span>
-                <Wind size={16} className="text-teal-200" />
+              {/* 4. Blood Pressure (BP) */}
+              <div onClick={onOpenBloodPressure} className="card card-sky">
+                <div className="card-content">
+                  <div className="flex-between-start mb-2">
+                    <span className="card-label text-sky-100">BP</span>
+                    <Stethoscope size={16} className="text-sky-200" />
+                  </div>
+                  <h3 className="title-main">{connectedDevice ? (
+                    <>119<span className="subtitle text-sky-200 inline">/</span>82</>
+                  ) : '—/—'}</h3>
+                  <p className="text-sky-100 subtitle mt-1">mmHg</p>
+                </div>
+                {/* Line Graph */}
+                <div className="graph-bp-container">
+                  <svg viewBox="0 0 100 40" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
+                    <path d="M0,20 L20,20 L30,5 L40,35 L50,20 L100,20" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
               </div>
-              <h3 className="title-main">{connectedDevice ? '95' : '—'} <span className="subtitle text-teal-200 inline">%</span></h3>
-            </div>
-            {/* Circular Indicator */}
-            <div className="circular-indicator">
-              <svg style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
-                <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.2)" strokeWidth="6" fill="none" />
-                <circle cx="32" cy="32" r="28" stroke="white" strokeWidth="6" fill="none" strokeDasharray="175" strokeDashoffset="10" strokeLinecap="round" />
-              </svg>
-              <div className="pulse-dot">
-                <div className="pulse-dot-inner"></div>
-              </div>
-            </div>
-          </div>
 
-          {/* 6. Stress */}
-          <div onClick={onOpenStress} className="card card-amber">
-            <div className="card-content">
-              <div className="flex-between-start mb-2">
-                <span className="card-label text-amber-900">Stress</span>
-                <Zap size={16} className="text-amber-800" />
+              {/* 5. Blood Oxygen */}
+              <div onClick={onOpenSpO2} className="card card-teal">
+                <div className="card-content">
+                  <div className="flex-between-start mb-2">
+                    <span className="card-label text-teal-100">SpO2</span>
+                    <Wind size={16} className="text-teal-200" />
+                  </div>
+                  <h3 className="title-main">{connectedDevice ? '95' : '—'} <span className="subtitle text-teal-200 inline">%</span></h3>
+                </div>
+                {/* Circular Indicator */}
+                <div className="circular-indicator">
+                  <svg style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                    <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.2)" strokeWidth="6" fill="none" />
+                    <circle cx="32" cy="32" r="28" stroke="white" strokeWidth="6" fill="none" strokeDasharray="175" strokeDashoffset="10" strokeLinecap="round" />
+                  </svg>
+                  <div className="pulse-dot">
+                    <div className="pulse-dot-inner"></div>
+                  </div>
+                </div>
               </div>
-              <h3 className="title-main">{connectedDevice ? 'Average' : '—'}</h3>
-              <p className="mt-1 tag-amber text-amber-800">Relaxed</p>
-            </div>
-            {/* Face graphic */}
-            <div className="face-graphic">
-              <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="8" y1="9" x2="10" y2="9"></line>
-                <line x1="14" y1="9" x2="16" y2="9"></line>
-                <path d="M8 14c1.5 1 4.5 1 6 0"></path>
-              </svg>
-            </div>
-          </div>
 
-          {/* 7. Periods */}
-          <div onClick={onOpenCycles} className="card card-pink">
-            <div className="card-content">
-              <div className="flex-between-start mb-2">
-                <span className="card-label text-pink-100">Cycles</span>
-                <CalendarHeart size={16} className="text-pink-200" />
+              {/* 6. Stress */}
+              <div onClick={onOpenStress} className="card card-amber">
+                <div className="card-content">
+                  <div className="flex-between-start mb-2">
+                    <span className="card-label text-amber-900">Stress</span>
+                    <Zap size={16} className="text-amber-800" />
+                  </div>
+                  <h3 className="title-main">{connectedDevice ? 'Average' : '—'}</h3>
+                  <p className="mt-1 tag-amber text-amber-800">Relaxed</p>
+                </div>
+                {/* Face graphic */}
+                <div className="face-graphic">
+                  <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="8" y1="9" x2="10" y2="9"></line>
+                    <line x1="14" y1="9" x2="16" y2="9"></line>
+                    <path d="M8 14c1.5 1 4.5 1 6 0"></path>
+                  </svg>
+                </div>
               </div>
-              <h3 className="title-main">{connectedDevice ? 'Day 12' : '—'}</h3>
-              <p className="text-pink-100 subtitle mt-1">Follicular Phase</p>
-            </div>
-            {/* Period dots */}
-            <div className="dots-container">
-              {[1, 2, 3, 4, 5].map(d => (
-                <div key={d} className={`dot ${d === 3 ? 'active' : ''}`}></div>
-              ))}
-            </div>
-          </div>
 
-          {/* 8. Weight (NEW LIGHT CARD) */}
-          <div onClick={onOpenWeight} className="card card-white-clean">
-            <div className="weight-header">
-              <div className="weight-icon-box">
-                <Scale size={20} color="#0ea5e9" />
+              {/* 7. Periods */}
+              <div onClick={onOpenCycles} className="card card-pink">
+                <div className="card-content">
+                  <div className="flex-between-start mb-2">
+                    <span className="card-label text-pink-100">Cycles</span>
+                    <CalendarHeart size={16} className="text-pink-200" />
+                  </div>
+                  <h3 className="title-main">{connectedDevice ? 'Day 12' : '—'}</h3>
+                  <p className="text-pink-100 subtitle mt-1">Follicular Phase</p>
+                </div>
+                {/* Period dots */}
+                <div className="dots-container">
+                  {[1, 2, 3, 4, 5].map(d => (
+                    <div key={d} className={`dot ${d === 3 ? 'active' : ''}`}></div>
+                  ))}
+                </div>
               </div>
-              <div className="weight-title-group">
-                <div className="weight-label">Weight</div>
-                <div className="weight-timestamp">19/11/2025, 11:07:09</div>
-              </div>
-            </div>
-            <div className="weight-big-number">
-              {connectedDevice ? (<><span>77.9</span><span className="weight-unit-text">kg</span></>) : '— kg'}
-            </div>
-          </div>
-
+            </>
+          )}
         </div>
       </div>
     </div>
   );
 };
-
-// MAIN APP COMPONENT
+// Simplified Dashboard Component
+// Main Dashboard component for wearables app
 const Dashboard = () => {
   const [showSteps, setShowSteps] = useState(false);
   const [showHeartRate, setShowHeartRate] = useState(false);
@@ -218,332 +339,237 @@ const Dashboard = () => {
   const [showStress, setShowStress] = useState(false);
   const [showCycles, setShowCycles] = useState(false);
   const [showWeight, setShowWeight] = useState(false);
-  // Connected/Default device to display on the dashboard
+  
+  // User and device state
+  const [activeUser, setActiveUser] = useState(null);
+  const [userDevices, setUserDevices] = useState([]);
   const [connectedDevice, setConnectedDevice] = useState(null);
-
+  const [showDevicesMenuModal, setShowDevicesMenuModal] = useState(false);
   const [pairedDevices, setPairedDevices] = useState([]);
   const [availableDevices, setAvailableDevices] = useState(getAvailableDevices());
-  const [showDevicesMenuModal, setShowDevicesMenuModal] = useState(false);
-  const [devicesMenuDismissed, setDevicesMenuDismissed] = useState(false);
-  const [shouldAssignDefaultInModal, setShouldAssignDefaultInModal] = useState(false);
-  const [userVersion, setUserVersion] = useState(0);
-  const [currentUserDeviceMap, setCurrentUserDeviceMap] = useState({});
-  const [activeDefaultUserId, setActiveDefaultUserId] = useState('');
 
-  // Modal for 'no device assigned to default user'
-  const [showNoDeviceAssignedModal, setShowNoDeviceAssignedModal] = useState(false);
-  // Default user name shown in the 'no device assigned' modal
-  const [defaultUserName, setDefaultUserName] = useState('');
-
-  const sanitizeUserForStorage = (user) => {
-    if (!user) return null;
-    const { self: _self, ...rest } = user;
-    return rest;
-  };
-
-  const debugLog = (...args) => {
-    // Debug logging disabled in production
-    // Note: Using Vite's import.meta.env.MODE instead of process.env.NODE_ENV
-    if (import.meta.env.MODE !== 'production') {
-      console.log('[Dashboard]', ...args);
-    }
-  };
-
-  const persistUserDeviceMap = async (usersSnapshot) => {
-    const map = {};
-    usersSnapshot.forEach(u => {
-      if (u.deviceId) {
-        map[u.id] = String(u.deviceId);
-      }
-    });
-    await setStorageJSON('userDeviceMap', map);
-  };
-
+  // Load active user and their devices
   React.useEffect(() => {
     let mounted = true;
-    (async () => {
+    
+    const loadUserAndDevices = async () => {
       try {
-        const storedPairedDevices = await getStorageJSON('pairedDevices', []);
-        if (!mounted) return;
-        setPairedDevices(storedPairedDevices);
-      } catch (err) {
-        console.error('Failed to load paired devices for dashboard', err);
-      }
-    })();
-    // Subscribe to paired devices changes so dashboard reacts to pair/unpair events
-    const unsub = subscribeToPairedDevicesChange(() => {
-      (async () => {
-        try {
-          const devices = await getStorageJSON('pairedDevices', []);
-          if (!mounted) return;
-          setPairedDevices(devices);
-        } catch (err) {
-          console.error('Failed to reload paired devices after change', err);
+        // Get active user (or fall back to default)
+        let activeId = await getStorageItem('activeUserId');
+        if (!activeId) {
+          activeId = await getStorageItem('defaultUserId');
         }
-      })();
-    });
-    return () => { mounted = false; unsub(); };
-  }, []);
-
-  React.useEffect(() => {
-    const pairedIds = pairedDevices.map(device => device.id);
-    setAvailableDevices(getAvailableDevices().filter(device => !pairedIds.includes(device.id)));
-  }, [pairedDevices]);
-
-  React.useEffect(() => {
-    const unsubscribe = subscribeToUserChange(() => {
-      setUserVersion(prev => prev + 1);
-    });
-    return unsubscribe;
-  }, []);
-
-  React.useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const storedDefaultUserId = await getStorageItem('defaultUserId');
-        const userDeviceMap = await getStorageJSON('userDeviceMap', {});
-        debugLog('Evaluating default user', { storedDefaultUserId, userDeviceMap, pairedCount: pairedDevices?.length });
-
-        if (!mounted) return;
-
-        const currentUser = await getStorageJSON('currentUser', null);
-        const otherUsers = await getStorageJSON('users', []);
-        const allUsers = [...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers.map(u => ({ ...u }))];
-
-        // If no paired devices at all, show modal to pair devices
-        // But if a default user is set and they have NO assigned device, show the "No device assigned" modal first.
-        if (!pairedDevices || pairedDevices.length === 0) {
-          setConnectedDevice(null);
-          setShouldAssignDefaultInModal(false);
-
-          if (!devicesMenuDismissed) {
-            // If there's a default user with no device, show the informative modal first.
-            if (storedDefaultUserId) {
-              const defUser = allUsers.find(u => String(u.id) === String(storedDefaultUserId));
-              const hasDevice = defUser && defUser.deviceId && String(defUser.deviceId) !== '';
-              const mappedDevice = hasDevice ? pairedDevices.find(d => String(d.id) === String(defUser.deviceId)) : null;
-              // If default user has a deviceId but the device is not in paired list (unpaired elsewhere), treat as unassigned
-              if (!hasDevice || !mappedDevice) {
-                setDefaultUserName(defUser?.name || 'user');
-                setShowNoDeviceAssignedModal(true);
-                setShowDevicesMenuModal(false);
-              } else {
-                setShowNoDeviceAssignedModal(false);
-                setShowDevicesMenuModal(true);
-              }
-            } else {
-              setShowNoDeviceAssignedModal(false);
-              setShowDevicesMenuModal(true);
-            }
+        
+        if (!activeId) {
+          // No user set yet - wait for onboarding
+          if (mounted) {
+            setActiveUser(null);
+            setUserDevices([]);
+            setConnectedDevice(null);
           }
-
           return;
         }
-
-        let connected = null;
-        let needsDefault = false;
-
-        setActiveDefaultUserId(storedDefaultUserId || '');
-        const derivedDeviceMap = {};
-        allUsers.forEach(u => {
-          if (u.deviceId) {
-            derivedDeviceMap[u.id] = String(u.deviceId);
-          }
-        });
-        setCurrentUserDeviceMap(derivedDeviceMap);
-
-        if (storedDefaultUserId) {
-          const mappedDeviceId = userDeviceMap ? userDeviceMap[storedDefaultUserId] : null;
-          if (mappedDeviceId) {
-            const mappedDevice = pairedDevices.find(d => String(d.id) === String(mappedDeviceId));
-            if (mappedDevice) {
-              connected = mappedDevice;
-            } else {
-              needsDefault = true;
-              debugLog('Mapped device missing from paired list', { mappedDeviceId });
-            }
-          }
-
-          if (!connected) {
-            // Find the DEFAULT user (not necessarily the current user)
-            const defUser = allUsers.find(u => String(u.id) === String(storedDefaultUserId));
-            debugLog('Fallback to default user record', { defUserExists: Boolean(defUser) });
-
-            // Use DEFAULT user's deviceId
-            if (defUser && defUser.deviceId && String(defUser.deviceId) !== '') {
-              connected = pairedDevices.find(d => String(d.id) === String(defUser.deviceId)) || null;
-
-              if (!connected) {
-                needsDefault = true;
-                debugLog('User had deviceId but not in paired list', { deviceId: defUser.deviceId });
-              }
-            } else {
-              needsDefault = true;
-              debugLog('Default user missing device assignment');
-            }
-          }
-
-          if (!connected) {
-            const assignedIds = allUsers.filter(u => u.deviceId).map(u => String(u.deviceId));
-            const unassigned = pairedDevices.filter(d => !assignedIds.includes(String(d.id)));
-            needsDefault = true;
-            debugLog('Default user lacks device; unassigned pool size', { unassignedCount: unassigned.length });
-          }
-        } else {
-          needsDefault = true;
-          debugLog('No stored default user id');
+        
+        const user = await getUserById(activeId);
+        if (!mounted) return;
+        
+        if (!user) {
+          setActiveUser(null);
+          setUserDevices([]);
+          setConnectedDevice(null);
+          return;
         }
-
-        setConnectedDevice(connected);
-        debugLog('Connected device resolved', { connectedId: connected ? connected.id : null, needsDefault });
-        setShouldAssignDefaultInModal(needsDefault || !connected);
-        if (needsDefault || !connected) {
-          // Find default user name and save to state
-          let foundDefaultUserName = '';
-          if (storedDefaultUserId) {
-            const defUser = allUsers.find(u => String(u.id) === String(storedDefaultUserId));
-            if (defUser) foundDefaultUserName = defUser.name || 'User';
-          }
-          setDefaultUserName(foundDefaultUserName);
-          // Only show the 'no device assigned' modal if there are paired devices to assign
-          if (!devicesMenuDismissed && pairedDevices.length > 0) {
-            setShowNoDeviceAssignedModal(true);
-            setShowDevicesMenuModal(false);
-          } else if (!devicesMenuDismissed) {
-            setShowDevicesMenuModal(true);
-            setShowNoDeviceAssignedModal(false);
-          } else {
-            setShowNoDeviceAssignedModal(false);
-          }
-        } else {
-          if (devicesMenuDismissed) {
-            setDevicesMenuDismissed(false);
-          }
-          setShowDevicesMenuModal(false);
-          setShowNoDeviceAssignedModal(false);
+        
+        setActiveUser(user);
+        
+        // Get user's devices
+        const devices = await getDevicesForUser(user.id);
+        setUserDevices(devices);
+        
+        // Get default device for user
+        const defaultDevice = await getDefaultDeviceForUser(user.id);
+        setConnectedDevice(defaultDevice);
+        
+        // If user has no devices, show assignment modal
+        if (devices.length === 0) {
+          setShowDevicesMenuModal(true);
         }
       } catch (err) {
-        console.error('Failed to load connected device for dashboard', err);
+        console.error('Failed to load user and devices', err);
       }
-    })();
+    };
+    
+    loadUserAndDevices();
+    
+    // Subscribe to user changes (from header dropdown)
+    const unsubUser = subscribeToUserChange(() => {
+      loadUserAndDevices();
+    });
+    
+    return () => {
+      mounted = false;
+      unsubUser();
+    };
+  }, []);
 
-    return () => { mounted = false; };
-  }, [pairedDevices, devicesMenuDismissed, userVersion]);
-
-  const deviceOwnerMap = useMemo(() => {
-    const entries = Object.entries(currentUserDeviceMap || {});
-    const map = new Map();
-    entries.forEach(([userId, deviceId]) => {
-      if (deviceId) {
-        map.set(String(deviceId), String(userId));
+  // Load paired devices
+  React.useEffect(() => {
+    let mounted = true;
+    
+    const loadPairedDevices = async () => {
+      try {
+        const devices = await getStorageJSON('pairedDevices', []);
+        if (mounted) {
+          setPairedDevices(devices);
+        }
+      } catch (err) {
+        console.error('Failed to load paired devices', err);
       }
+    };
+    
+    loadPairedDevices();
+    
+    const unsub = subscribeToPairedDevicesChange(() => {
+      loadPairedDevices();
     });
-    return map;
-  }, [currentUserDeviceMap]);
+    
+    return () => {
+      mounted = false;
+      unsub();
+    };
+  }, []);
 
-  const pairedDevicesForModal = useMemo(() => {
-    if (!shouldAssignDefaultInModal) return pairedDevices;
-    return pairedDevices.filter(device => {
-      const ownerId = deviceOwnerMap.get(String(device.id));
-      return !ownerId || ownerId === activeDefaultUserId;
-    });
-  }, [pairedDevices, deviceOwnerMap, shouldAssignDefaultInModal, activeDefaultUserId]);
+  // Update available devices
+  React.useEffect(() => {
+    const pairedIds = pairedDevices.map(d => d.id);
+    setAvailableDevices(getAvailableDevices().filter(d => !pairedIds.includes(d.id)));
+  }, [pairedDevices]);
 
-  const assignDeviceToDefaultUser = async (deviceId) => {
+  // Handle device selection
+  const handleDeviceSelect = async (device) => {
+    if (!activeUser) return;
+    
     try {
-      const currentUser = await getStorageJSON('currentUser', null);
-      const otherUsers = await getStorageJSON('users', []);
-      const allUsers = [...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers.map(u => ({ ...u }))];
-      if (allUsers.length === 0) return false;
-
-      let storedDefaultUserId = await getStorageItem('defaultUserId');
-      let defaultUser = storedDefaultUserId
-        ? allUsers.find(u => String(u.id) === String(storedDefaultUserId))
-        : null;
-
-      if (!defaultUser) {
-        defaultUser = allUsers[0];
-        storedDefaultUserId = defaultUser.id;
-        await setStorageItem('defaultUserId', storedDefaultUserId);
-      }
-
-      const updatedUsers = allUsers.map(u => (
-        String(u.id) === String(storedDefaultUserId)
-          ? { ...u, deviceId }
-          : u
-      ));
-
-      const updatedCurrent = updatedUsers.find(u => u.self);
-      if (updatedCurrent) {
-        const { self: _self, ...rest } = updatedCurrent;
-        await setStorageJSON('currentUser', rest);
-      }
-      const otherOnly = updatedUsers.filter(u => !u.self);
-      await setStorageJSON('users', otherOnly);
-      const defaultUserRecord = updatedUsers.find(u => String(u.id) === String(storedDefaultUserId));
-      await setStorageJSON('defaultUser', sanitizeUserForStorage(defaultUserRecord));
-      await persistUserDeviceMap(updatedUsers);
-      debugLog('Assigned device to default user', { deviceId, defaultUserId: storedDefaultUserId });
-      notifyUserChange();
-      return true;
+      // Set as default device for active user
+      await setDefaultDeviceForUser(activeUser.id, device.id);
+      setConnectedDevice(device);
     } catch (err) {
-      console.error('Failed assigning default device', err);
-      return false;
+      console.error('Failed to set device as default', err);
     }
   };
 
-  const handleAssignDefaultFromMenu = async (device) => {
-    if (!device) return;
-    const success = await assignDeviceToDefaultUser(device.id);
-    if (!success) return;
-    setConnectedDevice(device);
-    setDevicesMenuDismissed(false);
-    setShowDevicesMenuModal(false);
-  };
-
-  const handlePairDeviceFromMenu = async (device) => {
-    if (!device) return;
+  // Handle pairing device
+  const handlePairDevice = async (device) => {
     try {
       const mappedImage = deviceImageMap[device.image] || device.image;
-      const pairDevice = { ...device, image: mappedImage, connectionStatus: 'connected', batteryLevel: 70, lastSync: new Date().toISOString() };
+      const pairDevice = {
+        ...device,
+        image: mappedImage,
+        connectionStatus: 'connected',
+        batteryLevel: 70,
+        lastSync: new Date().toISOString()
+      };
+      
       const updated = [...pairedDevices, pairDevice];
       await setStorageJSON('pairedDevices', updated);
       setPairedDevices(updated);
-      setDevicesMenuDismissed(false);
       notifyPairedDevicesChange();
-
-      // If user has no paired devices, assign this device to default user and close modal
-      if (pairedDevices.length === 0) {
-        await assignDeviceToDefaultUser(pairDevice.id);
+      
+      // If active user has no devices, assign this one
+      if (activeUser && userDevices.length === 0) {
+        // Add device to user's devices
+        const currentUser = await getStorageJSON('currentUser', null);
+        const otherUsers = await getStorageJSON('users', []);
+        
+        if (currentUser && String(currentUser.id) === String(activeUser.id)) {
+          const updatedUser = {
+            ...currentUser,
+            devices: [String(pairDevice.id)],
+            defaultDevice: String(pairDevice.id)
+          };
+          await setStorageJSON('currentUser', updatedUser);
+        } else {
+          const updatedOthers = otherUsers.map(u =>
+            String(u.id) === String(activeUser.id)
+              ? {
+                  ...u,
+                  devices: [String(pairDevice.id)],
+                  defaultDevice: String(pairDevice.id)
+                }
+              : u
+          );
+          await setStorageJSON('users', updatedOthers);
+        }
+        
+        notifyUserChange();
         setConnectedDevice(pairDevice);
+        setUserDevices([pairDevice]);
         setShowDevicesMenuModal(false);
       }
     } catch (err) {
-      console.error('Failed to pair mock available device', err);
+      console.error('Failed to pair device', err);
     }
   };
 
-  const handleUnpairDeviceFromMenu = async (device) => {
-    if (!device) return;
+  // Handle unpairing device
+  const handleUnpairDevice = async (device) => {
     try {
       const updated = pairedDevices.filter(d => d.id !== device.id);
       await setStorageJSON('pairedDevices', updated);
       setPairedDevices(updated);
+      
       if (connectedDevice && String(connectedDevice.id) === String(device.id)) {
         setConnectedDevice(null);
       }
-      setDevicesMenuDismissed(false);
+      
       notifyPairedDevicesChange();
     } catch (err) {
       console.error('Failed to unpair device', err);
     }
   };
 
-  const handleDismissDevicesMenu = () => {
-    setShowDevicesMenuModal(false);
-    setDevicesMenuDismissed(true);
-  };
+  // Show empty state if user has no devices
+  if (activeUser && userDevices.length === 0 && !showDevicesMenuModal) {
+    return (
+      <div className="app-container" style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: 'calc(100vh - 60px)',
+        padding: '40px 20px'
+      }}>
+        <div style={{ 
+          textAlign: 'center', 
+          maxWidth: '400px',
+          background: 'white',
+          padding: '40px',
+          borderRadius: '16px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+        }}>
+          <h2 style={{ marginBottom: '16px', fontSize: '24px' }}>
+            {activeUser.name} has no device assigned
+          </h2>
+          <button
+            className="btn-primary"
+            style={{ 
+              width: '100%', 
+              marginTop: '20px',
+              padding: '12px 24px',
+              fontSize: '16px',
+              borderRadius: '8px',
+              border: 'none',
+              background: '#667eea',
+              color: 'white',
+              cursor: 'pointer'
+            }}
+            onClick={() => setShowDevicesMenuModal(true)}
+          >
+            Assign Device
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -557,7 +583,11 @@ const Dashboard = () => {
         onOpenCycles={() => setShowCycles(true)}
         onOpenWeight={() => setShowWeight(true)}
         connectedDevice={connectedDevice}
+        userDevices={userDevices}
+        onDeviceSelect={handleDeviceSelect}
       />
+      
+      {/* Modals */}
       {showSteps && <StepsModal onClose={() => setShowSteps(false)} />}
       {showHeartRate && <HeartRateModal onClose={() => setShowHeartRate(false)} />}
       {showSleep && <SleepModal onClose={() => setShowSleep(false)} />}
@@ -566,43 +596,27 @@ const Dashboard = () => {
       {showStress && <StressModal onClose={() => setShowStress(false)} />}
       {showCycles && <CyclesModal onClose={() => setShowCycles(false)} />}
       {showWeight && <WeightModal onClose={() => setShowWeight(false)} />}
-      {showNoDeviceAssignedModal && (
-        <div className="modal-overlay" onClick={() => setShowNoDeviceAssignedModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 400, textAlign: 'center' }}>
-            <h3 style={{ marginBottom: 16 }}>{defaultUserName || 'User'} has no assigned device</h3>
-            <button
-              className="btn-primary btn-submit"
-              style={{ width: '100%', marginTop: 12 }}
-              onClick={() => {
-                setShowNoDeviceAssignedModal(false);
-                setShowDevicesMenuModal(true);
-              }}
-            >
-              Assign Device
-            </button>
-          </div>
-        </div>
-      )}
+      
+      {/* Device Assignment Modal */}
       {showDevicesMenuModal && (
-        <div className="devices-menu-overlay" onClick={handleDismissDevicesMenu}>
+        <div className="devices-menu-overlay" onClick={() => setShowDevicesMenuModal(false)}>
           <div className="devices-menu-modal" onClick={(e) => e.stopPropagation()}>
             <div className="devices-menu-modal-header">
-              <h3>
-                {pairedDevices.length === 0 
-                  ? 'Pair a device to get started' 
-                  : shouldAssignDefaultInModal 
-                    ? 'Choose a device to connect' 
-                    : 'Manage devices'}
-              </h3>
-              <button className="devices-menu-modal-close" onClick={handleDismissDevicesMenu}>✕</button>
+              <h3>{pairedDevices.length === 0 ? 'Pair a device to get started' : 'Assign a device'}</h3>
+              <button 
+                className="devices-menu-modal-close" 
+                onClick={() => setShowDevicesMenuModal(false)}
+              >
+                ✕
+              </button>
             </div>
             <div className="devices-menu-modal-body">
               <DevicesMenu
-                pairedDevices={pairedDevicesForModal}
+                pairedDevices={pairedDevices}
                 availableDevices={availableDevices}
-                onPairDevice={handlePairDeviceFromMenu}
-                onUnpairDevice={handleUnpairDeviceFromMenu}
-                onCardClick={shouldAssignDefaultInModal ? handleAssignDefaultFromMenu : undefined}
+                onPairDevice={handlePairDevice}
+                onUnpairDevice={handleUnpairDevice}
+                onCardClick={handlePairDevice}
               />
             </div>
           </div>
@@ -610,6 +624,6 @@ const Dashboard = () => {
       )}
     </>
   );
-}
+};
 
 export default Dashboard;
