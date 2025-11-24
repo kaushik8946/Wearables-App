@@ -390,10 +390,7 @@ const Dashboard = () => {
         const defaultDevice = await getDefaultDeviceForUser(user.id);
         setConnectedDevice(defaultDevice);
         
-        // If user has no devices, show assignment modal
-        if (devices.length === 0) {
-          setShowDevicesMenuModal(true);
-        }
+        // Don't automatically show modal - let user click button instead
       } catch (err) {
         console.error('Failed to load user and devices', err);
       }
@@ -546,8 +543,8 @@ const Dashboard = () => {
           borderRadius: '16px',
           boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
         }}>
-          <h2 style={{ marginBottom: '16px', fontSize: '24px' }}>
-            {activeUser.name} has no device assigned
+          <h2 style={{ marginBottom: '16px', fontSize: '24px', color: '#334155' }}>
+            no devices paired for: {activeUser.name}
           </h2>
           <button
             className="btn-primary"
@@ -564,7 +561,7 @@ const Dashboard = () => {
             }}
             onClick={() => setShowDevicesMenuModal(true)}
           >
-            Assign Device
+            pair device
           </button>
         </div>
       </div>

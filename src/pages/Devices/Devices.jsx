@@ -3,6 +3,7 @@ import { MdEdit } from 'react-icons/md';
 import * as deviceService from '../../service';
 import './Devices.css';
 import ReassignDeviceModal from '../../common/ReassignDeviceModal/ReassignDeviceModal';
+import DevicesMenu from '../../common/DevicesMenu/DevicesMenu';
 import watchImg from '../../assets/images/watch.png';
 import ringImg from '../../assets/images/ring.webp';
 import scaleImg from '../../assets/images/weighing-scale.avif';
@@ -26,6 +27,8 @@ const Devices = () => {
   const [deviceUserMap, setDeviceUserMap] = useState({});
   const [showReassignModal, setShowReassignModal] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState(null);
+  const [showPairDeviceModal, setShowPairDeviceModal] = useState(false);
+  const [availableDevices, setAvailableDevices] = useState([]);
 
   const loadDevicesAndUsers = async () => {
     try {
@@ -49,6 +52,12 @@ const Devices = () => {
         userMapEntries.filter(([, user]) => user !== null)
       );
       setDeviceUserMap(userMap);
+
+      // Load available devices (not yet paired)
+      const allAvailableDevices = deviceService.getAvailableDevices();
+      const pairedIds = new Set(randomizedPaired.map(d => String(d.id)));
+      const unpaired = allAvailableDevices.filter(d => !pairedIds.has(String(d.id)));
+      setAvailableDevices(unpaired);
     } catch (err) {
       console.error('Failed to load device data from IndexedDB', err);
     }
@@ -114,11 +123,60 @@ const Devices = () => {
     await loadDevicesAndUsers();
   };
 
+  const handlePairNewDevice = async (device) => {
+    try {
+      // Map the device image
+      const mappedImage = deviceImageMap[device.image] || device.image;
+      const pairDevice = {
+        ...device,
+        image: mappedImage,
+        connectionStatus: 'connected',
+        batteryLevel: 70,
+        lastSync: new Date().toISOString()
+      };
+      
+      // Add to paired devices
+      const updated = [...pairedDevices, pairDevice];
+      await deviceService.setStorageJSON('pairedDevices', updated);
+      deviceService.notifyPairedDevicesChange();
+      
+      // Close the pairing modal
+      setShowPairDeviceModal(false);
+      
+      // Refresh the list
+      await loadDevicesAndUsers();
+      
+      // Show assignment modal for the newly paired device
+      setSelectedDevice(pairDevice);
+      setShowReassignModal(true);
+    } catch (err) {
+      console.error('Failed to pair device', err);
+    }
+  };
+
   return (
     <div className="devices-container">
       <div className="devices-ui">
         <div className="devices-header">
           <h1>Devices</h1>
+          <button
+            className="btn-primary"
+            style={{ 
+              padding: '10px 20px',
+              fontSize: '14px',
+              borderRadius: '8px',
+              border: 'none',
+              background: '#667eea',
+              color: 'white',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+            onClick={() => setShowPairDeviceModal(true)}
+          >
+            + Pair New Device
+          </button>
         </div>
 
         <div className="devices-section">
@@ -182,6 +240,73 @@ const Devices = () => {
           onUnassign={handleUnassign}
           onClose={handleCloseReassignModal}
         />
+      )}
+
+      {showPairDeviceModal && (
+        <div 
+          className="devices-menu-overlay" 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}
+          onClick={() => setShowPairDeviceModal(false)}
+        >
+          <div 
+            className="devices-menu-modal" 
+            style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '600px',
+              width: '90%',
+              maxHeight: '80vh',
+              overflow: 'auto'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '20px'
+            }}>
+              <h3 style={{ margin: 0 }}>Pair New Device</h3>
+              <button 
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  padding: '0',
+                  width: '30px',
+                  height: '30px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                onClick={() => setShowPairDeviceModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <DevicesMenu
+              pairedDevices={[]}
+              availableDevices={availableDevices}
+              onPairDevice={handlePairNewDevice}
+              onCardClick={handlePairNewDevice}
+              showPairedSection={false}
+              showAvailableSection={true}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

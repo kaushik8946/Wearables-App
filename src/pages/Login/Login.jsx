@@ -55,11 +55,7 @@ const Login = () => {
     await setStorageItem('userPhone', mobileNumber);
     await setStorageItem('defaultUserId', user.id);
     await setStorageItem('defaultUser', JSON.stringify(user));
-    if (mobileNumber.endsWith('123')) {
-      navigate('/signup');
-    } else {
-      navigate('/dashboard');
-    }
+    navigate('/dashboard');
   };
 
   return (
