@@ -1,0 +1,83 @@
+.manage-devices-modal {
+  max-width: 600px;
+}
+
+.devices-list {
+  padding: 20px 0;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.empty-devices {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.device-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.device-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.device-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.device-model {
+  font-size: 14px;
+  color: #666;
+}
+
+.device-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-secondary {
+  padding: 8px 16px;
+  background: #667eea;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: #5568d3;
+}
+
+.btn-delete-icon {
+  padding: 8px;
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.btn-delete-icon:hover {
+  background: #dc2626;
+}

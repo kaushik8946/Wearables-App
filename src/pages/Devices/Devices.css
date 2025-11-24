@@ -294,3 +294,108 @@ h1 {
     font-size: 14px;
   }
 }
+
+/* Custom Device List */
+.custom-devices-list {
+  padding: 20px;
+}
+
+.custom-device-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 2px solid #f0f0f0;
+  transition: all 0.2s ease;
+}
+
+.custom-device-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.15);
+}
+
+.device-card-image {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #f9fafb;
+  padding: 10px;
+}
+
+.device-card-info {
+  flex: 1;
+}
+
+.device-card-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.device-card-model {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.device-card-owner {
+  font-size: 13px;
+  color: #667eea;
+  font-weight: 500;
+  background: #f0f3ff;
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+.device-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.device-edit-btn {
+  padding: 10px;
+  background: #667eea;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.device-edit-btn:hover {
+  background: #5568d3;
+  transform: scale(1.05);
+}
+
+.device-unpair-btn {
+  padding: 10px 20px;
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.device-unpair-btn:hover {
+  background: #dc2626;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+}

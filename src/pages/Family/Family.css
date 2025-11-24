@@ -698,3 +698,21 @@ select.form-input {
     height: 18px;
   }
 }
+
+/* Device Info Row */
+.device-info-row {
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.device-info-label {
+  font-size: 14px;
+  color: #666;
+}
+
+.manage-devices-btn {
+  width: 100%;
+  margin-top: 8px;
+}

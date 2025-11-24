@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { MdPerson, MdPersonOutline, MdEdit, MdDelete, MdAdd, MdWatch } from 'react-icons/md';
 import { GiRing } from 'react-icons/gi';
 import { FaWeight } from 'react-icons/fa';
-import { getStorageItem, getStorageJSON, setStorageItem, setStorageJSON, notifyUserChange, notifyPairedDevicesChange } from '../../service';
+import { getStorageItem, getStorageJSON, setStorageItem, setStorageJSON, notifyUserChange, notifyPairedDevicesChange, getUserDevices } from '../../service';
 import { getAvailableDevices } from '../../service';
 import DevicesMenu from '../../common/DevicesMenu/DevicesMenu';
+import ManageDevicesModal from '../../common/ManageDevicesModal/ManageDevicesModal';
 import './Family.css';
 
 const Users = () => {
@@ -25,6 +26,10 @@ const Users = () => {
   const [errors, setErrors] = useState({});
   const [showDeviceSelectionModal, setShowDeviceSelectionModal] = useState(false);
   const [pendingNewUser, setPendingNewUser] = useState(null);
+  const [showManageDevicesModal, setShowManageDevicesModal] = useState(false);
+  const [manageDevicesUserId, setManageDevicesUserId] = useState(null);
+  const [manageDevicesUserName, setManageDevicesUserName] = useState('');
+  const [userDevices, setUserDevices] = useState({});
 
   const sanitizeUserForStorage = (user) => {
     if (!user) return null;
@@ -79,6 +84,14 @@ const Users = () => {
         // Load paired devices
         const devices = await getStorageJSON('pairedDevices', []);
         setPairedDevices(devices);
+        
+        // Load user devices from new multi-device storage
+        const devicesMap = {};
+        for (const user of hydratedUsers) {
+          const userDevicesList = await getUserDevices(user.id);
+          devicesMap[user.id] = userDevicesList;
+        }
+        setUserDevices(devicesMap);
       } catch (err) {
         console.error('Failed to load users/devices from IndexedDB', err);
       }
@@ -450,61 +463,41 @@ const Users = () => {
 
             {modalMode === 'edit' && users[editingIndex] && (
               <div className="form-group">
+                <label>Devices</label>
                 {(() => {
-                  const deviceId = users[editingIndex].deviceId;
-                  const assignedDevice = deviceId ? pairedDevices.find(d => String(d.id) === String(deviceId)) : null;
-                  if (deviceId && assignedDevice) {
-                    // Device assigned and found
-                    return (
-                      <>
-                        <label>Assigned Device</label>
-                        <div className="device-action-col">
-                          <span className="device-action-label">
-                            {`${assignedDevice.name} (${assignedDevice.model})`}
+                  const userId = users[editingIndex].id;
+                  const devices = userDevices[userId] || [];
+                  const defaultDevice = devices.find(d => d.isDefault);
+                  
+                  return (
+                    <>
+                      {defaultDevice ? (
+                        <div className="device-info-row">
+                          <span className="device-info-label">
+                            Default Device: {defaultDevice.name}
                           </span>
-                          <div className="device-action-row">
-                            <button
-                              className="btn-submit device-action-btn"
-                              onClick={() => {
-                                setPendingEditUser(users[editingIndex]);
-                                setShowDeviceAssignmentForEdit(true);
-                                setModalOpen(false);
-                              }}
-                            >
-                              Switch
-                            </button>
-                            <button
-                              className="btn-delete device-action-btn"
-                              onClick={async () => {
-                                // Unassign device from user
-                                const updatedUsers = users.map((u, idx) =>
-                                  idx === editingIndex ? { ...u, deviceId: '' } : u
-                                );
-                                await saveUsers(updatedUsers);
-                                setUsers(updatedUsers);
-                              }}
-                            >
-                              Delete
-                            </button>
-                          </div>
                         </div>
-                      </>
-                    );
-                  } else {
-                    // No device assigned or device not found
-                    return (
+                      ) : (
+                        <div className="device-info-row">
+                          <span className="device-info-label">
+                            No default device set
+                          </span>
+                        </div>
+                      )}
                       <button
-                        className="btn-submit device-action-btn"
+                        type="button"
+                        className="btn-secondary manage-devices-btn"
                         onClick={() => {
-                          setPendingEditUser(users[editingIndex]);
-                          setShowDeviceAssignmentForEdit(true);
+                          setManageDevicesUserId(userId);
+                          setManageDevicesUserName(users[editingIndex].name);
+                          setShowManageDevicesModal(true);
                           setModalOpen(false);
                         }}
                       >
-                        Assign Device
+                        Manage Devices
                       </button>
-                    );
-                  }
+                    </>
+                  );
                 })()}
               </div>
             )}
@@ -661,6 +654,42 @@ const Users = () => {
           </div>
         );
       })()}
+      
+      {/* Manage Devices Modal */}
+      {showManageDevicesModal && manageDevicesUserId && (
+        <ManageDevicesModal
+          userId={manageDevicesUserId}
+          userName={manageDevicesUserName}
+          onClose={async () => {
+            setShowManageDevicesModal(false);
+            // Reload user devices
+            const devicesMap = {};
+            for (const user of users) {
+              const userDevicesList = await getUserDevices(user.id);
+              devicesMap[user.id] = userDevicesList;
+            }
+            setUserDevices(devicesMap);
+            // Reopen edit modal
+            const idx = users.findIndex(u => u.id === manageDevicesUserId);
+            if (idx !== -1) {
+              setEditingIndex(idx);
+              setModalMode('edit');
+              setModalOpen(true);
+            }
+            setManageDevicesUserId(null);
+            setManageDevicesUserName('');
+          }}
+          onUpdate={async () => {
+            // Reload user devices
+            const devicesMap = {};
+            for (const user of users) {
+              const userDevicesList = await getUserDevices(user.id);
+              devicesMap[user.id] = userDevicesList;
+            }
+            setUserDevices(devicesMap);
+          }}
+        />
+      )}
     </div>
   );
 };
