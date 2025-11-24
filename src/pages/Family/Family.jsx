@@ -2,9 +2,7 @@ import { useEffect, useState } from 'react';
 import { MdPerson, MdPersonOutline, MdEdit, MdDelete, MdAdd, MdWatch } from 'react-icons/md';
 import { GiRing } from 'react-icons/gi';
 import { FaWeight } from 'react-icons/fa';
-import { getStorageItem, getStorageJSON, setStorageItem, setStorageJSON, notifyUserChange, notifyPairedDevicesChange } from '../../service';
-import { getAvailableDevices } from '../../service';
-import DevicesMenu from '../../common/DevicesMenu/DevicesMenu';
+import { getStorageItem, getStorageJSON, setStorageItem, setStorageJSON, notifyUserChange } from '../../service';
 import './Family.css';
 
 const Users = () => {
@@ -21,11 +19,8 @@ const Users = () => {
     gender: '',
   });
   const [errors, setErrors] = useState({});
-  const [showDeviceSelectionModal, setShowDeviceSelectionModal] = useState(false);
-  const [pendingNewUser, setPendingNewUser] = useState(null);
   const [showManageDevicesModal, setShowManageDevicesModal] = useState(false);
   const [managingUserIndex, setManagingUserIndex] = useState(null);
-  const [showAddDeviceSection, setShowAddDeviceSection] = useState(false);
 
   const sanitizeUserForStorage = (user) => {
     if (!user) return null;
@@ -189,46 +184,10 @@ const Users = () => {
       defaultDevice: null
     };
     
-    // Store pending user and show device selection
-    setPendingNewUser(newUser);
+    // Add user directly without device selection
+    const updatedUsers = [...users, newUser];
+    await saveUsers(updatedUsers);
     closeModal();
-    setShowDeviceSelectionModal(true);
-  };
-
-  const handleDeviceSelected = async (device) => {
-    if (!pendingNewUser) return;
-
-    const isPaired = pairedDevices.some(d => String(d.id) === String(device.id));
-    let newPairedDevices = pairedDevices;
-    if (!isPaired) {
-      // Pair the device (add to pairedDevices and persist)
-      newPairedDevices = [...pairedDevices, device];
-      setPairedDevices(newPairedDevices);
-      await setStorageJSON('pairedDevices', newPairedDevices);
-        notifyPairedDevicesChange();
-    }
-
-    // Assign device to the new user with new structure
-    const deviceIdStr = String(device.id);
-    const newUserWithDevice = { 
-      ...pendingNewUser, 
-      devices: [deviceIdStr],
-      defaultDevice: deviceIdStr
-    };
-
-    const updatedUsers = [...users, newUserWithDevice];
-    await saveUsers(updatedUsers);
-    setShowDeviceSelectionModal(false);
-    setPendingNewUser(null);
-  };
-
-  const handleSkipDeviceSelection = async () => {
-    if (!pendingNewUser) return;
-    
-    const updatedUsers = [...users, pendingNewUser];
-    await saveUsers(updatedUsers);
-    setShowDeviceSelectionModal(false);
-    setPendingNewUser(null);
   };
 
   const handleSaveEdit = async () => {
@@ -521,47 +480,6 @@ const Users = () => {
         </div>
       )}
 
-      {/* Device Selection Modal for New User */}
-      {showDeviceSelectionModal && pendingNewUser && (() => {
-        // Devices in getAvailableDevices() that are not yet paired (not in pairedDevices by id)
-        const pairedIds = new Set(pairedDevices.map(d => String(d.id)));
-        const unpairedAvailableDevices = getAvailableDevices().filter(d => !pairedIds.has(String(d.id)));
-        return (
-          <div className="modal-overlay" onClick={handleSkipDeviceSelection}>
-            <div className="modal-content" style={{ maxWidth: 600 }} onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <div className="modal-title-group">
-                  <h3>Assign Device (Optional)</h3>
-                  <p className="modal-subtitle">Select a device for {pendingNewUser.name}</p>
-                </div>
-                <button className="modal-close-btn" onClick={handleSkipDeviceSelection} aria-label="Skip">
-                  X
-                </button>
-              </div>
-              <DevicesMenu
-                pairedDevices={pairedDevices}
-                availableDevices={unpairedAvailableDevices}
-                onPairDevice={handleDeviceSelected}
-                onCardClick={handleDeviceSelected}
-                variant="modal"
-                isCloseButtonRequired={false}
-                showPairedSection={true}
-                showAvailableSection={true}
-              />
-              <div className="modal-buttons">
-                <button 
-                  className="btn-primary btn-submit" 
-                  style={{ background: '#94a3b8' }}
-                  onClick={handleSkipDeviceSelection}
-                >
-                  Skip & Add User
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
       {/* Manage Devices Modal */}
       {showManageDevicesModal && managingUserIndex !== null && (() => {
         const user = users[managingUserIndex];
@@ -574,15 +492,7 @@ const Users = () => {
           .filter(Boolean);
 
         const handleAddDevice = async (device) => {
-          const isPaired = pairedDevices.some(d => String(d.id) === String(device.id));
-          let newPairedDevices = pairedDevices;
-          if (!isPaired) {
-            newPairedDevices = [...pairedDevices, device];
-            setPairedDevices(newPairedDevices);
-            await setStorageJSON('pairedDevices', newPairedDevices);
-            notifyPairedDevicesChange();
-          }
-
+          // Only allow assigning already-paired devices, not pairing new ones
           const deviceIdStr = String(device.id);
           const updatedUsers = users.map((u, idx) => {
             if (idx === managingUserIndex) {
@@ -600,7 +510,6 @@ const Users = () => {
           });
 
           await saveUsers(updatedUsers);
-          setShowAddDeviceSection(false);
         };
 
         const handleRemoveDevice = async (deviceId) => {
@@ -641,7 +550,6 @@ const Users = () => {
 
         const handleCloseManageDevices = () => {
           setShowManageDevicesModal(false);
-          setShowAddDeviceSection(false);
           // Reopen edit modal
           if (managingUserIndex !== null) {
             setEditingIndex(managingUserIndex);
@@ -651,12 +559,11 @@ const Users = () => {
           setManagingUserIndex(null);
         };
 
-        // Available devices to add (not already assigned to this user)
-        const pairedIds = new Set(pairedDevices.map(d => String(d.id)));
-        const unpairedAvailableDevices = getAvailableDevices().filter(d => !pairedIds.has(String(d.id)));
-        const availablePairedDevices = pairedDevices.filter(d => 
-          !(user.devices || []).includes(String(d.id))
-        );
+        // Available paired devices to add.
+        // Exclude any devices already assigned to any user — we must not
+        // show devices that belong to another user when assigning to this one.
+        const assignedDeviceIds = new Set((users || []).flatMap(u => (u.devices || []).map(id => String(id))));
+        const availablePairedDevices = pairedDevices.filter(d => !assignedDeviceIds.has(String(d.id)));
 
         return (
           <div className="modal-overlay" onClick={handleCloseManageDevices}>
@@ -738,36 +645,55 @@ const Users = () => {
                 )}
               </div>
 
-              {/* Add device section */}
-              {!showAddDeviceSection ? (
-                <button
-                  className="btn-primary"
-                  style={{ width: '100%' }}
-                  onClick={() => setShowAddDeviceSection(true)}
-                >
-                  <MdAdd size={20} />
-                  Add Device
-                </button>
-              ) : (
-                <>
-                  <DevicesMenu
-                    pairedDevices={availablePairedDevices}
-                    availableDevices={unpairedAvailableDevices}
-                    onPairDevice={handleAddDevice}
-                    onCardClick={handleAddDevice}
-                    variant="modal"
-                    isCloseButtonRequired={false}
-                    showPairedSection={true}
-                    showAvailableSection={true}
-                  />
-                  <button
-                    className="btn-primary"
-                    style={{ width: '100%', marginTop: '12px', background: '#94a3b8' }}
-                    onClick={() => setShowAddDeviceSection(false)}
-                  >
-                    Cancel
-                  </button>
-                </>
+              {/* Only show available paired devices, not unpaired ones */}
+              {availablePairedDevices.length > 0 && (
+                <div style={{ marginTop: '20px' }}>
+                  <div style={{ 
+                    fontSize: '14px', 
+                    fontWeight: '600', 
+                    marginBottom: '12px',
+                    color: '#475569' 
+                  }}>
+                    Available Paired Devices
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {availablePairedDevices.map(device => (
+                      <div
+                        key={device.id}
+                        style={{
+                          padding: '16px',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          cursor: 'pointer',
+                          background: '#fff'
+                        }}
+                        onClick={() => handleAddDevice(device)}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 500, marginBottom: '4px' }}>
+                            {device.name}
+                          </div>
+                          <div style={{ fontSize: '14px', color: '#64748b' }}>
+                            {device.model} • {device.brand}
+                          </div>
+                        </div>
+                        <button
+                          className="btn-primary btn-compact"
+                          style={{ padding: '6px 12px', fontSize: '14px' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddDevice(device);
+                          }}
+                        >
+                          Assign
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
 
               <div className="modal-buttons" style={{ marginTop: '16px' }}>

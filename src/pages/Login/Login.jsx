@@ -17,14 +17,35 @@ const Login = () => {
     setErrors((prev) => ({ ...prev, mobile: '' }));
   };
 
-  const handleRequestOtp = (e) => {
+  const handleRequestOtp = async (e) => {
     e.preventDefault();
     if (mobileNumber.length !== 10) {
       setErrors({ ...errors, mobile: 'Enter valid 10 digit mobile number' });
       return;
     }
-    setShowOtpScreen(true);
-    setOtp(['1','2','3','4','5','6']);
+
+    try {
+      // Check if this phone is already registered — if yes show OTP screen,
+      // otherwise persist phone and redirect to signup.
+      const registeredUserRaw = await getStorageItem('registeredUser');
+      const registeredUser = registeredUserRaw ? JSON.parse(registeredUserRaw) : null;
+
+      if (registeredUser && String(registeredUser.mobile) === String(mobileNumber)) {
+        // Registered — show OTP flow so user can verify and sign in
+        setShowOtpScreen(true);
+        setOtp(['1','2','3','4','5','6']);
+        return;
+      }
+
+      // Unknown number — save and redirect to signup to complete profile
+      await setStorageItem('userPhone', mobileNumber);
+      navigate('/signup');
+    } catch (err) {
+      console.error('Error while checking registration or redirecting to signup', err);
+      // Fallback: still save phone and redirect
+      try { await setStorageItem('userPhone', mobileNumber); } catch (e) {}
+      navigate('/signup');
+    }
   };
 
   const handleOtpChange = (updatedOtp) => {
@@ -55,11 +76,7 @@ const Login = () => {
     await setStorageItem('userPhone', mobileNumber);
     await setStorageItem('defaultUserId', user.id);
     await setStorageItem('defaultUser', JSON.stringify(user));
-    if (mobileNumber.endsWith('123')) {
-      navigate('/signup');
-    } else {
-      navigate('/dashboard');
-    }
+    navigate('/dashboard');
   };
 
   return (

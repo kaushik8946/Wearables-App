@@ -73,6 +73,9 @@ const Signup = () => {
     await setStorageItem('currentUser', JSON.stringify(userToSave));
     await setStorageItem('isAuthenticated', 'true');
     await setStorageItem('userPhone', form.mobileNumber);
+    // Make this newly created user the default user so dashboard loads as expected
+    await setStorageItem('defaultUserId', userToSave.id);
+    await setStorageItem('defaultUser', JSON.stringify(userToSave));
     navigate('/dashboard');
   };
 
