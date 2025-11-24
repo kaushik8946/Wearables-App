@@ -2,7 +2,7 @@
 // Service layer for device-related operations
 
 import { availableDevices } from '../data/mockData';
-import { getStorageJSON, setStorageJSON, notifyPairedDevicesChange } from './storageService';
+import { getStorageJSON, setStorageJSON, notifyPairedDevicesChange, notifyUserChange } from './storageService';
 
 // Helper functions for device information
 export const getSignalStrengthText = (rssi) => {
@@ -90,4 +90,162 @@ export const getUnpairedDevices = async () => {
   const pairedDevices = await getPairedDevices();
   const pairedIds = new Set(pairedDevices.map(d => d.id));
   return availableDevices.filter(device => !pairedIds.has(device.id));
+};
+
+// Get all users (currentUser + users)
+export const getAllUsers = async () => {
+  const currentUser = await getStorageJSON('currentUser', null);
+  const otherUsers = await getStorageJSON('users', []);
+  
+  // Ensure every user has an id
+  const ensureId = (user) => {
+    if (!user) return user;
+    if (!user.id) {
+      return { ...user, id: `user_${Date.now()}_${Math.random().toString(36).slice(2,8)}` };
+    }
+    return user;
+  };
+  
+  const normalizedCurrentUser = currentUser ? ensureId(currentUser) : null;
+  const normalizedOtherUsers = Array.isArray(otherUsers) ? otherUsers.map(ensureId) : [];
+  
+  return normalizedCurrentUser 
+    ? [{ ...normalizedCurrentUser, self: true }, ...normalizedOtherUsers]
+    : normalizedOtherUsers;
+};
+
+// Get the user assigned to a specific device
+export const getUserForDevice = async (deviceId) => {
+  const users = await getAllUsers();
+  const deviceIdStr = String(deviceId);
+  
+  return users.find(user => {
+    const userDevices = user.devices || [];
+    return userDevices.some(id => String(id) === deviceIdStr);
+  }) || null;
+};
+
+// Reassign a device to a different user
+export const reassignDevice = async (deviceId, newUserId) => {
+  const deviceIdStr = String(deviceId);
+  const newUserIdStr = String(newUserId);
+  
+  // Get all users
+  const currentUser = await getStorageJSON('currentUser', null);
+  const otherUsers = await getStorageJSON('users', []);
+  
+  let updatedCurrentUser = currentUser;
+  let updatedOtherUsers = [...otherUsers];
+  
+  // Remove device from all users
+  if (updatedCurrentUser && Array.isArray(updatedCurrentUser.devices)) {
+    const devices = updatedCurrentUser.devices.filter(id => String(id) !== deviceIdStr);
+    updatedCurrentUser = {
+      ...updatedCurrentUser,
+      devices,
+      // If removing the default device, clear it
+      defaultDevice: String(updatedCurrentUser.defaultDevice) === deviceIdStr ? null : updatedCurrentUser.defaultDevice
+    };
+  }
+  
+  updatedOtherUsers = updatedOtherUsers.map(user => {
+    if (!Array.isArray(user.devices)) return user;
+    const devices = user.devices.filter(id => String(id) !== deviceIdStr);
+    return {
+      ...user,
+      devices,
+      // If removing the default device, clear it
+      defaultDevice: String(user.defaultDevice) === deviceIdStr ? null : user.defaultDevice
+    };
+  });
+  
+  // Add device to the new user
+  if (updatedCurrentUser && String(updatedCurrentUser.id) === newUserIdStr) {
+    const devices = [...(updatedCurrentUser.devices || [])];
+    if (!devices.includes(deviceIdStr)) {
+      devices.push(deviceIdStr);
+    }
+    updatedCurrentUser = {
+      ...updatedCurrentUser,
+      devices,
+      // Set as default if no default device
+      defaultDevice: updatedCurrentUser.defaultDevice || deviceIdStr
+    };
+  } else {
+    updatedOtherUsers = updatedOtherUsers.map(user => {
+      if (String(user.id) === newUserIdStr) {
+        const devices = [...(user.devices || [])];
+        if (!devices.includes(deviceIdStr)) {
+          devices.push(deviceIdStr);
+        }
+        return {
+          ...user,
+          devices,
+          // Set as default if no default device
+          defaultDevice: user.defaultDevice || deviceIdStr
+        };
+      }
+      return user;
+    });
+  }
+  
+  // Save updated users
+  if (updatedCurrentUser) {
+    await setStorageJSON('currentUser', updatedCurrentUser);
+  }
+  await setStorageJSON('users', updatedOtherUsers);
+  
+  // Notify listeners
+  notifyUserChange();
+  
+  return { success: true };
+};
+
+// Unassign a device from all users
+export const unassignDevice = async (deviceId) => {
+  const deviceIdStr = String(deviceId);
+  
+  // Get all users
+  const currentUser = await getStorageJSON('currentUser', null);
+  const otherUsers = await getStorageJSON('users', []);
+  
+  let updatedCurrentUser = currentUser;
+  let updatedOtherUsers = [...otherUsers];
+  
+  // Remove device from all users
+  if (updatedCurrentUser && Array.isArray(updatedCurrentUser.devices)) {
+    const devices = updatedCurrentUser.devices.filter(id => String(id) !== deviceIdStr);
+    updatedCurrentUser = {
+      ...updatedCurrentUser,
+      devices,
+      // If removing the default device, clear it or set to first available
+      defaultDevice: String(updatedCurrentUser.defaultDevice) === deviceIdStr 
+        ? (devices.length > 0 ? devices[0] : null)
+        : updatedCurrentUser.defaultDevice
+    };
+  }
+  
+  updatedOtherUsers = updatedOtherUsers.map(user => {
+    if (!Array.isArray(user.devices)) return user;
+    const devices = user.devices.filter(id => String(id) !== deviceIdStr);
+    return {
+      ...user,
+      devices,
+      // If removing the default device, clear it or set to first available
+      defaultDevice: String(user.defaultDevice) === deviceIdStr 
+        ? (devices.length > 0 ? devices[0] : null)
+        : user.defaultDevice
+    };
+  });
+  
+  // Save updated users
+  if (updatedCurrentUser) {
+    await setStorageJSON('currentUser', updatedCurrentUser);
+  }
+  await setStorageJSON('users', updatedOtherUsers);
+  
+  // Notify listeners
+  notifyUserChange();
+  
+  return { success: true };
 };
