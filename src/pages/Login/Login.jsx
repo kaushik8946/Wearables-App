@@ -24,28 +24,15 @@ const Login = () => {
       return;
     }
 
+    // Always show the OTP flow (prefilled). Persist the phone so Signup
+    // can still read it later if needed. The OTP is autofilled for demo.
     try {
-      // Check if this phone is already registered — if yes show OTP screen,
-      // otherwise persist phone and redirect to signup.
-      const registeredUserRaw = await getStorageItem('registeredUser');
-      const registeredUser = registeredUserRaw ? JSON.parse(registeredUserRaw) : null;
-
-      if (registeredUser && String(registeredUser.mobile) === String(mobileNumber)) {
-        // Registered — show OTP flow so user can verify and sign in
-        setShowOtpScreen(true);
-        setOtp(['1','2','3','4','5','6']);
-        return;
-      }
-
-      // Unknown number — save and redirect to signup to complete profile
       await setStorageItem('userPhone', mobileNumber);
-      navigate('/signup');
     } catch (err) {
-      console.error('Error while checking registration or redirecting to signup', err);
-      // Fallback: still save phone and redirect
-      try { await setStorageItem('userPhone', mobileNumber); } catch (e) {}
-      navigate('/signup');
+      console.error('Failed to persist phone before showing OTP', err);
     }
+    setOtp(['1','2','3','4','5','6']);
+    setShowOtpScreen(true);
   };
 
   const handleOtpChange = (updatedOtp) => {
@@ -60,23 +47,29 @@ const Login = () => {
       setErrors({ ...errors, otp: 'Please enter correct OTP (123456)' });
       return;
     }
+    // Load any registered user (single-user model) and branch accordingly.
     let registeredUser = await getStorageItem('registeredUser');
     const parsedUser = registeredUser ? JSON.parse(registeredUser) : null;
-    const user = parsedUser || {
-      name: 'User',
-      lastName: '',
-      age: null,
-      gender: '',
-      email: '',
-      mobile: mobileNumber,
-      id: `user_${Date.now()}`,
-    };
-    await setStorageItem('currentUser', JSON.stringify(user));
-    await setStorageItem('isAuthenticated', 'true');
-    await setStorageItem('userPhone', mobileNumber);
-    await setStorageItem('defaultUserId', user.id);
-    await setStorageItem('defaultUser', JSON.stringify(user));
-    navigate('/dashboard');
+
+    // If the phone belongs to a registered user, sign them in.
+    if (parsedUser && String(parsedUser.mobile) === String(mobileNumber)) {
+      const user = parsedUser;
+      await setStorageItem('currentUser', JSON.stringify(user));
+      await setStorageItem('isAuthenticated', 'true');
+      await setStorageItem('userPhone', mobileNumber);
+      await setStorageItem('defaultUserId', user.id);
+      await setStorageItem('defaultUser', JSON.stringify(user));
+      navigate('/dashboard');
+      return;
+    }
+
+    // Unregistered phone — persist it and send user to Signup to complete profile
+    try {
+      await setStorageItem('userPhone', mobileNumber);
+    } catch (err) {
+      console.error('Failed to persist phone after OTP verify', err);
+    }
+    navigate('/signup');
   };
 
   return (
@@ -114,7 +107,7 @@ const Login = () => {
               <h2 className="form-title">Enter OTP</h2>
               <p className="subtitle">For demo purposes, your OTP is <strong>123456</strong>.</p>
               <OtpInput otp={otp} onChange={handleOtpChange} error={errors.otp} />
-              <button type="submit" className="btn-primary">Verify & Login</button>
+              <button type="submit" className="btn-primary">Verify</button>
             </form>
           )}
         </div>

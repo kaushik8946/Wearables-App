@@ -472,7 +472,7 @@ const Dashboard = () => {
       setPairedDevices(updated);
       notifyPairedDevicesChange();
       
-      // If active user has no devices, assign this one
+      // If active user has no devices, pair this one
       if (activeUser && userDevices.length === 0) {
         // Add device to user's devices
         const currentUser = await getStorageJSON('currentUser', null);
@@ -594,12 +594,12 @@ const Dashboard = () => {
       {showCycles && <CyclesModal onClose={() => setShowCycles(false)} />}
       {showWeight && <WeightModal onClose={() => setShowWeight(false)} />}
       
-      {/* Device Assignment Modal */}
+      {/* Device Pairing Modal */}
       {showDevicesMenuModal && (
         <div className="devices-menu-overlay" onClick={() => setShowDevicesMenuModal(false)}>
           <div className="devices-menu-modal" onClick={(e) => e.stopPropagation()}>
             <div className="devices-menu-modal-header">
-              <h3>{pairedDevices.length === 0 ? 'Pair a device to get started' : 'Assign a device'}</h3>
+              <h3>{pairedDevices.length === 0 ? 'Pair a device to get started' : 'Pair a device'}</h3>
               <button 
                 className="devices-menu-modal-close" 
                 onClick={() => setShowDevicesMenuModal(false)}

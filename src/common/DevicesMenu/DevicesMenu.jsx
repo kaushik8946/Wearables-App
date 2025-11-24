@@ -22,8 +22,8 @@ const DevicesMenu = ({
   onPairDevice,
   onUnpairDevice,
   onCardClick,
-  pairedTitle = 'Paired Devices',
-  availableTitle = 'Available Devices',
+  pairedTitle = 'Available Devices',
+  availableTitle = 'Nearby Devices',
   showPairedSection = true,
   showAvailableSection = true
 }) => {
@@ -138,7 +138,7 @@ const DevicesMenu = ({
             </span>
           )}
           {renderList(normalizedPaired, {
-            emptyLabel: 'No paired devices',
+            emptyLabel: 'No available devices',
             clickHandler: isPairedSelectable ? handlePairedClick : null,
             showUnpair: canUnpair,
           })}
@@ -149,7 +149,7 @@ const DevicesMenu = ({
         <div className="devices-menu-section">
           <div className="devices-menu-section-title">{availableTitle}</div>
           {renderList(normalizedAvailable, {
-            emptyLabel: 'No devices available to pair',
+            emptyLabel: 'No nearby devices',
             clickHandler: canPair ? handleAvailableClick : null,
             showUnpair: false,
           })}

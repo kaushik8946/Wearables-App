@@ -292,7 +292,7 @@ const Users = () => {
                           );
                         }
                       }
-                      return <span style={{ color: '#94a3b8' }}>No device assigned</span>;
+                      return <span style={{ color: '#94a3b8' }}>No device paired</span>;
                     })()}
                   </p>
                 </div>
@@ -561,7 +561,7 @@ const Users = () => {
 
         // Available paired devices to add.
         // Exclude any devices already assigned to any user — we must not
-        // show devices that belong to another user when assigning to this one.
+        // show devices that belong to another user when pairing to this one.
         const assignedDeviceIds = new Set((users || []).flatMap(u => (u.devices || []).map(id => String(id))));
         const availablePairedDevices = pairedDevices.filter(d => !assignedDeviceIds.has(String(d.id)));
 
@@ -582,7 +582,7 @@ const Users = () => {
               <div style={{ marginBottom: '20px' }}>
                 {userDevices.length === 0 ? (
                   <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>
-                    No devices assigned to this user
+                    No paired devices for this user
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -649,12 +649,12 @@ const Users = () => {
               {availablePairedDevices.length > 0 && (
                 <div style={{ marginTop: '20px' }}>
                   <div style={{ 
-                    fontSize: '14px', 
-                    fontWeight: '600', 
-                    marginBottom: '12px',
-                    color: '#475569' 
-                  }}>
-                    Available Paired Devices
+                        fontSize: '14px', 
+                        fontWeight: '600', 
+                        marginBottom: '12px',
+                        color: '#475569' 
+                      }}>
+                        Available Devices
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {availablePairedDevices.map(device => (
@@ -688,7 +688,7 @@ const Users = () => {
                             handleAddDevice(device);
                           }}
                         >
-                          Assign
+                          Pair
                         </button>
                       </div>
                     ))}

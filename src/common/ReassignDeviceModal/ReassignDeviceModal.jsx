@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import './ReassignDeviceModal.css';
 
-const ReassignDeviceModal = ({ device, currentUserId, users, onReassign, onUnassign, onClose }) => {
+const ReassignDeviceModal = ({ device, currentUserId, users, onReassign, onUnassign, onClose, requireAssignment = false, onCancelDuringPair }) => {
   const [selectedUserId, setSelectedUserId] = useState(currentUserId || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,15 +33,34 @@ const ReassignDeviceModal = ({ device, currentUserId, users, onReassign, onUnass
 
   const hasChanged = selectedUserId !== (currentUserId || '');
 
+  // If this modal was opened after pairing a new device (requireAssignment),
+  // the caller expects the device to be assigned. We'll prevent saving when
+  // no user is selected (hasChanged will be false if no selection made), and
+  // if the user cancels/closes the modal without assigning we will call
+  // onCancelDuringPair to allow the parent to unpair the device.
+
+  const handleClose = () => {
+    // If we require assignment and user hasn't picked anyone (still unassigned)
+    // then notify parent to cancel pairing (unpair the device).
+    if (requireAssignment && (!selectedUserId || selectedUserId === '')) {
+      if (typeof onCancelDuringPair === 'function') {
+        try { onCancelDuringPair(device.id); } catch (e) { /* swallow */ }
+      }
+    }
+
+    // Always call onClose so parent can hide the modal
+    onClose();
+  };
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={handleClose}>
       <div className="modal-content reassign-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-title-group">
-            <h3>Reassign Device</h3>
-            <p className="modal-subtitle">Change user assignment for {device?.name}</p>
+            <h3>Pair Device</h3>
+            <p className="modal-subtitle">Pair {device?.name}</p>
           </div>
-          <button className="modal-close-btn" onClick={onClose} aria-label="Close">
+          <button className="modal-close-btn" onClick={handleClose} aria-label="Close">
             ×
           </button>
         </div>
@@ -54,7 +73,7 @@ const ReassignDeviceModal = ({ device, currentUserId, users, onReassign, onUnass
           </div>
 
           <div className="form-group">
-            <label htmlFor="userSelect">Assign to User</label>
+            <label htmlFor="userSelect">Pair with User</label>
             <select
               id="userSelect"
               className="form-input"
@@ -62,7 +81,7 @@ const ReassignDeviceModal = ({ device, currentUserId, users, onReassign, onUnass
               onChange={(e) => setSelectedUserId(e.target.value)}
               disabled={isSubmitting}
             >
-              <option value="">-- Unassigned --</option>
+              <option value="">-----</option>
               {users.map(user => (
                 <option key={user.id} value={user.id}>
                   {user.name || 'Unnamed'} {user.self ? '(Self)' : ''}
@@ -71,9 +90,10 @@ const ReassignDeviceModal = ({ device, currentUserId, users, onReassign, onUnass
             </select>
           </div>
 
+
           {currentUserId && selectedUserId === '' && (
             <div className="warning-message">
-              This device will be unassigned from all users.
+              This device will be unpaired from all users.
             </div>
           )}
         </div>
@@ -81,7 +101,13 @@ const ReassignDeviceModal = ({ device, currentUserId, users, onReassign, onUnass
         <div className="modal-buttons">
           <button 
             className="btn-secondary" 
-            onClick={onClose}
+            onClick={() => {
+              // If assignment is required, cancelling means unpair the device
+              if (requireAssignment && (!selectedUserId || selectedUserId === '')) {
+                if (typeof onCancelDuringPair === 'function') onCancelDuringPair(device.id);
+              }
+              onClose();
+            }}
             disabled={isSubmitting}
           >
             Cancel
@@ -89,9 +115,9 @@ const ReassignDeviceModal = ({ device, currentUserId, users, onReassign, onUnass
           <button 
             className="btn-primary btn-submit" 
             onClick={handleSubmit}
-            disabled={!hasChanged || isSubmitting}
+            disabled={!hasChanged || isSubmitting || (requireAssignment && !selectedUserId)}
           >
-            {isSubmitting ? 'Saving...' : 'Save Changes'}
+            {isSubmitting ? 'Saving...' : 'Save'}
           </button>
         </div>
       </div>
@@ -113,7 +139,9 @@ ReassignDeviceModal.propTypes = {
   })).isRequired,
   onReassign: PropTypes.func.isRequired,
   onUnassign: PropTypes.func.isRequired,
-  onClose: PropTypes.func.isRequired
+  onClose: PropTypes.func.isRequired,
+  requireAssignment: PropTypes.bool,
+  onCancelDuringPair: PropTypes.func
 };
 
 export default ReassignDeviceModal;

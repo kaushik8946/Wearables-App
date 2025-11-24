@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MdEdit } from 'react-icons/md';
+import { MdEdit, MdDelete } from 'react-icons/md';
 import * as deviceService from '../../service';
 import './Devices.css';
 import ReassignDeviceModal from '../../common/ReassignDeviceModal/ReassignDeviceModal';
@@ -27,6 +27,7 @@ const Devices = () => {
   const [deviceUserMap, setDeviceUserMap] = useState({});
   const [showReassignModal, setShowReassignModal] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState(null);
+  const [isNewlyPaired, setIsNewlyPaired] = useState(false);
   const [showPairDeviceModal, setShowPairDeviceModal] = useState(false);
   const [availableDevices, setAvailableDevices] = useState([]);
 
@@ -111,6 +112,26 @@ const Devices = () => {
   const handleCloseReassignModal = () => {
     setShowReassignModal(false);
     setSelectedDevice(null);
+    setIsNewlyPaired(false);
+  };
+
+  const handleCancelDuringPair = async (deviceId) => {
+    try {
+      // Remove newly paired device from storage (unpair)
+      const updated = pairedDevices.filter(d => String(d.id) !== String(deviceId));
+      await deviceService.setStorageJSON('pairedDevices', updated);
+      deviceService.notifyPairedDevicesChange();
+
+      // Cleanup UI state
+      setShowReassignModal(false);
+      setSelectedDevice(null);
+      setIsNewlyPaired(false);
+
+      // Refresh lists
+      await loadDevicesAndUsers();
+    } catch (err) {
+      console.error('Failed to cancel pairing and remove device', err);
+    }
   };
 
   const handleReassign = async (deviceId, newUserId) => {
@@ -146,8 +167,9 @@ const Devices = () => {
       // Refresh the list
       await loadDevicesAndUsers();
       
-      // Show assignment modal for the newly paired device
+      // Show pairing modal for the newly paired device
       setSelectedDevice(pairDevice);
+      setIsNewlyPaired(true);
       setShowReassignModal(true);
     } catch (err) {
       console.error('Failed to pair device', err);
@@ -170,9 +192,9 @@ const Devices = () => {
         </div>
 
         <div className="devices-section">
-          <div className="devices-section-title">Paired Devices</div>
+          <div className="devices-section-title">Available Devices</div>
           {pairedDevices.length === 0 ? (
-            <div className="devices-empty">No paired devices</div>
+            <div className="devices-empty">No available devices</div>
           ) : (
             <div className="devices-list">
               {pairedDevices.map(device => {
@@ -201,16 +223,18 @@ const Devices = () => {
                       <button
                         className="device-edit-btn"
                         onClick={() => handleOpenReassignModal(device)}
-                        title="Reassign device"
-                        aria-label="Reassign device"
+                        title="Pair device"
+                        aria-label="Pair device"
                       >
                         <MdEdit size={18} />
                       </button>
                       <button 
                         className="device-unpair-btn" 
                         onClick={() => handleRemoveDevice(device)}
+                        title="Unpair device"
+                        aria-label="Unpair device"
                       >
-                        Unpair
+                        <MdDelete size={16} />
                       </button>
                     </div>
                   </div>
@@ -229,6 +253,8 @@ const Devices = () => {
           onReassign={handleReassign}
           onUnassign={handleUnassign}
           onClose={handleCloseReassignModal}
+          requireAssignment={isNewlyPaired}
+          onCancelDuringPair={handleCancelDuringPair}
         />
       )}
 

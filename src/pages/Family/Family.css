@@ -1,4 +1,4 @@
-/* Device action row for switch/delete/assign buttons in edit modal */
+/* Device action row for switch/delete/pair buttons in edit modal */
 .device-action-row {
   display: flex;
   flex-direction: row;
@@ -47,11 +47,11 @@
   background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
 }
 
-/* Assign Device button (when no device assigned) should be full width */
+/* Pair Device button (when no device paired) should be full width */
 .device-action-btn:only-child {
   width: 100%;
 }
-/* Remove Button in Assigned Device Section */
+/* Remove Button in Paired Device Section */
 .btn-remove {
   padding: 6px 16px;
   background: #f1f5f9;
