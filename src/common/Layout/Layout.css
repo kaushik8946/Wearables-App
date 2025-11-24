@@ -22,6 +22,14 @@
   z-index: 998;
 }
 
+/* Header User Section */
+.header-user-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
 /* Hamburger Button */
 .hamburger-btn {
   background: transparent;
@@ -55,6 +63,77 @@
   font-weight: 700;
   color: #333333;
   margin: 0;
+}
+
+/* User Dropdown */
+.user-dropdown-container {
+  position: relative;
+}
+
+.user-dropdown-trigger {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.user-dropdown-trigger:hover {
+  background: rgba(102, 126, 234, 0.08);
+}
+
+.user-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  padding: 8px 0;
+}
+
+.user-dropdown-item {
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333333;
+  transition: background 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.user-dropdown-item:hover {
+  background: rgba(102, 126, 234, 0.08);
+}
+
+.user-dropdown-item.active {
+  background: rgba(102, 126, 234, 0.12);
+  font-weight: 600;
+}
+
+.user-badge {
+  background: #667eea;
+  color: #ffffff;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Main Content */

@@ -1,45 +1,50 @@
 import { useState, useEffect } from 'react';
 import { MdMenu } from 'react-icons/md';
+import { ChevronDown } from 'lucide-react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../Sidebar/Sidebar';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getStorageItem, getStorageJSON, clearStorage, subscribeToUserChange } from '../../service';
+import { getStorageItem, setStorageItem, clearStorage, subscribeToUserChange, getAllUsers, notifyUserChange } from '../../service';
 import './Layout.css';
 
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [defaultUserName, setDefaultUserName] = useState('');
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
+  const [selectedUserId, setSelectedUserId] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
   
   useEffect(() => {
     let isMounted = true;
     
-    const loadDefaultUserName = async () => {
+    const loadUsers = async () => {
       try {
+        const users = await getAllUsers();
         const defaultUserId = await getStorageItem('defaultUserId');
+        
         if (!isMounted) return;
         
-        if (!defaultUserId) {
+        setAllUsers(users);
+        setSelectedUserId(defaultUserId || '');
+        
+        if (defaultUserId) {
+          const defUser = users.find(u => String(u.id) === String(defaultUserId));
+          setDefaultUserName(defUser?.name || '');
+        } else {
           setDefaultUserName('');
-          return;
         }
-        const currentUser = await getStorageJSON('currentUser', null);
-        const otherUsers = await getStorageJSON('users', []);
-        if (!isMounted) return;
-        
-        const allUsers = [...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers];
-        const defUser = allUsers.find(u => String(u.id) === String(defaultUserId));
-        setDefaultUserName(defUser?.name || '');
       } catch {
         if (isMounted) {
           setDefaultUserName('');
+          setAllUsers([]);
         }
       }
     };
     
-    loadDefaultUserName();
+    loadUsers();
     
     return () => {
       isMounted = false;
@@ -49,32 +54,33 @@ const Layout = () => {
   useEffect(() => {
     let isMounted = true;
     
-    const loadDefaultUserName = async () => {
+    const loadUsers = async () => {
       try {
+        const users = await getAllUsers();
         const defaultUserId = await getStorageItem('defaultUserId');
+        
         if (!isMounted) return;
         
-        if (!defaultUserId) {
+        setAllUsers(users);
+        setSelectedUserId(defaultUserId || '');
+        
+        if (defaultUserId) {
+          const defUser = users.find(u => String(u.id) === String(defaultUserId));
+          setDefaultUserName(defUser?.name || '');
+        } else {
           setDefaultUserName('');
-          return;
         }
-        const currentUser = await getStorageJSON('currentUser', null);
-        const otherUsers = await getStorageJSON('users', []);
-        if (!isMounted) return;
-        
-        const allUsers = [...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers];
-        const defUser = allUsers.find(u => String(u.id) === String(defaultUserId));
-        setDefaultUserName(defUser?.name || '');
       } catch {
         if (isMounted) {
           setDefaultUserName('');
+          setAllUsers([]);
         }
       }
     };
     
     // Listen for user data changes
     const unsubscribe = subscribeToUserChange(() => {
-      loadDefaultUserName();
+      loadUsers();
     });
     
     return () => {
@@ -106,10 +112,52 @@ const Layout = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
+  const handleUserSwitch = async (userId) => {
+    try {
+      await setStorageItem('defaultUserId', userId);
+      const user = allUsers.find(u => String(u.id) === String(userId));
+      setDefaultUserName(user?.name || '');
+      setSelectedUserId(userId);
+      setShowUserDropdown(false);
+      
+      // Trigger user change notification to update dashboard
+      notifyUserChange();
+    } catch (err) {
+      console.error('Failed to switch user', err);
+    }
+  };
+
   return (
     <div className="layout">
       <header className="app-header">
-        <h1 className="app-title">Welcome{", " + defaultUserName || ' '}</h1>
+        <div className="header-user-section">
+          <h1 className="app-title">Welcome{defaultUserName ? `, ${defaultUserName}` : ''}</h1>
+          {allUsers.length > 1 && (
+            <div className="user-dropdown-container">
+              <button 
+                className="user-dropdown-trigger" 
+                onClick={() => setShowUserDropdown(!showUserDropdown)}
+                aria-label="Switch user"
+              >
+                <ChevronDown size={20} />
+              </button>
+              {showUserDropdown && (
+                <div className="user-dropdown-menu">
+                  {allUsers.map(user => (
+                    <button
+                      key={user.id}
+                      className={`user-dropdown-item ${String(user.id) === String(selectedUserId) ? 'active' : ''}`}
+                      onClick={() => handleUserSwitch(user.id)}
+                    >
+                      {user.name || 'Unnamed User'}
+                      {user.self && <span className="user-badge">Self</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
         <button className="sidebar-toggle" onClick={toggleSidebar} style={{ background: 'none', border: 'none', boxShadow: 'none', padding: 0, margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <MdMenu size={32} style={{ fontWeight: 'bold', color: '#222', filter: 'none' }} />
         </button>

@@ -4,6 +4,7 @@ import './ManageAccount.css';
 
 
 const fields = [
+  { key: 'name', label: 'Name', type: 'text' },
   { key: 'gender', label: 'Gender', type: 'select', options: ['Male', 'Female', 'Other'] },
   { key: 'birthday', label: 'Birthday', type: 'date' },
   { key: 'age', label: 'Age', type: 'readonly' },
@@ -72,6 +73,13 @@ const ManageAccount = () => {
 
 
   const handleSave = async (key) => {
+    // Name validation: must not be empty
+    if (key === 'name') {
+      if (!editValue || !editValue.trim()) {
+        setError('Name cannot be empty.');
+        return;
+      }
+    }
     // Birthday validation: must be a past date
     if (key === 'birthday') {
       const today = new Date();
@@ -162,6 +170,13 @@ const ManageAccount = () => {
                         </select>
                       ) : type === 'date' ? (
                         <input type="date" value={editValue} onChange={handleInput} className="profile-input modern-input" />
+                      ) : type === 'text' ? (
+                        <input
+                          type="text"
+                          value={editValue}
+                          onChange={handleInput}
+                          className="profile-input modern-input"
+                        />
                       ) : (
                         <input
                           type="number"
