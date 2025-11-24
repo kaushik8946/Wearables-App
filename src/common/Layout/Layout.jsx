@@ -164,11 +164,11 @@ const Layout = () => {
       <header className="app-header">
         <div 
           className="user-dropdown-wrapper"
-          style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
-          onClick={() => setShowUserDropdown(!showUserDropdown)}
+          style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', cursor: allUsers.length > 0 ? 'pointer' : 'default' }}
+          onClick={() => allUsers.length > 0 && setShowUserDropdown(!showUserDropdown)}
         >
           <h1 className="app-title">Welcome{activeUserName ? `, ${activeUserName}` : ''}</h1>
-          {allUsers.length > 1 && (
+          {allUsers.length > 0 && (
             <MdKeyboardArrowDown 
               size={24} 
               style={{ 
@@ -179,7 +179,7 @@ const Layout = () => {
             />
           )}
           
-          {showUserDropdown && allUsers.length > 1 && (
+          {showUserDropdown && allUsers.length > 0 && (
             <div 
               className="user-dropdown"
               style={{

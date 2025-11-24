@@ -48,8 +48,7 @@ const DashboardView = ({
   onOpenWeight, 
   connectedDevice,
   userDevices,
-  onDeviceSelect,
-  showDeviceSelector
+  onDeviceSelect
 }) => {
   const [showDeviceDropdown, setShowDeviceDropdown] = useState(false);
   
@@ -62,7 +61,7 @@ const DashboardView = ({
     <div className="app-container">
       <div className="max-w-wrapper">
         {/* Device Selector */}
-        {showDeviceSelector && connectedDevice && userDevices && userDevices.length > 0 && (
+        {connectedDevice && userDevices && userDevices.length > 0 && (
           <div style={{ 
             marginBottom: '24px', 
             padding: '16px', 
@@ -586,7 +585,6 @@ const Dashboard = () => {
         connectedDevice={connectedDevice}
         userDevices={userDevices}
         onDeviceSelect={handleDeviceSelect}
-        showDeviceSelector={userDevices.length > 1}
       />
       
       {/* Modals */}
