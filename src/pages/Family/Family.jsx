@@ -567,8 +567,10 @@ const Users = () => {
         const user = users[managingUserIndex];
         if (!user) return null;
 
+        // Create a Map for O(1) device lookups
+        const devicesMap = new Map(pairedDevices.map(d => [String(d.id), d]));
         const userDevices = (user.devices || [])
-          .map(deviceId => pairedDevices.find(d => String(d.id) === String(deviceId)))
+          .map(deviceId => devicesMap.get(String(deviceId)))
           .filter(Boolean);
 
         const handleAddDevice = async (device) => {
@@ -598,6 +600,7 @@ const Users = () => {
           });
 
           await saveUsers(updatedUsers);
+          setShowAddDeviceSection(false);
         };
 
         const handleRemoveDevice = async (deviceId) => {
@@ -648,9 +651,12 @@ const Users = () => {
           setManagingUserIndex(null);
         };
 
-        // Available devices to add
+        // Available devices to add (not already assigned to this user)
         const pairedIds = new Set(pairedDevices.map(d => String(d.id)));
         const unpairedAvailableDevices = getAvailableDevices().filter(d => !pairedIds.has(String(d.id)));
+        const availablePairedDevices = pairedDevices.filter(d => 
+          !(user.devices || []).includes(String(d.id))
+        );
 
         return (
           <div className="modal-overlay" onClick={handleCloseManageDevices}>
@@ -743,9 +749,7 @@ const Users = () => {
               ) : (
                 <>
                   <DevicesMenu
-                    pairedDevices={pairedDevices.filter(d => 
-                      !(user.devices || []).includes(String(d.id))
-                    )}
+                    pairedDevices={availablePairedDevices}
                     availableDevices={unpairedAvailableDevices}
                     onPairDevice={handleAddDevice}
                     onCardClick={handleAddDevice}
