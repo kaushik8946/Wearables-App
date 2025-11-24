@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MdEdit } from 'react-icons/md';
-import { getStorageJSON, setStorageJSON, notifyPairedDevicesChange, subscribeToPairedDevicesChange, subscribeToUserChange, getAllUsers, getUserForDevice, reassignDevice, unassignDevice } from '../../service';
+import * as deviceService from '../../service';
 import './Devices.css';
 import ReassignDeviceModal from '../../common/ReassignDeviceModal/ReassignDeviceModal';
 import watchImg from '../../assets/images/watch.png';
@@ -29,22 +29,25 @@ const Devices = () => {
 
   const loadDevicesAndUsers = async () => {
     try {
-      const storedPairedDevices = await getStorageJSON('pairedDevices', []);
+      const storedPairedDevices = await deviceService.getStorageJSON('pairedDevices', []);
       const randomizedPaired = randomizeBatteryLevels(storedPairedDevices);
       setPairedDevices(randomizedPaired);
 
       // Load users
-      const allUsers = await getAllUsers();
+      const allUsers = await deviceService.getAllUsers();
       setUsers(allUsers);
 
-      // Build device-to-user mapping
-      const userMap = {};
-      for (const device of randomizedPaired) {
-        const user = await getUserForDevice(device.id);
-        if (user) {
-          userMap[device.id] = user;
-        }
-      }
+      // Build device-to-user mapping in parallel
+      const userMapEntries = await Promise.all(
+        randomizedPaired.map(async (device) => {
+          const user = await deviceService.getUserForDevice(device.id);
+          return [device.id, user];
+        })
+      );
+      
+      const userMap = Object.fromEntries(
+        userMapEntries.filter(([, user]) => user !== null)
+      );
       setDeviceUserMap(userMap);
     } catch (err) {
       console.error('Failed to load device data from IndexedDB', err);
@@ -65,10 +68,10 @@ const Devices = () => {
 
   // Subscribe to changes
   useEffect(() => {
-    const unsubscribeDevices = subscribeToPairedDevicesChange(() => {
+    const unsubscribeDevices = deviceService.subscribeToPairedDevicesChange(() => {
       loadDevicesAndUsers();
     });
-    const unsubscribeUsers = subscribeToUserChange(() => {
+    const unsubscribeUsers = deviceService.subscribeToUserChange(() => {
       loadDevicesAndUsers();
     });
     return () => {
@@ -82,13 +85,13 @@ const Devices = () => {
     if (!window.confirm(`Unpair ${device.name}?`)) return;
 
     // First unassign from users
-    await unassignDevice(device.id);
+    await deviceService.unassignDevice(device.id);
 
     // Then remove from paired devices
     const updatedPairedDevices = pairedDevices.filter(d => d.id !== device.id);
     setPairedDevices(updatedPairedDevices);
-    await setStorageJSON('pairedDevices', updatedPairedDevices);
-    notifyPairedDevicesChange();
+    await deviceService.setStorageJSON('pairedDevices', updatedPairedDevices);
+    deviceService.notifyPairedDevicesChange();
   };
 
   const handleOpenReassignModal = (device) => {
@@ -102,12 +105,12 @@ const Devices = () => {
   };
 
   const handleReassign = async (deviceId, newUserId) => {
-    await reassignDevice(deviceId, newUserId);
+    await deviceService.reassignDevice(deviceId, newUserId);
     await loadDevicesAndUsers();
   };
 
   const handleUnassign = async (deviceId) => {
-    await unassignDevice(deviceId);
+    await deviceService.unassignDevice(deviceId);
     await loadDevicesAndUsers();
   };
 
