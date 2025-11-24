@@ -215,7 +215,7 @@ const Devices = () => {
                             👤 {assignedUser.name || 'Unnamed'}
                           </span>
                         ) : (
-                          <span className="unassigned-label">Unassigned</span>
+                          <span className="unassigned-label">Unpaired</span>
                         )}
                       </div>
                     </div>
