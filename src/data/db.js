@@ -4,6 +4,8 @@
 const DB_NAME = 'wearables-app-db';
 const STORE_NAME = 'app-store';
 const HISTORY_STORE_NAME = 'device-user-history';
+// Bump DB version to 2 to match previously-created databases and avoid
+// "requested version is less than the existing version" errors in runtime.
 const DB_VERSION = 2;
 
 function openDB() {
