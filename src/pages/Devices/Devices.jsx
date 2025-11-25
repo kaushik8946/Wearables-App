@@ -67,8 +67,12 @@ const Devices = () => {
       setUserDevices(randomizedForActive);
 
       // Get ALL available devices with ownership info for nearby devices list
+      // and filter out devices that are already paired to the current (active) user
       const allDevicesWithOwnership = await deviceService.getAllAvailableDevicesWithOwnership();
-      setAvailableDevices(allDevicesWithOwnership);
+      const filteredNearby = active
+        ? allDevicesWithOwnership.filter(d => String(d.ownerId) !== String(active.id))
+        : allDevicesWithOwnership;
+      setAvailableDevices(filteredNearby);
     } catch (err) {
       console.error('Failed to load device data from IndexedDB', err);
     }
@@ -223,6 +227,19 @@ const Devices = () => {
         // Add new device
         updated = [...pairedDevices, pairDevice];
       }
+
+      // If the device is already owned/paired by another user, automatically transfer
+      // ownership to the currently active user and skip the reassign modal.
+      // This makes pairing a device that's already paired to someone else behave as
+      // a direct reconnect to the active user.
+      if (device.isOwnedByOther && activeUser) {
+        try {
+          await deviceService.transferDeviceOwnership(device.id, activeUser.id);
+        } catch (err) {
+          // don't block pairing on transfer failure; log and continue
+          console.error('Failed to transfer ownership while pairing device', err);
+        }
+      }
       
       await deviceService.setStorageJSON('pairedDevices', updated);
       deviceService.notifyPairedDevicesChange();
@@ -231,9 +248,15 @@ const Devices = () => {
 
       await loadDevicesAndUsers();
 
-      setSelectedDevice(pairDevice);
-      setIsNewlyPaired(true);
-      setShowReassignModal(true);
+      // If this is a brand-new pairing and the device isn't owned by someone else,
+      // open the reassign modal so the user can pick an owner. If the device was
+      // previously owned by someone else we already transferred ownership above
+      // and skip the modal (pair directly to the active user).
+      if (!device.isOwnedByOther) {
+        setSelectedDevice(pairDevice);
+        setIsNewlyPaired(true);
+        setShowReassignModal(true);
+      }
     } catch (err) {
       console.error('Failed to pair device', err);
     }
