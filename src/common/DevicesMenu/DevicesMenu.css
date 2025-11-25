@@ -225,3 +225,97 @@
     padding: 6px 12px;
   }
 }
+
+/* Device owner info in nearby devices list */
+.devices-menu-owner {
+  font-size: 11px;
+  color: #f59e0b;
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.devices-menu-owner .owner-name {
+  font-weight: 600;
+  color: #d97706;
+}
+
+/* Warning Dialog Styles */
+.devices-warning-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.devices-warning-dialog {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+
+.devices-warning-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.devices-warning-title {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.devices-warning-message {
+  margin: 0 0 24px 0;
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.devices-warning-message strong {
+  color: #0f172a;
+}
+
+.devices-warning-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.devices-warning-btn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.devices-warning-btn-cancel {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.devices-warning-btn-cancel:hover {
+  background: #e2e8f0;
+}
+
+.devices-warning-btn-confirm {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.devices-warning-btn-confirm:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}

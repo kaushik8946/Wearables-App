@@ -467,7 +467,19 @@ const Dashboard = () => {
         lastSync: new Date().toISOString()
       };
       
-      const updated = [...pairedDevices, pairDevice];
+      // Check if device already exists in pairedDevices to avoid duplicates
+      const existingDevice = pairedDevices.find(d => String(d.id) === String(device.id));
+      let updated;
+      if (existingDevice) {
+        // Update existing device
+        updated = pairedDevices.map(d => 
+          String(d.id) === String(device.id) ? pairDevice : d
+        );
+      } else {
+        // Add new device
+        updated = [...pairedDevices, pairDevice];
+      }
+      
       await setStorageJSON('pairedDevices', updated);
       setPairedDevices(updated);
       notifyPairedDevicesChange();

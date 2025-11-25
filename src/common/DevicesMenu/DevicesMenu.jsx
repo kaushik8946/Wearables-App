@@ -25,10 +25,13 @@ const DevicesMenu = ({
   pairedTitle = 'Available Devices',
   availableTitle = 'Nearby Devices',
   showPairedSection = true,
-  showAvailableSection = true
+  showAvailableSection = true,
+  onWarningRequired
 }) => {
   const [connectingAvailableId, setConnectingAvailableId] = useState(null);
   const [connectingPairedId, setConnectingPairedId] = useState(null);
+  const [showWarningDialog, setShowWarningDialog] = useState(false);
+  const [pendingDevice, setPendingDevice] = useState(null);
   const timeoutsRef = useRef([]);
 
   useEffect(() => {
@@ -54,12 +57,37 @@ const DevicesMenu = ({
 
   const handleAvailableClick = React.useCallback((device) => {
     if (!canPair || connectingPairedId || connectingAvailableId) return;
+    
+    // Check if device is owned by another user
+    if (device.isOwnedByOther && device.ownerName) {
+      setPendingDevice(device);
+      setShowWarningDialog(true);
+      return;
+    }
+    
     setConnectingAvailableId(device.id);
     scheduleTimeout(() => {
       setConnectingAvailableId(null);
       onPairDevice(device);
     });
   }, [canPair, connectingPairedId, connectingAvailableId, scheduleTimeout, onPairDevice]);
+
+  const handleWarningConfirm = React.useCallback(() => {
+    if (!pendingDevice) return;
+    setShowWarningDialog(false);
+    setConnectingAvailableId(pendingDevice.id);
+    const device = pendingDevice;
+    setPendingDevice(null);
+    scheduleTimeout(() => {
+      setConnectingAvailableId(null);
+      onPairDevice(device);
+    });
+  }, [pendingDevice, scheduleTimeout, onPairDevice]);
+
+  const handleWarningCancel = React.useCallback(() => {
+    setShowWarningDialog(false);
+    setPendingDevice(null);
+  }, []);
 
   const handlePairedClick = React.useCallback((device) => {
     if (!isPairedSelectable || connectingPairedId || connectingAvailableId) return;
@@ -78,7 +106,7 @@ const DevicesMenu = ({
 
   const rootClass = ['devices-menu', 'devices-menu--page'];
 
-  const renderList = (devices, { emptyLabel, clickHandler, showUnpair }) => {
+  const renderList = (devices, { emptyLabel, clickHandler, showUnpair, showOwnerInfo }) => {
     if (!devices || devices.length === 0) {
       return <div className="devices-menu-empty">{emptyLabel}</div>;
     }
@@ -104,6 +132,11 @@ const DevicesMenu = ({
               <div className="devices-menu-meta">
                 <div className="devices-menu-name">{device.name}</div>
                 <div className="devices-menu-model">{device.model}</div>
+                {showOwnerInfo && device.isOwnedByOther && device.ownerName && (
+                  <div className="devices-menu-owner">
+                    Paired to: <span className="owner-name">{device.ownerName}</span>
+                  </div>
+                )}
               </div>
               {showUnpair && (
                 <div className="devices-menu-actions">
@@ -141,6 +174,7 @@ const DevicesMenu = ({
             emptyLabel: 'No available devices',
             clickHandler: isPairedSelectable ? handlePairedClick : null,
             showUnpair: canUnpair,
+            showOwnerInfo: false,
           })}
         </div>
       )}
@@ -152,7 +186,35 @@ const DevicesMenu = ({
             emptyLabel: 'No nearby devices',
             clickHandler: canPair ? handleAvailableClick : null,
             showUnpair: false,
+            showOwnerInfo: true,
           })}
+        </div>
+      )}
+
+      {/* Warning Dialog for pairing device owned by another user */}
+      {showWarningDialog && pendingDevice && (
+        <div className="devices-warning-overlay">
+          <div className="devices-warning-dialog">
+            <div className="devices-warning-icon">⚠️</div>
+            <h4 className="devices-warning-title">Device Already Paired</h4>
+            <p className="devices-warning-message">
+              This device is already paired to <strong>{pendingDevice.ownerName}</strong>, your pairing will unpair it from them.
+            </p>
+            <div className="devices-warning-buttons">
+              <button 
+                className="devices-warning-btn devices-warning-btn-cancel"
+                onClick={handleWarningCancel}
+              >
+                Cancel
+              </button>
+              <button 
+                className="devices-warning-btn devices-warning-btn-confirm"
+                onClick={handleWarningConfirm}
+              >
+                I Understand
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
