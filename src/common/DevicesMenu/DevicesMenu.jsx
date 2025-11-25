@@ -198,7 +198,7 @@ const DevicesMenu = ({
             <div className="devices-warning-icon">⚠️</div>
             <h4 className="devices-warning-title">Device Already Paired</h4>
             <p className="devices-warning-message">
-              This device is already paired to <strong>{pendingDevice.ownerName}</strong>, your pairing will unpair it from them.
+              This device is already paired to <strong>{pendingDevice.ownerName}</strong>, your pairing will unpair it from him.
             </p>
             <div className="devices-warning-buttons">
               <button 

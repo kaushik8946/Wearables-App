@@ -2,7 +2,17 @@
 // Service layer for device-related operations
 
 import { availableDevices } from '../data/mockData';
-import { getStorageJSON, setStorageJSON, getStorageItem, setStorageItem, notifyPairedDevicesChange, notifyUserChange } from './storageService';
+import { 
+  getStorageJSON, 
+  setStorageJSON, 
+  getStorageItem, 
+  setStorageItem, 
+  notifyPairedDevicesChange, 
+  notifyUserChange,
+  recordDeviceConnected,
+  recordDeviceDisconnected,
+  getHistoricalDeviceIdsForUser
+} from './storageService';
 
 // Helper functions for device information
 export const getSignalStrengthText = (rssi) => {
@@ -187,6 +197,9 @@ export const reassignDevice = async (deviceId, newUserId) => {
   const deviceIdStr = String(deviceId);
   const newUserIdStr = String(newUserId);
   
+  // Get current owner before reassignment for history tracking
+  const oldOwnerId = await getDeviceOwner(deviceIdStr);
+  
   // Get all users
   const currentUser = await getStorageJSON('currentUser', null);
   const otherUsers = await getStorageJSON('users', []);
@@ -257,6 +270,14 @@ export const reassignDevice = async (deviceId, newUserId) => {
   // Update device ownership map
   await setDeviceOwner(deviceIdStr, newUserIdStr);
   
+  // Record history events in IndexedDB
+  // If there was an old owner, record disconnection
+  if (oldOwnerId && oldOwnerId !== newUserIdStr) {
+    await recordDeviceDisconnected(deviceIdStr, oldOwnerId);
+  }
+  // Record connection to new user
+  await recordDeviceConnected(deviceIdStr, newUserIdStr);
+  
   // Notify listeners
   notifyUserChange();
   
@@ -266,6 +287,9 @@ export const reassignDevice = async (deviceId, newUserId) => {
 // Unassign a device from all users
 export const unassignDevice = async (deviceId) => {
   const deviceIdStr = String(deviceId);
+  
+  // Get current owner before unassignment for history tracking
+  const oldOwnerId = await getDeviceOwner(deviceIdStr);
   
   // Get all users
   const currentUser = await getStorageJSON('currentUser', null);
@@ -305,6 +329,14 @@ export const unassignDevice = async (deviceId) => {
     await setStorageJSON('currentUser', updatedCurrentUser);
   }
   await setStorageJSON('users', updatedOtherUsers);
+  
+  // Clear device ownership
+  await setDeviceOwner(deviceIdStr, null);
+  
+  // Record disconnection event in IndexedDB if there was an owner
+  if (oldOwnerId) {
+    await recordDeviceDisconnected(deviceIdStr, oldOwnerId);
+  }
   
   // Notify listeners
   notifyUserChange();
@@ -430,6 +462,9 @@ export const transferDeviceOwnership = async (deviceId, newUserId) => {
   const deviceIdStr = String(deviceId);
   const newUserIdStr = String(newUserId);
   
+  // Get current owner before transfer for history tracking
+  const oldOwnerId = await getDeviceOwner(deviceIdStr);
+  
   // Get all users
   const currentUser = await getStorageJSON('currentUser', null);
   const otherUsers = await getStorageJSON('users', []);
@@ -498,8 +533,89 @@ export const transferDeviceOwnership = async (deviceId, newUserId) => {
   // Update device ownership map
   await setDeviceOwner(deviceIdStr, newUserIdStr);
   
+  // Record history events in IndexedDB
+  // If there was an old owner different from new owner, record disconnection
+  if (oldOwnerId && oldOwnerId !== newUserIdStr) {
+    await recordDeviceDisconnected(deviceIdStr, oldOwnerId);
+  }
+  // Record connection to new user
+  await recordDeviceConnected(deviceIdStr, newUserIdStr);
+  
   // Notify listeners
   notifyUserChange();
   
   return { success: true };
+};
+
+// Get both current and historical devices for a user
+// Returns devices that are currently paired to this user + devices that were historically paired
+// Historical devices that are now owned by someone else will have isOffline=true
+export const getCurrentAndHistoricalDevicesForUser = async (userId) => {
+  const userIdStr = String(userId);
+  const user = await getUserById(userIdStr);
+  if (!user) return [];
+  
+  const pairedDevices = await getPairedDevices();
+  const allUsers = await getAllUsers();
+  const ownershipMap = await getStorageJSON('deviceOwnership', {});
+  
+  // Get historical device IDs for this user from IndexedDB
+  const historicalDeviceIds = await getHistoricalDeviceIdsForUser(userIdStr);
+  
+  // Get current user device IDs (from user object)
+  const currentDeviceIds = user.devices || [];
+  
+  // Combine current and historical (deduplicated)
+  const allDeviceIds = new Set([
+    ...currentDeviceIds.map(id => String(id)),
+    ...historicalDeviceIds
+  ]);
+  
+  // Filter paired devices to only include those in our combined set
+  const relevantDevices = pairedDevices.filter(device => 
+    allDeviceIds.has(String(device.id))
+  );
+  
+  // Also check for historical devices that might not be in pairedDevices yet
+  // (edge case where device was paired before)
+  const pairedDeviceIds = new Set(pairedDevices.map(d => String(d.id)));
+  const missingHistoricalIds = historicalDeviceIds.filter(id => !pairedDeviceIds.has(id));
+  
+  // Get missing historical devices from availableDevices
+  const additionalHistoricalDevices = availableDevices
+    .filter(device => missingHistoricalIds.includes(String(device.id)));
+  
+  // Combine all relevant devices
+  const allRelevantDevices = [...relevantDevices, ...additionalHistoricalDevices];
+  
+  // Map to include ownership status
+  return allRelevantDevices.map(device => {
+    const deviceIdStr = String(device.id);
+    
+    // Determine current owner
+    let currentOwner = null;
+    const ownerUserId = ownershipMap[deviceIdStr];
+    
+    if (ownerUserId) {
+      currentOwner = allUsers.find(u => String(u.id) === String(ownerUserId));
+    } else {
+      // Fallback: check users' devices lists
+      currentOwner = allUsers.find(u => {
+        const uDevices = u.devices || [];
+        return uDevices.some(id => String(id) === deviceIdStr);
+      });
+    }
+    
+    const isOwnedByThisUser = currentOwner && String(currentOwner.id) === userIdStr;
+    const isOwnedByOther = currentOwner && String(currentOwner.id) !== userIdStr;
+    
+    return {
+      ...device,
+      isOffline: isOwnedByOther,
+      currentOwnerId: currentOwner?.id || null,
+      currentOwnerName: currentOwner?.name || null,
+      isOwnedByOther,
+      isHistorical: historicalDeviceIds.includes(deviceIdStr) && !currentDeviceIds.some(id => String(id) === deviceIdStr)
+    };
+  });
 };

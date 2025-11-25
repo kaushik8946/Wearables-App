@@ -61,8 +61,9 @@ const Devices = () => {
       const active = await deviceService.getActiveUser();
       setActiveUser(active);
       
-      // Get devices with status (including offline devices)
-      const devicesWithStatus = active ? await deviceService.getDevicesForUserWithStatus(active.id) : [];
+      // Get devices with status (including offline/historical devices)
+      // Use getCurrentAndHistoricalDevicesForUser to show both current and historical devices
+      const devicesWithStatus = active ? await deviceService.getCurrentAndHistoricalDevicesForUser(active.id) : [];
       const randomizedForActive = randomizeBatteryLevels(devicesWithStatus || []);
       setUserDevices(randomizedForActive);
 
@@ -556,7 +557,7 @@ const Devices = () => {
             <div className="reconnect-warning-icon">⚠️</div>
             <h4 className="reconnect-warning-title">Device Already Paired</h4>
             <p className="reconnect-warning-message">
-              This device is already paired to <strong>{reconnectDevice.currentOwnerName}</strong>, your pairing will unpair it from them.
+              This device is already paired to <strong>{reconnectDevice.currentOwnerName}</strong>, your pairing will unpair it from him.
             </p>
             <div className="reconnect-warning-buttons">
               <button 

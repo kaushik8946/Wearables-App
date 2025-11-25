@@ -11,7 +11,12 @@ import {
   emitUserChange,
   onUserChange,
   emitPairedDevicesChange,
-  onPairedDevicesChange
+  onPairedDevicesChange,
+  addDeviceHistoryEvent,
+  getDeviceHistoryForUser,
+  getDeviceHistoryForDevice,
+  getAllDeviceHistory,
+  clearDeviceHistory
 } from '../data/db';
 
 // Storage operations
@@ -55,4 +60,88 @@ export const notifyPairedDevicesChange = () => {
 
 export const subscribeToPairedDevicesChange = (callback) => {
   return onPairedDevicesChange(callback);
+};
+
+// ============================================
+// Device-User History Service Functions
+// ============================================
+
+/**
+ * Record a device connection event (device paired to user)
+ * @param {string} deviceId
+ * @param {string} userId
+ * @returns {Promise<number>}
+ */
+export const recordDeviceConnected = async (deviceId, userId) => {
+  return await addDeviceHistoryEvent({
+    deviceId: String(deviceId),
+    userId: String(userId),
+    eventType: 'connected',
+    timestamp: Date.now()
+  });
+};
+
+/**
+ * Record a device disconnection event (device unpaired from user)
+ * @param {string} deviceId
+ * @param {string} userId
+ * @returns {Promise<number>}
+ */
+export const recordDeviceDisconnected = async (deviceId, userId) => {
+  return await addDeviceHistoryEvent({
+    deviceId: String(deviceId),
+    userId: String(userId),
+    eventType: 'disconnected',
+    timestamp: Date.now()
+  });
+};
+
+/**
+ * Get all historical device-user relations for a given user
+ * @param {string} userId
+ * @returns {Promise<Array>} - Array of history events
+ */
+export const getHistoryForUser = async (userId) => {
+  return await getDeviceHistoryForUser(String(userId));
+};
+
+/**
+ * Get all historical device-user relations for a given device
+ * @param {string} deviceId
+ * @returns {Promise<Array>} - Array of history events
+ */
+export const getHistoryForDevice = async (deviceId) => {
+  return await getDeviceHistoryForDevice(String(deviceId));
+};
+
+/**
+ * Get all device-user history
+ * @returns {Promise<Array>}
+ */
+export const getAllHistory = async () => {
+  return await getAllDeviceHistory();
+};
+
+/**
+ * Clear all device-user history (for testing/reset)
+ * @returns {Promise<void>}
+ */
+export const clearHistory = async () => {
+  return await clearDeviceHistory();
+};
+
+/**
+ * Get unique device IDs that a user has historically been connected to
+ * @param {string} userId
+ * @returns {Promise<Array<string>>} - Array of device IDs
+ */
+export const getHistoricalDeviceIdsForUser = async (userId) => {
+  const history = await getDeviceHistoryForUser(String(userId));
+  const deviceIds = new Set();
+  for (const event of history) {
+    if (event.eventType === 'connected') {
+      deviceIds.add(event.deviceId);
+    }
+  }
+  return Array.from(deviceIds);
 };
