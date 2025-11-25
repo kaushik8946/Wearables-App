@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MdEdit, MdDelete, MdRefresh } from 'react-icons/md';
+import { MdEdit, MdDelete, MdRefresh, MdLinkOff } from 'react-icons/md';
 import * as deviceService from '../../service';
 import './Devices.css';
 import ReassignDeviceModal from '../../common/ReassignDeviceModal/ReassignDeviceModal';
@@ -114,6 +114,36 @@ const Devices = () => {
     setPairedDevices(updatedPairedDevices);
     await deviceService.setStorageJSON('pairedDevices', updatedPairedDevices);
     deviceService.notifyPairedDevicesChange();
+  };
+
+  // Unlink device from user (device stays in app but not assigned)
+  const handleUnlinkDevice = async (device) => {
+    if (!device) return;
+    if (!window.confirm(`Unlink ${device.name} from its user? The device will remain in the app but not assigned to anyone.`)) return;
+
+    try {
+      const result = await deviceService.unlinkDeviceFromUser(device.id, deviceUserMap[device.id]?.id);
+      if (result.success) {
+        await loadDevicesAndUsers();
+      }
+    } catch (err) {
+      console.error('Failed to unlink device', err);
+    }
+  };
+
+  // Delete device completely from the app
+  const handleDeleteDevice = async (device) => {
+    if (!device) return;
+    if (!window.confirm(`Delete ${device.name} from the app? This will remove it from all users and the paired devices list. The device will only appear in Nearby Devices when scanning.`)) return;
+
+    try {
+      const result = await deviceService.deleteDevice(device.id);
+      if (result.success) {
+        await loadDevicesAndUsers();
+      }
+    } catch (err) {
+      console.error('Failed to delete device', err);
+    }
   };
 
   const handleOpenReassignModal = (device) => {
@@ -393,20 +423,48 @@ const Devices = () => {
                           </button>
                         ) : (
                           <>
-                            <button
-                              className="device-edit-btn"
-                              onClick={() => handleOpenReassignModal(device)}
-                              title="Pair device"
-                              aria-label="Pair device"
-                            >
-                              <MdEdit size={18} />
-                            </button>
+                            {/* Only show edit button for paired devices (assigned to a user) */}
+                            {assignedUser && (
+                              <button
+                                className="device-edit-btn"
+                                onClick={() => handleOpenReassignModal(device)}
+                                title="Reassign device"
+                                aria-label="Reassign device"
+                              >
+                                <MdEdit size={18} />
+                              </button>
+                            )}
 
+                            {/* Show unlink button for paired devices (assigned to a user) */}
+                            {assignedUser && (
+                              <button
+                                className="device-unlink-btn"
+                                onClick={() => handleUnlinkDevice(device)}
+                                title="Unlink device from user"
+                                aria-label="Unlink device from user"
+                                style={{
+                                  background: 'rgba(249, 115, 22, 0.1)',
+                                  color: '#f97316',
+                                  border: 'none',
+                                  borderRadius: '8px',
+                                  padding: '8px',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.2s ease'
+                                }}
+                              >
+                                <MdLinkOff size={18} />
+                              </button>
+                            )}
+
+                            {/* Show delete button for all devices */}
                             <button
-                              className="device-unpair-btn"
-                              onClick={() => handleRemoveDevice(device)}
-                              title="Unpair device"
-                              aria-label="Unpair device"
+                              className="device-delete-btn"
+                              onClick={() => handleDeleteDevice(device)}
+                              title="Delete device from app"
+                              aria-label="Delete device from app"
                             >
                               <MdDelete size={16} />
                             </button>
