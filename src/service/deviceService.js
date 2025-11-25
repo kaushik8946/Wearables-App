@@ -92,6 +92,29 @@ export const getUnpairedDevices = async () => {
   return availableDevices.filter(device => !pairedIds.has(device.id));
 };
 
+// Get ALL available devices with ownership info (for nearby devices list)
+export const getAllAvailableDevicesWithOwnership = async () => {
+  const allDevices = availableDevices;
+  const users = await getAllUsers();
+  
+  const devicesWithOwnership = await Promise.all(
+    allDevices.map(async (device) => {
+      const owner = users.find(user => {
+        const userDevices = user.devices || [];
+        return userDevices.some(id => String(id) === String(device.id));
+      });
+      return {
+        ...device,
+        ownerId: owner ? owner.id : null,
+        ownerName: owner ? owner.name : null,
+        isOwnedByOther: owner ? true : false
+      };
+    })
+  );
+  
+  return devicesWithOwnership;
+};
+
 // Get all users (currentUser + users)
 export const getAllUsers = async () => {
   const currentUser = await getStorageJSON('currentUser', null);
@@ -318,4 +341,112 @@ export const setDefaultDeviceForUser = async (userId, deviceId) => {
   }
   
   notifyUserChange();
+};
+
+// Get devices for a user with ownership status
+// A device is "offline" if it was historically assigned to this user but is now owned by someone else
+export const getDevicesForUserWithStatus = async (userId) => {
+  const user = await getUserById(userId);
+  if (!user) return [];
+  
+  const pairedDevices = await getPairedDevices();
+  const userDeviceIds = user.devices || [];
+  const allUsers = await getAllUsers();
+  
+  return pairedDevices
+    .filter(device => userDeviceIds.some(id => String(id) === String(device.id)))
+    .map(device => {
+      // Check if this device is currently owned by another user
+      const currentOwner = allUsers.find(u => {
+        const uDevices = u.devices || [];
+        return uDevices.some(id => String(id) === String(device.id));
+      });
+      
+      const isOwnedByThisUser = currentOwner && String(currentOwner.id) === String(userId);
+      const isOwnedByOther = currentOwner && String(currentOwner.id) !== String(userId);
+      
+      return {
+        ...device,
+        isOffline: isOwnedByOther,
+        currentOwnerId: currentOwner?.id || null,
+        currentOwnerName: currentOwner?.name || null,
+        isOwnedByOther
+      };
+    });
+};
+
+// Transfer device ownership from one user to another
+export const transferDeviceOwnership = async (deviceId, newUserId) => {
+  const deviceIdStr = String(deviceId);
+  const newUserIdStr = String(newUserId);
+  
+  // Get all users
+  const currentUser = await getStorageJSON('currentUser', null);
+  const otherUsers = await getStorageJSON('users', []);
+  
+  let updatedCurrentUser = currentUser;
+  let updatedOtherUsers = [...otherUsers];
+  
+  // Remove device from all users
+  if (updatedCurrentUser && Array.isArray(updatedCurrentUser.devices)) {
+    const devices = updatedCurrentUser.devices.filter(id => String(id) !== deviceIdStr);
+    updatedCurrentUser = {
+      ...updatedCurrentUser,
+      devices,
+      defaultDevice: String(updatedCurrentUser.defaultDevice) === deviceIdStr 
+        ? (devices.length > 0 ? devices[0] : null)
+        : updatedCurrentUser.defaultDevice
+    };
+  }
+  
+  updatedOtherUsers = updatedOtherUsers.map(user => {
+    if (!Array.isArray(user.devices)) return user;
+    const devices = user.devices.filter(id => String(id) !== deviceIdStr);
+    return {
+      ...user,
+      devices,
+      defaultDevice: String(user.defaultDevice) === deviceIdStr 
+        ? (devices.length > 0 ? devices[0] : null)
+        : user.defaultDevice
+    };
+  });
+  
+  // Add device to the new user
+  if (updatedCurrentUser && String(updatedCurrentUser.id) === newUserIdStr) {
+    const devices = [...(updatedCurrentUser.devices || [])];
+    if (!devices.includes(deviceIdStr)) {
+      devices.push(deviceIdStr);
+    }
+    updatedCurrentUser = {
+      ...updatedCurrentUser,
+      devices,
+      defaultDevice: updatedCurrentUser.defaultDevice || deviceIdStr
+    };
+  } else {
+    updatedOtherUsers = updatedOtherUsers.map(user => {
+      if (String(user.id) === newUserIdStr) {
+        const devices = [...(user.devices || [])];
+        if (!devices.includes(deviceIdStr)) {
+          devices.push(deviceIdStr);
+        }
+        return {
+          ...user,
+          devices,
+          defaultDevice: user.defaultDevice || deviceIdStr
+        };
+      }
+      return user;
+    });
+  }
+  
+  // Save updated users
+  if (updatedCurrentUser) {
+    await setStorageJSON('currentUser', updatedCurrentUser);
+  }
+  await setStorageJSON('users', updatedOtherUsers);
+  
+  // Notify listeners
+  notifyUserChange();
+  
+  return { success: true };
 };

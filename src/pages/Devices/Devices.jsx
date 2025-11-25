@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MdEdit, MdDelete } from 'react-icons/md';
+import { MdEdit, MdDelete, MdRefresh } from 'react-icons/md';
 import * as deviceService from '../../service';
 import './Devices.css';
 import ReassignDeviceModal from '../../common/ReassignDeviceModal/ReassignDeviceModal';
@@ -34,6 +34,8 @@ const Devices = () => {
   const [selectedDefaultDeviceId, setSelectedDefaultDeviceId] = useState(null);
   const [showPairDeviceModal, setShowPairDeviceModal] = useState(false);
   const [availableDevices, setAvailableDevices] = useState([]);
+  const [showReconnectWarning, setShowReconnectWarning] = useState(false);
+  const [reconnectDevice, setReconnectDevice] = useState(null);
 
   const loadDevicesAndUsers = async () => {
     try {
@@ -58,14 +60,15 @@ const Devices = () => {
 
       const active = await deviceService.getActiveUser();
       setActiveUser(active);
-      const devicesForActive = active ? await deviceService.getDevicesForUser(active.id) : [];
-      const randomizedForActive = randomizeBatteryLevels(devicesForActive || []);
+      
+      // Get devices with status (including offline devices)
+      const devicesWithStatus = active ? await deviceService.getDevicesForUserWithStatus(active.id) : [];
+      const randomizedForActive = randomizeBatteryLevels(devicesWithStatus || []);
       setUserDevices(randomizedForActive);
 
-      const allAvailableDevices = deviceService.getAvailableDevices();
-      const pairedIds = new Set(randomizedPaired.map(d => String(d.id)));
-      const unpaired = allAvailableDevices.filter(d => !pairedIds.has(String(d.id)));
-      setAvailableDevices(unpaired);
+      // Get ALL available devices with ownership info for nearby devices list
+      const allDevicesWithOwnership = await deviceService.getAllAvailableDevicesWithOwnership();
+      setAvailableDevices(allDevicesWithOwnership);
     } catch (err) {
       console.error('Failed to load device data from IndexedDB', err);
     }
@@ -164,6 +167,39 @@ const Devices = () => {
     await loadDevicesAndUsers();
   };
 
+  // Handle reconnect button click
+  const handleReconnectClick = (device) => {
+    // If device is owned by another user, show warning
+    if (device.isOwnedByOther && device.currentOwnerName) {
+      setReconnectDevice(device);
+      setShowReconnectWarning(true);
+    } else {
+      // Device is not owned by anyone else, reconnect directly
+      handleReconnectConfirm(device);
+    }
+  };
+
+  // Confirm reconnect - transfer ownership
+  const handleReconnectConfirm = async (device) => {
+    const deviceToReconnect = device || reconnectDevice;
+    if (!deviceToReconnect || !activeUser) return;
+    
+    try {
+      await deviceService.transferDeviceOwnership(deviceToReconnect.id, activeUser.id);
+      setShowReconnectWarning(false);
+      setReconnectDevice(null);
+      await loadDevicesAndUsers();
+    } catch (err) {
+      console.error('Failed to reconnect device', err);
+    }
+  };
+
+  // Cancel reconnect
+  const handleReconnectCancel = () => {
+    setShowReconnectWarning(false);
+    setReconnectDevice(null);
+  };
+
   const handlePairNewDevice = async (device) => {
     try {
       const mappedImage = deviceImageMap[device.image] || device.image;
@@ -174,6 +210,11 @@ const Devices = () => {
         batteryLevel: 70,
         lastSync: new Date().toISOString()
       };
+
+      // If device was owned by another user, transfer ownership
+      if (device.isOwnedByOther && device.ownerId) {
+        await deviceService.transferDeviceOwnership(device.id, null);
+      }
 
       const updated = [...pairedDevices, pairDevice];
       await deviceService.setStorageJSON('pairedDevices', updated);
@@ -269,9 +310,10 @@ const Devices = () => {
                 {(activeUser ? userDevices : pairedDevices).map(device => {
                   const assignedUser = deviceUserMap[device.id];
                   const imageSrc = deviceImageMap[device.image] || device.image;
+                  const isOffline = device.isOffline || device.isOwnedByOther;
 
                   return (
-                    <div key={device.id} className="device-card">
+                    <div key={device.id} className={`device-card ${isOffline ? 'device-card-offline' : ''}`}>
                       <div className="device-card-left">
                         <img src={imageSrc} alt={device.name} className="device-card-image" />
                       </div>
@@ -281,13 +323,25 @@ const Devices = () => {
                         <div className="device-card-model">{device.model}</div>
 
                         <div className="device-card-user">
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            {assignedUser ? null : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            {/* Show offline status when device is owned by another user */}
+                            {isOffline && (
+                              <span className="offline-label">Offline</span>
+                            )}
+                            
+                            {/* Show current owner if device is owned by another user */}
+                            {isOffline && device.currentOwnerName && (
+                              <span className="current-owner-label">
+                                Now with: {device.currentOwnerName}
+                              </span>
+                            )}
+
+                            {!isOffline && !assignedUser && (
                               <span className="unassigned-label">Unpaired</span>
                             )}
 
-                            {/* show Default tag if this device is the active user's default */}
-                            {activeUser && String(activeUser.defaultDevice) === String(device.id) && (
+                            {/* show Default tag if this device is the active user's default and not offline */}
+                            {!isOffline && activeUser && String(activeUser.defaultDevice) === String(device.id) && (
                               <span style={{ marginLeft: 6, padding: '2px 8px', background: '#667eea', color: 'white', fontSize: 12, borderRadius: 8 }}>Default</span>
                             )}
                           </div>
@@ -295,23 +349,37 @@ const Devices = () => {
                       </div>
 
                       <div className="device-card-actions">
-                        <button
-                          className="device-edit-btn"
-                          onClick={() => handleOpenReassignModal(device)}
-                          title="Pair device"
-                          aria-label="Pair device"
-                        >
-                          <MdEdit size={18} />
-                        </button>
+                        {/* Show reconnect button for offline devices */}
+                        {isOffline ? (
+                          <button
+                            className="device-reconnect-btn"
+                            onClick={() => handleReconnectClick(device)}
+                            title="Reconnect device"
+                            aria-label="Reconnect device"
+                          >
+                            <MdRefresh size={18} />
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              className="device-edit-btn"
+                              onClick={() => handleOpenReassignModal(device)}
+                              title="Pair device"
+                              aria-label="Pair device"
+                            >
+                              <MdEdit size={18} />
+                            </button>
 
-                        <button
-                          className="device-unpair-btn"
-                          onClick={() => handleRemoveDevice(device)}
-                          title="Unpair device"
-                          aria-label="Unpair device"
-                        >
-                          <MdDelete size={16} />
-                        </button>
+                            <button
+                              className="device-unpair-btn"
+                              onClick={() => handleRemoveDevice(device)}
+                              title="Unpair device"
+                              aria-label="Unpair device"
+                            >
+                              <MdDelete size={16} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   );
@@ -447,6 +515,33 @@ const Devices = () => {
               showPairedSection={false}
               showAvailableSection={true}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Reconnect Warning Dialog */}
+      {showReconnectWarning && reconnectDevice && (
+        <div className="reconnect-warning-overlay">
+          <div className="reconnect-warning-dialog">
+            <div className="reconnect-warning-icon">⚠️</div>
+            <h4 className="reconnect-warning-title">Device Already Paired</h4>
+            <p className="reconnect-warning-message">
+              This device is already paired to <strong>{reconnectDevice.currentOwnerName}</strong>, your pairing will unpair it from him.
+            </p>
+            <div className="reconnect-warning-buttons">
+              <button 
+                className="reconnect-warning-btn reconnect-warning-btn-cancel"
+                onClick={handleReconnectCancel}
+              >
+                Cancel
+              </button>
+              <button 
+                className="reconnect-warning-btn reconnect-warning-btn-confirm"
+                onClick={() => handleReconnectConfirm()}
+              >
+                I Understand
+              </button>
+            </div>
           </div>
         </div>
       )}
