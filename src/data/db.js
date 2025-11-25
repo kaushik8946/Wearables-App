@@ -1,9 +1,10 @@
 // src/data/db.js
-// Simple IndexedDB wrapper for get/set/remove (single-store)
+// Simple IndexedDB wrapper for get/set/remove (multi-store)
 
 const DB_NAME = 'wearables-app-db';
 const STORE_NAME = 'app-store';
-const DB_VERSION = 1;
+const HISTORY_STORE_NAME = 'device-user-history';
+const DB_VERSION = 2;
 
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -12,6 +13,13 @@ function openDB() {
       const db = event.target.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME);
+      }
+      // Add device-user history store with auto-increment key
+      if (!db.objectStoreNames.contains(HISTORY_STORE_NAME)) {
+        const historyStore = db.createObjectStore(HISTORY_STORE_NAME, { keyPath: 'id', autoIncrement: true });
+        historyStore.createIndex('deviceId', 'deviceId', { unique: false });
+        historyStore.createIndex('userId', 'userId', { unique: false });
+        historyStore.createIndex('timestamp', 'timestamp', { unique: false });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -107,4 +115,108 @@ export function emitPairedDevicesChange() {
 export function onPairedDevicesChange(callback) {
   window.addEventListener(PAIRED_DEVICES_EVENT, callback);
   return () => window.removeEventListener(PAIRED_DEVICES_EVENT, callback);
+}
+
+// ============================================
+// Device-User History Store Functions
+// ============================================
+
+/**
+ * Add a device-user history event (connected or disconnected)
+ * @param {Object} event - { deviceId, userId, eventType: 'connected'|'disconnected', timestamp }
+ * @returns {Promise<number>} - The auto-generated ID of the new record
+ */
+export async function addDeviceHistoryEvent(event) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(HISTORY_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(HISTORY_STORE_NAME);
+    const record = {
+      deviceId: String(event.deviceId),
+      userId: String(event.userId),
+      eventType: event.eventType, // 'connected' or 'disconnected'
+      timestamp: event.timestamp || Date.now()
+    };
+    const req = store.add(record);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/**
+ * Get all history events for a specific user
+ * @param {string} userId
+ * @returns {Promise<Array>} - Array of history events sorted by timestamp desc
+ */
+export async function getDeviceHistoryForUser(userId) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(HISTORY_STORE_NAME, 'readonly');
+    const store = tx.objectStore(HISTORY_STORE_NAME);
+    const index = store.index('userId');
+    const req = index.getAll(String(userId));
+    req.onsuccess = () => {
+      const results = req.result || [];
+      // Sort by timestamp descending (most recent first)
+      results.sort((a, b) => b.timestamp - a.timestamp);
+      resolve(results);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/**
+ * Get all history events for a specific device
+ * @param {string} deviceId
+ * @returns {Promise<Array>} - Array of history events sorted by timestamp desc
+ */
+export async function getDeviceHistoryForDevice(deviceId) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(HISTORY_STORE_NAME, 'readonly');
+    const store = tx.objectStore(HISTORY_STORE_NAME);
+    const index = store.index('deviceId');
+    const req = index.getAll(String(deviceId));
+    req.onsuccess = () => {
+      const results = req.result || [];
+      // Sort by timestamp descending (most recent first)
+      results.sort((a, b) => b.timestamp - a.timestamp);
+      resolve(results);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/**
+ * Get all device-user history events
+ * @returns {Promise<Array>}
+ */
+export async function getAllDeviceHistory() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(HISTORY_STORE_NAME, 'readonly');
+    const store = tx.objectStore(HISTORY_STORE_NAME);
+    const req = store.getAll();
+    req.onsuccess = () => {
+      const results = req.result || [];
+      results.sort((a, b) => b.timestamp - a.timestamp);
+      resolve(results);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/**
+ * Clear all device-user history
+ * @returns {Promise<void>}
+ */
+export async function clearDeviceHistory() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(HISTORY_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(HISTORY_STORE_NAME);
+    const req = store.clear();
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
 }

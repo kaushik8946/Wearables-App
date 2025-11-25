@@ -61,8 +61,9 @@ const Devices = () => {
       const active = await deviceService.getActiveUser();
       setActiveUser(active);
       
-      // Get devices with status (including offline devices)
-      const devicesWithStatus = active ? await deviceService.getDevicesForUserWithStatus(active.id) : [];
+      // Get devices with status (including offline/historical devices)
+      // Use getCurrentAndHistoricalDevicesForUser to show both current and historical devices
+      const devicesWithStatus = active ? await deviceService.getCurrentAndHistoricalDevicesForUser(active.id) : [];
       const randomizedForActive = randomizeBatteryLevels(devicesWithStatus || []);
       setUserDevices(randomizedForActive);
 
@@ -340,7 +341,8 @@ const Devices = () => {
                 {(activeUser ? userDevices : pairedDevices).map(device => {
                   const assignedUser = deviceUserMap[device.id];
                   const imageSrc = deviceImageMap[device.image] || device.image;
-                  const isOffline = device.isOffline || device.isOwnedByOther;
+                  // isOffline is set by the service layer when device is owned by another user
+                  const isOffline = device.isOffline;
 
                   return (
                     <div key={device.id} className={`device-card ${isOffline ? 'device-card-offline' : ''}`}>
