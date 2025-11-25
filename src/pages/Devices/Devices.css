@@ -226,6 +226,42 @@ h1 {
   color: #ffffff;
 }
 
+.device-unlink-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  background: rgba(249, 115, 22, 0.1);
+  color: #f97316;
+  transition: background 0.2s ease, color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.device-unlink-btn:hover {
+  background: #f97316;
+  color: #ffffff;
+}
+
+.device-delete-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  transition: background 0.2s ease, color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.device-delete-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
 .section-title {
   font-size: 12px;
   font-weight: 700;
