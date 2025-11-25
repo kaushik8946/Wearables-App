@@ -62,8 +62,22 @@ const Devices = () => {
       setActiveUser(active);
       
       // Get devices with status (including offline/historical devices)
-      // Use getCurrentAndHistoricalDevicesForUser to show both current and historical devices
-      const devicesWithStatus = active ? await deviceService.getCurrentAndHistoricalDevicesForUser(active.id) : [];
+      // Use user's devices from pairedDevices with ownership status, including historical
+      let devicesWithStatus = [];
+      if (active) {
+        const userDeviceIds = active.devices || [];
+        const historicalIds = await deviceService.getHistoricalDeviceIdsForUser(active.id);
+        const allIds = [...new Set([...userDeviceIds, ...historicalIds])];
+        const userDevicesRaw = randomizedPaired.filter(d => allIds.includes(String(d.id)));
+        devicesWithStatus = await Promise.all(
+          userDevicesRaw.map(async (d) => {
+            const ownerId = await deviceService.getDeviceOwner(d.id);
+            const isOffline = ownerId && String(ownerId) !== String(active.id);
+            const currentOwnerName = isOffline ? (await deviceService.getUserById(ownerId))?.name : null;
+            return { ...d, isOffline, currentOwnerName };
+          })
+        );
+      }
       const randomizedForActive = randomizeBatteryLevels(devicesWithStatus || []);
       setUserDevices(randomizedForActive);
 
@@ -368,7 +382,7 @@ const Devices = () => {
               <div className="devices-empty">No available devices</div>
             ) : (
               <div className="devices-list">
-                {(activeUser ? userDevices : pairedDevices).map(device => {
+                {(activeUser ? userDevices : pairedDevices).filter(device => deviceUserMap[device.id]).map(device => {
                   const assignedUser = deviceUserMap[device.id];
                   const imageSrc = deviceImageMap[device.image] || device.image;
                   // isOffline is set by the service layer when device is owned by another user
@@ -408,56 +422,46 @@ const Devices = () => {
                             )}
                           </div>
                         </div>
+                      </div>
 
-                        <div className="device-buttons">
-                          {/* Show reconnect button for offline devices */}
-                          {isOffline ? (
-                            <button
-                              className="device-reconnect-btn"
-                              onClick={() => handleReconnectClick(device)}
-                              title="Reconnect device"
-                              aria-label="Reconnect device"
-                            >
-                              <MdRefresh size={18} />
-                            </button>
-                          ) : (
-                            <>
-                              {/* Only show edit button for paired devices (assigned to a user) */}
-                              {assignedUser && (
-                                <button
-                                  className="device-edit-btn"
-                                  onClick={() => handleOpenReassignModal(device)}
-                                  title="Reassign device"
-                                  aria-label="Reassign device"
-                                >
-                                  <MdEdit size={18} />
-                                </button>
-                              )}
-
-                              {/* Show unlink button for paired devices (assigned to a user) */}
-                              {assignedUser && (
-                                <button
-                                  className="device-unlink-btn"
-                                  onClick={() => handleUnlinkDevice(device)}
-                                  title="Unlink device from user"
-                                  aria-label="Unlink device from user"
-                                >
-                                  <MdLinkOff size={18} />
-                                </button>
-                              )}
-
-                              {/* Show delete button for all devices */}
+                      <div className="device-card-actions">
+                        {/* Show reconnect button for offline devices */}
+                        {isOffline ? (
+                          <button
+                            className="device-reconnect-btn"
+                            onClick={() => handleReconnectClick(device)}
+                            title="Reconnect device"
+                            aria-label="Reconnect device"
+                          >
+                            <MdRefresh size={18} />
+                          </button>
+                        ) : (
+                          <>
+                            {/* Only show edit button for paired devices (assigned to a user) */}
+                            {assignedUser && (
                               <button
-                                className="device-delete-btn"
-                                onClick={() => handleDeleteDevice(device)}
-                                title="Delete device from app"
-                                aria-label="Delete device from app"
+                                className="device-edit-btn"
+                                onClick={() => handleOpenReassignModal(device)}
+                                title="Reassign device"
+                                aria-label="Reassign device"
                               >
-                                <MdDelete size={16} />
+                                <MdEdit size={18} />
                               </button>
-                            </>
-                          )}
-                        </div>
+                            )}
+
+                            
+
+                            {/* Show delete button for all devices */}
+                            <button
+                              className="device-delete-btn"
+                              onClick={() => handleDeleteDevice(device)}
+                              title="Delete device from app"
+                              aria-label="Delete device from app"
+                            >
+                              <MdDelete size={16} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   );
