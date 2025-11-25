@@ -442,18 +442,6 @@ const Devices = () => {
                                 onClick={() => handleUnlinkDevice(device)}
                                 title="Unlink device from user"
                                 aria-label="Unlink device from user"
-                                style={{
-                                  background: 'rgba(249, 115, 22, 0.1)',
-                                  color: '#f97316',
-                                  border: 'none',
-                                  borderRadius: '8px',
-                                  padding: '8px',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  transition: 'all 0.2s ease'
-                                }}
                               >
                                 <MdLinkOff size={18} />
                               </button>
