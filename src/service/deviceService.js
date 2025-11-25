@@ -149,6 +149,8 @@ export const getUserForDevice = async (deviceId) => {
 };
 
 // Reassign a device to a different user
+// Note: This keeps the device in the old user's list for historical tracking
+// but marks it as owned by the new user
 export const reassignDevice = async (deviceId, newUserId) => {
   const deviceIdStr = String(deviceId);
   const newUserIdStr = String(newUserId);
@@ -160,7 +162,7 @@ export const reassignDevice = async (deviceId, newUserId) => {
   let updatedCurrentUser = currentUser;
   let updatedOtherUsers = [...otherUsers];
   
-  // Remove device from all users
+  // Remove device from all users (to transfer ownership)
   if (updatedCurrentUser && Array.isArray(updatedCurrentUser.devices)) {
     const devices = updatedCurrentUser.devices.filter(id => String(id) !== deviceIdStr);
     updatedCurrentUser = {
