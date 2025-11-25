@@ -403,6 +403,157 @@ h1 {
   margin-top: 12px;
 }
 
+/* Change Default Device modal overlay + dialog */
+.devices-menu-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  z-index: 999;
+  padding: 24px;
+}
+
+.devices-menu-modal {
+  background: #fff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 680px;
+  box-shadow: 0 24px 50px rgba(15,23,42,0.24);
+  border: 1px solid rgba(15,23,42,0.06);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.devices-menu-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(15,23,42,0.06);
+}
+
+.devices-menu-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.devices-menu-modal-close {
+  background: transparent;
+  border: 1px solid rgba(15,23,42,0.06);
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #475569;
+}
+
+.devices-menu-modal-close:hover {
+  background: #667eea;
+  color: #fff;
+  border-color: rgba(102,126,234,0.4);
+}
+
+.devices-menu-modal-body {
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.default-device-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.default-device-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(15,23,42,0.06);
+  transition: box-shadow 0.12s ease, transform 0.06s ease, border-color 0.12s ease;
+  cursor: pointer;
+}
+
+.default-device-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(15,23,42,0.06);
+  border-color: rgba(102,126,234,0.12);
+}
+
+.default-device-item input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #667eea;
+  flex-shrink: 0;
+}
+
+.default-device-item .device-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.default-device-item img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.default-device-item .device-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.default-device-item .device-meta .device-name { font-weight: 700; color: #0f172a; }
+.default-device-item .device-meta .device-model { font-size: 12px; color: #64748b; }
+
+.devices-menu-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(15,23,42,0.04);
+}
+
+.btn-primary.btn-submit {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.btn-secondary {
+  background: #f1f5f9;
+  color: #0f172a;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(15,23,42,0.06);
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+  .devices-menu-modal { padding: 16px; max-width: 96vw; }
+  .default-device-item img { width: 44px; height: 44px; }
+}
+
 /* Devices menu overlay handled via src/components/DevicesMenu */
 
 /* Responsive */

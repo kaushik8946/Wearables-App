@@ -230,8 +230,8 @@ const Users = () => {
     <div className="page-container">
       <div className="page-content">
         <div className="header-section">
-          <h2 className="page-title">Family Members</h2>
-          <p className="page-subtitle">Manage your family's health profiles</p>
+          <h2 className="page-title">Users</h2>
+          <p className="page-subtitle">Manage your users</p>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'row', gap: 16, justifyContent: 'flex-end', marginBottom: 24 }}>
@@ -425,44 +425,7 @@ const Users = () => {
               {errors.gender && <span className="error-message">{errors.gender}</span>}
             </div>
 
-            {modalMode === 'edit' && users[editingIndex] && (
-              <div className="form-group">
-                <label>Default Device</label>
-                {(() => {
-                  const user = users[editingIndex];
-                  const defaultDeviceId = user.defaultDevice;
-                  const defaultDevice = defaultDeviceId 
-                    ? pairedDevices.find(d => String(d.id) === String(defaultDeviceId)) 
-                    : null;
-                  
-                  return (
-                    <>
-                      <div style={{ marginBottom: '12px', padding: '10px', background: '#f8fafc', borderRadius: '8px' }}>
-                        {defaultDevice ? (
-                          <span style={{ color: '#334155', fontWeight: 500 }}>
-                            {defaultDevice.name}
-                          </span>
-                        ) : (
-                          <span style={{ color: '#94a3b8' }}>No default device set</span>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        className="btn-primary"
-                        style={{ width: '100%', marginTop: '8px' }}
-                        onClick={() => {
-                          setManagingUserIndex(editingIndex);
-                          setShowManageDevicesModal(true);
-                          setModalOpen(false);
-                        }}
-                      >
-                        Manage Devices
-                      </button>
-                    </>
-                  );
-                })()}
-              </div>
-            )}
+            
 
             <div className="modal-buttons">
               {modalMode === 'add' ? (

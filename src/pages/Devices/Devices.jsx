@@ -338,32 +338,46 @@ const Devices = () => {
 
       {showChangeDefaultModal && activeUser && (
         <div className="devices-menu-overlay" onClick={() => setShowChangeDefaultModal(false)}>
-          <div className="devices-menu-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="devices-menu-modal" role="dialog" aria-modal="true" aria-labelledby="change-default-title" onClick={(e) => e.stopPropagation()}>
             <div className="devices-menu-modal-header">
-              <h3>Change default device</h3>
-              <button className="devices-menu-modal-close" onClick={() => setShowChangeDefaultModal(false)}>✕</button>
-            </div>
-            <div style={{ padding: '8px 0 16px 0' }}>
-              <p style={{ margin: 0, color: '#64748b' }}>Select a device to become the default for {activeUser.name}</p>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {userDevices.map(d => (
-                <label key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, borderRadius: 8, border: '1px solid #e6e7ea', cursor: 'pointer' }}>
-                  <input type="radio" name="defaultDevice" value={d.id} checked={String(selectedDefaultDeviceId) === String(d.id)} onChange={() => setSelectedDefaultDeviceId(String(d.id))} />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <img src={d.image} alt={d.name} style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8 }} />
-                    <div>
-                      <div style={{ fontWeight: 700 }}>{d.name}</div>
-                      <div style={{ fontSize: 13, color: '#64748b' }}>{d.model}</div>
-                    </div>
-                  </div>
-                </label>
-              ))}
+              <h3 id="change-default-title">Change default device</h3>
+              <button className="devices-menu-modal-close" aria-label="close" onClick={() => setShowChangeDefaultModal(false)}>✕</button>
             </div>
 
-            <div className="modal-buttons" style={{ marginTop: 16 }}>
-              <button className="btn-secondary" onClick={() => setShowChangeDefaultModal(false)}>Cancel</button>
-              <button className="btn-primary btn-submit" onClick={handleSaveDefault} disabled={!selectedDefaultDeviceId}>Save</button>
+            <div className="devices-menu-modal-body">
+              <p style={{ margin: 0, color: '#64748b' }}>Select a device to become the default for <strong style={{ color: '#0f172a' }}>{activeUser.name}</strong></p>
+
+              <div className="default-device-list">
+                {userDevices.map(d => (
+                  <label
+                    key={d.id}
+                    className="default-device-item"
+                    onClick={() => setSelectedDefaultDeviceId(String(d.id))}
+                    aria-label={`Select ${d.name} as default`}
+                  >
+                    <input
+                      type="radio"
+                      name="defaultDevice"
+                      value={d.id}
+                      checked={String(selectedDefaultDeviceId) === String(d.id)}
+                      onChange={() => setSelectedDefaultDeviceId(String(d.id))}
+                    />
+
+                    <div className="device-preview">
+                      <img src={d.image} alt={d.name} />
+                      <div className="device-meta">
+                        <div className="device-name">{d.name}</div>
+                        <div className="device-model">{d.model}</div>
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+
+              <div className="devices-menu-modal-footer">
+                <button className="btn-secondary" onClick={() => setShowChangeDefaultModal(false)}>Cancel</button>
+                <button className="btn-primary btn-submit" onClick={handleSaveDefault} disabled={!selectedDefaultDeviceId}>Save</button>
+              </div>
             </div>
           </div>
         </div>
