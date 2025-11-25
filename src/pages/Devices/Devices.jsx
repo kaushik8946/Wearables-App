@@ -557,7 +557,7 @@ const Devices = () => {
             <div className="reconnect-warning-icon">⚠️</div>
             <h4 className="reconnect-warning-title">Device Already Paired</h4>
             <p className="reconnect-warning-message">
-              This device is already paired to <strong>{reconnectDevice.currentOwnerName}</strong>, your pairing will unpair it from him.
+              This device is already paired to <strong>{reconnectDevice.currentOwnerName}</strong>, your pairing will unpair it from them.
             </p>
             <div className="reconnect-warning-buttons">
               <button 
