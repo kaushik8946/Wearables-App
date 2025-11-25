@@ -120,7 +120,7 @@ export const getAllAvailableDevicesWithOwnership = async () => {
         ...device,
         ownerId: owner ? owner.id : null,
         ownerName: owner ? owner.name : null,
-        isOwnedByOther: owner ? true : false
+        isOwnedByOther: !!owner
       };
     })
   );
@@ -282,7 +282,7 @@ export const unassignDevice = async (deviceId) => {
       devices,
       // If removing the default device, clear it or set to first available
       defaultDevice: String(updatedCurrentUser.defaultDevice) === deviceIdStr 
-        ? (devices.length > 0 ? devices[0] : null)
+        ? (devices[0] ?? null)
         : updatedCurrentUser.defaultDevice
     };
   }

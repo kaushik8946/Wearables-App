@@ -211,11 +211,6 @@ const Devices = () => {
         lastSync: new Date().toISOString()
       };
 
-      // If device was owned by another user, transfer ownership
-      if (device.isOwnedByOther && device.ownerId) {
-        await deviceService.transferDeviceOwnership(device.id, null);
-      }
-
       // Check if device already exists in pairedDevices to avoid duplicates
       const existingDevice = pairedDevices.find(d => String(d.id) === String(device.id));
       let updated;
@@ -538,7 +533,7 @@ const Devices = () => {
             <div className="reconnect-warning-icon">⚠️</div>
             <h4 className="reconnect-warning-title">Device Already Paired</h4>
             <p className="reconnect-warning-message">
-              This device is already paired to <strong>{reconnectDevice.currentOwnerName}</strong>, your pairing will unpair it from him.
+              This device is already paired to <strong>{reconnectDevice.currentOwnerName}</strong>, your pairing will unpair it from them.
             </p>
             <div className="reconnect-warning-buttons">
               <button 
