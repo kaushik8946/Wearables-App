@@ -96,13 +96,26 @@ export const getUnpairedDevices = async () => {
 export const getAllAvailableDevicesWithOwnership = async () => {
   const allDevices = availableDevices;
   const users = await getAllUsers();
+  const ownershipMap = await getStorageJSON('deviceOwnership', {});
   
   const devicesWithOwnership = await Promise.all(
     allDevices.map(async (device) => {
-      const owner = users.find(user => {
-        const userDevices = user.devices || [];
-        return userDevices.some(id => String(id) === String(device.id));
-      });
+      const deviceIdStr = String(device.id);
+      
+      // Check ownership map first, then fallback to user devices lists
+      let owner = null;
+      const ownerUserId = ownershipMap[deviceIdStr];
+      
+      if (ownerUserId) {
+        owner = users.find(u => String(u.id) === String(ownerUserId));
+      } else {
+        // Fallback: check users' devices lists (backwards compatibility)
+        owner = users.find(user => {
+          const userDevices = user.devices || [];
+          return userDevices.some(id => String(id) === deviceIdStr);
+        });
+      }
+      
       return {
         ...device,
         ownerId: owner ? owner.id : null,
@@ -137,11 +150,30 @@ export const getAllUsers = async () => {
     : normalizedOtherUsers;
 };
 
-// Get the user assigned to a specific device
+// Get the current owner of a device from the ownership map
+export const getDeviceOwner = async (deviceId) => {
+  const ownershipMap = await getStorageJSON('deviceOwnership', {});
+  return ownershipMap[String(deviceId)] || null;
+};
+
+// Set the owner of a device
+export const setDeviceOwner = async (deviceId, userId) => {
+  const ownershipMap = await getStorageJSON('deviceOwnership', {});
+  ownershipMap[String(deviceId)] = userId ? String(userId) : null;
+  await setStorageJSON('deviceOwnership', ownershipMap);
+};
+
+// Get the user assigned to a specific device (current owner)
 export const getUserForDevice = async (deviceId) => {
-  const users = await getAllUsers();
   const deviceIdStr = String(deviceId);
+  const ownerUserId = await getDeviceOwner(deviceIdStr);
   
+  if (ownerUserId) {
+    return await getUserById(ownerUserId);
+  }
+  
+  // Fallback: check users' devices lists (backwards compatibility)
+  const users = await getAllUsers();
   return users.find(user => {
     const userDevices = user.devices || [];
     return userDevices.some(id => String(id) === deviceIdStr);
@@ -149,8 +181,8 @@ export const getUserForDevice = async (deviceId) => {
 };
 
 // Reassign a device to a different user
-// Note: This keeps the device in the old user's list for historical tracking
-// but marks it as owned by the new user
+// Note: This keeps the device in the old user's list for historical tracking (offline state)
+// but adds it to the new user's list. The current owner is determined by who has it most recently.
 export const reassignDevice = async (deviceId, newUserId) => {
   const deviceIdStr = String(deviceId);
   const newUserIdStr = String(newUserId);
@@ -162,26 +194,28 @@ export const reassignDevice = async (deviceId, newUserId) => {
   let updatedCurrentUser = currentUser;
   let updatedOtherUsers = [...otherUsers];
   
-  // Remove device from all users (to transfer ownership)
+  // Clear default device for old owners if this was their default
   if (updatedCurrentUser && Array.isArray(updatedCurrentUser.devices)) {
-    const devices = updatedCurrentUser.devices.filter(id => String(id) !== deviceIdStr);
-    updatedCurrentUser = {
-      ...updatedCurrentUser,
-      devices,
-      // If removing the default device, clear it
-      defaultDevice: String(updatedCurrentUser.defaultDevice) === deviceIdStr ? null : updatedCurrentUser.defaultDevice
-    };
+    if (String(updatedCurrentUser.defaultDevice) === deviceIdStr && String(updatedCurrentUser.id) !== newUserIdStr) {
+      // Find another device to set as default, or null
+      const otherDevices = updatedCurrentUser.devices.filter(id => String(id) !== deviceIdStr);
+      updatedCurrentUser = {
+        ...updatedCurrentUser,
+        defaultDevice: otherDevices.length > 0 ? otherDevices[0] : null
+      };
+    }
   }
   
   updatedOtherUsers = updatedOtherUsers.map(user => {
     if (!Array.isArray(user.devices)) return user;
-    const devices = user.devices.filter(id => String(id) !== deviceIdStr);
-    return {
-      ...user,
-      devices,
-      // If removing the default device, clear it
-      defaultDevice: String(user.defaultDevice) === deviceIdStr ? null : user.defaultDevice
-    };
+    if (String(user.defaultDevice) === deviceIdStr && String(user.id) !== newUserIdStr) {
+      const otherDevices = user.devices.filter(id => String(id) !== deviceIdStr);
+      return {
+        ...user,
+        defaultDevice: otherDevices.length > 0 ? otherDevices[0] : null
+      };
+    }
+    return user;
   });
   
   // Add device to the new user
@@ -219,6 +253,9 @@ export const reassignDevice = async (deviceId, newUserId) => {
     await setStorageJSON('currentUser', updatedCurrentUser);
   }
   await setStorageJSON('users', updatedOtherUsers);
+  
+  // Update device ownership map
+  await setDeviceOwner(deviceIdStr, newUserIdStr);
   
   // Notify listeners
   notifyUserChange();
@@ -354,15 +391,26 @@ export const getDevicesForUserWithStatus = async (userId) => {
   const pairedDevices = await getPairedDevices();
   const userDeviceIds = user.devices || [];
   const allUsers = await getAllUsers();
+  const ownershipMap = await getStorageJSON('deviceOwnership', {});
   
   return pairedDevices
     .filter(device => userDeviceIds.some(id => String(id) === String(device.id)))
     .map(device => {
-      // Check if this device is currently owned by another user
-      const currentOwner = allUsers.find(u => {
-        const uDevices = u.devices || [];
-        return uDevices.some(id => String(id) === String(device.id));
-      });
+      const deviceIdStr = String(device.id);
+      
+      // Check ownership map first, then fallback to user devices lists
+      let currentOwner = null;
+      const ownerUserId = ownershipMap[deviceIdStr];
+      
+      if (ownerUserId) {
+        currentOwner = allUsers.find(u => String(u.id) === String(ownerUserId));
+      } else {
+        // Fallback: check users' devices lists (backwards compatibility)
+        currentOwner = allUsers.find(u => {
+          const uDevices = u.devices || [];
+          return uDevices.some(id => String(id) === deviceIdStr);
+        });
+      }
       
       const isOwnedByThisUser = currentOwner && String(currentOwner.id) === String(userId);
       const isOwnedByOther = currentOwner && String(currentOwner.id) !== String(userId);
@@ -446,6 +494,9 @@ export const transferDeviceOwnership = async (deviceId, newUserId) => {
     await setStorageJSON('currentUser', updatedCurrentUser);
   }
   await setStorageJSON('users', updatedOtherUsers);
+  
+  // Update device ownership map
+  await setDeviceOwner(deviceIdStr, newUserIdStr);
   
   // Notify listeners
   notifyUserChange();
