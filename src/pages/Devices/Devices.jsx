@@ -119,7 +119,7 @@ const Devices = () => {
   // Unlink device from user (device stays in app but not assigned)
   const handleUnlinkDevice = async (device) => {
     if (!device) return;
-    if (!window.confirm(`Unlink ${device.name} from its user? The device will remain in the app but not assigned to anyone.`)) return;
+    if (!window.confirm(`Unpair ${device.name}?`)) return;
 
     try {
       const result = await deviceService.unlinkDeviceFromUser(device.id, deviceUserMap[device.id]?.id);
@@ -134,7 +134,7 @@ const Devices = () => {
   // Delete device completely from the app
   const handleDeleteDevice = async (device) => {
     if (!device) return;
-    if (!window.confirm(`Delete ${device.name} from the app? This will remove it from all users and the paired devices list. The device will only appear in Nearby Devices when scanning.`)) return;
+    if (!window.confirm(`Remove ${device.name}?`)) return;
 
     try {
       const result = await deviceService.deleteDevice(device.id);
