@@ -341,7 +341,8 @@ const Devices = () => {
                 {(activeUser ? userDevices : pairedDevices).map(device => {
                   const assignedUser = deviceUserMap[device.id];
                   const imageSrc = deviceImageMap[device.image] || device.image;
-                  const isOffline = device.isOffline || device.isOwnedByOther;
+                  // isOffline is set by the service layer when device is owned by another user
+                  const isOffline = device.isOffline;
 
                   return (
                     <div key={device.id} className={`device-card ${isOffline ? 'device-card-offline' : ''}`}>

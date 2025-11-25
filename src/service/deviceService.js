@@ -571,8 +571,11 @@ export const getCurrentAndHistoricalDevicesForUser = async (userId) => {
     ...historicalDeviceIds
   ]);
   
+  // Convert currentDeviceIds to Set for O(1) lookup
+  const currentDeviceIdSet = new Set(currentDeviceIds.map(id => String(id)));
+  
   // Filter paired devices to only include those in our combined set
-  const relevantDevices = pairedDevices.filter(device => 
+  const currentlyPairedDevices = pairedDevices.filter(device => 
     allDeviceIds.has(String(device.id))
   );
   
@@ -585,8 +588,8 @@ export const getCurrentAndHistoricalDevicesForUser = async (userId) => {
   const additionalHistoricalDevices = availableDevices
     .filter(device => missingHistoricalIds.includes(String(device.id)));
   
-  // Combine all relevant devices
-  const allRelevantDevices = [...relevantDevices, ...additionalHistoricalDevices];
+  // Combine all devices (current + historical)
+  const allRelevantDevices = [...currentlyPairedDevices, ...additionalHistoricalDevices];
   
   // Map to include ownership status
   return allRelevantDevices.map(device => {
@@ -615,7 +618,7 @@ export const getCurrentAndHistoricalDevicesForUser = async (userId) => {
       currentOwnerId: currentOwner?.id || null,
       currentOwnerName: currentOwner?.name || null,
       isOwnedByOther,
-      isHistorical: historicalDeviceIds.includes(deviceIdStr) && !currentDeviceIds.some(id => String(id) === deviceIdStr)
+      isHistorical: historicalDeviceIds.includes(deviceIdStr) && !currentDeviceIdSet.has(deviceIdStr)
     };
   });
 };
