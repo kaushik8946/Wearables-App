@@ -629,11 +629,17 @@ export const getCurrentAndHistoricalDevicesForUser = async (userId) => {
 export const deleteDevice = async (deviceId) => {
   const deviceIdStr = String(deviceId);
   
+  // Validate device exists in pairedDevices
+  const pairedDevices = await getPairedDevices();
+  const deviceExists = pairedDevices.some(d => String(d.id) === deviceIdStr);
+  if (!deviceExists) {
+    return { success: false, error: 'Device not found in paired devices' };
+  }
+  
   // Get current owner before deletion for history tracking
   const oldOwnerId = await getDeviceOwner(deviceIdStr);
   
   // Remove device from pairedDevices
-  const pairedDevices = await getPairedDevices();
   const updatedPairedDevices = pairedDevices.filter(d => String(d.id) !== deviceIdStr);
   await setStorageJSON('pairedDevices', updatedPairedDevices);
   
@@ -696,6 +702,18 @@ export const deleteDevice = async (deviceId) => {
 export const unlinkDeviceFromUser = async (deviceId, userId) => {
   const deviceIdStr = String(deviceId);
   const userIdStr = String(userId);
+  
+  // Validate user exists and has this device
+  const user = await getUserById(userIdStr);
+  if (!user) {
+    return { success: false, error: 'User not found' };
+  }
+  
+  const userDevices = user.devices || [];
+  const hasDevice = userDevices.some(id => String(id) === deviceIdStr);
+  if (!hasDevice) {
+    return { success: false, error: 'Device not associated with this user' };
+  }
   
   // Get current owner to check if this user is the owner
   const currentOwnerId = await getDeviceOwner(deviceIdStr);

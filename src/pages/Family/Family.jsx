@@ -512,30 +512,35 @@ const Users = () => {
           await saveUsers(updatedUsers);
         };
 
+        // Helper to remove device from user in local state
+        const removeDeviceFromUserState = (deviceId, userIdx = null) => {
+          return users.map((u, idx) => {
+            // If userIdx is null, remove from all users; otherwise only from specified user
+            if (userIdx !== null && idx !== userIdx) return u;
+            
+            const newDevices = (u.devices || []).filter(id => String(id) !== String(deviceId));
+            let newDefaultDevice = u.defaultDevice;
+            
+            if (String(u.defaultDevice) === String(deviceId)) {
+              newDefaultDevice = newDevices.length > 0 ? newDevices[0] : null;
+            }
+            
+            return {
+              ...u,
+              devices: newDevices,
+              defaultDevice: newDefaultDevice
+            };
+          });
+        };
+
         // Unlink device from this user only (device stays in pairedDevices)
         const handleUnlinkDevice = async (deviceId) => {
           if (!window.confirm('Unlink this device from the user? The device will be available for pairing to other users.')) return;
           
           await unlinkDeviceFromUser(deviceId, user.id);
           
-          // Update local state
-          const updatedUsers = users.map((u, idx) => {
-            if (idx === managingUserIndex) {
-              const newDevices = (u.devices || []).filter(id => String(id) !== String(deviceId));
-              let newDefaultDevice = u.defaultDevice;
-              
-              if (String(u.defaultDevice) === String(deviceId)) {
-                newDefaultDevice = newDevices.length > 0 ? newDevices[0] : null;
-              }
-              
-              return {
-                ...u,
-                devices: newDevices,
-                defaultDevice: newDefaultDevice
-              };
-            }
-            return u;
-          });
+          // Update local state - remove from this user only
+          const updatedUsers = removeDeviceFromUserState(deviceId, managingUserIndex);
           setUsers(updatedUsers);
         };
 
@@ -550,20 +555,7 @@ const Users = () => {
           setPairedDevices(updatedPairedDevices);
           
           // Update local users state - remove device from all users
-          const updatedUsers = users.map(u => {
-            const newDevices = (u.devices || []).filter(id => String(id) !== String(deviceId));
-            let newDefaultDevice = u.defaultDevice;
-            
-            if (String(u.defaultDevice) === String(deviceId)) {
-              newDefaultDevice = newDevices.length > 0 ? newDevices[0] : null;
-            }
-            
-            return {
-              ...u,
-              devices: newDevices,
-              defaultDevice: newDefaultDevice
-            };
-          });
+          const updatedUsers = removeDeviceFromUserState(deviceId, null);
           setUsers(updatedUsers);
         };
 
