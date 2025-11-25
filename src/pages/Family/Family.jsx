@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { MdPerson, MdPersonOutline, MdEdit, MdDelete, MdAdd, MdWatch } from 'react-icons/md';
+import { MdPerson, MdPersonOutline, MdEdit, MdDelete, MdAdd, MdWatch, MdLinkOff } from 'react-icons/md';
 import { GiRing } from 'react-icons/gi';
 import { FaWeight } from 'react-icons/fa';
-import { getStorageItem, getStorageJSON, setStorageItem, setStorageJSON, notifyUserChange } from '../../service';
+import { getStorageItem, getStorageJSON, setStorageItem, setStorageJSON, notifyUserChange, deleteDevice, unlinkDeviceFromUser, notifyPairedDevicesChange } from '../../service';
 import './Family.css';
 
 const Users = () => {
@@ -411,16 +411,44 @@ const Users = () => {
 
             
 
-            <div className="modal-buttons">
+            <div className="modal-buttons" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {modalMode === 'add' ? (
                 <button onClick={handleAdd} className="btn-primary btn-submit">
                   <MdAdd size={20} />
                   Add User
                 </button>
               ) : (
-                <button onClick={handleSaveEdit} className="btn-primary btn-submit">
-                  Save Changes
-                </button>
+                <>
+                  <button 
+                    onClick={() => {
+                      setManagingUserIndex(editingIndex);
+                      setShowManageDevicesModal(true);
+                      setModalOpen(false);
+                    }} 
+                    className="btn-primary"
+                    style={{ 
+                      background: 'rgba(102, 126, 234, 0.1)', 
+                      color: '#667eea',
+                      boxShadow: 'none',
+                      width: '100%',
+                      padding: '16px 32px',
+                      borderRadius: '14px',
+                      border: 'none',
+                      fontWeight: '700',
+                      fontSize: '16px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <MdWatch size={20} style={{ marginRight: '8px' }} />
+                    Manage Devices
+                  </button>
+                  <button onClick={handleSaveEdit} className="btn-primary btn-submit">
+                    Save Changes
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -482,6 +510,61 @@ const Users = () => {
           });
 
           await saveUsers(updatedUsers);
+        };
+
+        // Unlink device from this user only (device stays in pairedDevices)
+        const handleUnlinkDevice = async (deviceId) => {
+          if (!window.confirm('Unlink this device from the user? The device will be available for pairing to other users.')) return;
+          
+          await unlinkDeviceFromUser(deviceId, user.id);
+          
+          // Update local state
+          const updatedUsers = users.map((u, idx) => {
+            if (idx === managingUserIndex) {
+              const newDevices = (u.devices || []).filter(id => String(id) !== String(deviceId));
+              let newDefaultDevice = u.defaultDevice;
+              
+              if (String(u.defaultDevice) === String(deviceId)) {
+                newDefaultDevice = newDevices.length > 0 ? newDevices[0] : null;
+              }
+              
+              return {
+                ...u,
+                devices: newDevices,
+                defaultDevice: newDefaultDevice
+              };
+            }
+            return u;
+          });
+          setUsers(updatedUsers);
+        };
+
+        // Delete device completely from the app
+        const handleDeleteDevice = async (deviceId) => {
+          if (!window.confirm('Delete this device from the app? This will remove it from all users and the paired devices list. The device will only appear in Nearby Devices when scanning.')) return;
+          
+          await deleteDevice(deviceId);
+          
+          // Update local paired devices state
+          const updatedPairedDevices = pairedDevices.filter(d => String(d.id) !== String(deviceId));
+          setPairedDevices(updatedPairedDevices);
+          
+          // Update local users state - remove device from all users
+          const updatedUsers = users.map(u => {
+            const newDevices = (u.devices || []).filter(id => String(id) !== String(deviceId));
+            let newDefaultDevice = u.defaultDevice;
+            
+            if (String(u.defaultDevice) === String(deviceId)) {
+              newDefaultDevice = newDevices.length > 0 ? newDevices[0] : null;
+            }
+            
+            return {
+              ...u,
+              devices: newDevices,
+              defaultDevice: newDefaultDevice
+            };
+          });
+          setUsers(updatedUsers);
         };
 
         const handleSetDefaultDevice = async (deviceId) => {
@@ -566,7 +649,7 @@ const Users = () => {
                             {device.model} • {device.brand}
                           </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                           {String(device.id) !== String(user.defaultDevice) && (
                             <button
                               className="btn-primary"
@@ -577,13 +660,40 @@ const Users = () => {
                             </button>
                           )}
                           <button
-                            className="btn-delete"
-                            style={{ padding: '6px 12px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                            onClick={() => handleRemoveDevice(device.id)}
-                            title="Remove device"
-                            aria-label="Remove device"
+                            className="btn-unlink"
+                            style={{ 
+                              padding: '6px 10px', 
+                              fontSize: '14px', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center',
+                              background: 'rgba(249, 115, 22, 0.1)',
+                              color: '#f97316',
+                              border: 'none',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease'
+                            }}
+                            onClick={() => handleUnlinkDevice(device.id)}
+                            title="Unlink device from user"
+                            aria-label="Unlink device from user"
                           >
-                            <MdDelete size={16} />
+                            <MdLinkOff size={18} />
+                          </button>
+                          <button
+                            className="btn-delete"
+                            style={{ 
+                              padding: '6px 10px', 
+                              fontSize: '14px', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center'
+                            }}
+                            onClick={() => handleDeleteDevice(device.id)}
+                            title="Delete device from app"
+                            aria-label="Delete device from app"
+                          >
+                            <MdDelete size={18} />
                           </button>
                         </div>
                       </div>

@@ -622,3 +622,134 @@ export const getCurrentAndHistoricalDevicesForUser = async (userId) => {
     };
   });
 };
+
+// Delete a device completely from the app
+// This removes the device from pairedDevices, all user associations, and ownership map
+// The device will still appear in "Nearby Devices" (availableDevices from mockData)
+export const deleteDevice = async (deviceId) => {
+  const deviceIdStr = String(deviceId);
+  
+  // Get current owner before deletion for history tracking
+  const oldOwnerId = await getDeviceOwner(deviceIdStr);
+  
+  // Remove device from pairedDevices
+  const pairedDevices = await getPairedDevices();
+  const updatedPairedDevices = pairedDevices.filter(d => String(d.id) !== deviceIdStr);
+  await setStorageJSON('pairedDevices', updatedPairedDevices);
+  
+  // Remove device from all users' devices lists
+  const currentUser = await getStorageJSON('currentUser', null);
+  const otherUsers = await getStorageJSON('users', []);
+  
+  let updatedCurrentUser = currentUser;
+  let updatedOtherUsers = [...otherUsers];
+  
+  // Remove from current user
+  if (updatedCurrentUser && Array.isArray(updatedCurrentUser.devices)) {
+    const devices = updatedCurrentUser.devices.filter(id => String(id) !== deviceIdStr);
+    updatedCurrentUser = {
+      ...updatedCurrentUser,
+      devices,
+      defaultDevice: String(updatedCurrentUser.defaultDevice) === deviceIdStr 
+        ? (devices.length > 0 ? devices[0] : null)
+        : updatedCurrentUser.defaultDevice
+    };
+  }
+  
+  // Remove from other users
+  updatedOtherUsers = updatedOtherUsers.map(user => {
+    if (!Array.isArray(user.devices)) return user;
+    const devices = user.devices.filter(id => String(id) !== deviceIdStr);
+    return {
+      ...user,
+      devices,
+      defaultDevice: String(user.defaultDevice) === deviceIdStr 
+        ? (devices.length > 0 ? devices[0] : null)
+        : user.defaultDevice
+    };
+  });
+  
+  // Save updated users
+  if (updatedCurrentUser) {
+    await setStorageJSON('currentUser', updatedCurrentUser);
+  }
+  await setStorageJSON('users', updatedOtherUsers);
+  
+  // Clear device ownership
+  await setDeviceOwner(deviceIdStr, null);
+  
+  // Record disconnection event if there was an owner
+  if (oldOwnerId) {
+    await recordDeviceDisconnected(deviceIdStr, oldOwnerId);
+  }
+  
+  // Notify listeners
+  notifyPairedDevicesChange();
+  notifyUserChange();
+  
+  return { success: true };
+};
+
+// Unlink a device from a specific user only
+// The device remains in pairedDevices and can be assigned to other users
+// It will appear in "Available Devices" for pairing
+export const unlinkDeviceFromUser = async (deviceId, userId) => {
+  const deviceIdStr = String(deviceId);
+  const userIdStr = String(userId);
+  
+  // Get current owner to check if this user is the owner
+  const currentOwnerId = await getDeviceOwner(deviceIdStr);
+  
+  // Get all users
+  const currentUser = await getStorageJSON('currentUser', null);
+  const otherUsers = await getStorageJSON('users', []);
+  
+  let updatedCurrentUser = currentUser;
+  let updatedOtherUsers = [...otherUsers];
+  
+  // Remove device from the specified user only
+  if (updatedCurrentUser && String(updatedCurrentUser.id) === userIdStr) {
+    if (Array.isArray(updatedCurrentUser.devices)) {
+      const devices = updatedCurrentUser.devices.filter(id => String(id) !== deviceIdStr);
+      updatedCurrentUser = {
+        ...updatedCurrentUser,
+        devices,
+        defaultDevice: String(updatedCurrentUser.defaultDevice) === deviceIdStr 
+          ? (devices.length > 0 ? devices[0] : null)
+          : updatedCurrentUser.defaultDevice
+      };
+    }
+  } else {
+    updatedOtherUsers = updatedOtherUsers.map(user => {
+      if (String(user.id) !== userIdStr) return user;
+      if (!Array.isArray(user.devices)) return user;
+      const devices = user.devices.filter(id => String(id) !== deviceIdStr);
+      return {
+        ...user,
+        devices,
+        defaultDevice: String(user.defaultDevice) === deviceIdStr 
+          ? (devices.length > 0 ? devices[0] : null)
+          : user.defaultDevice
+      };
+    });
+  }
+  
+  // Save updated users
+  if (updatedCurrentUser) {
+    await setStorageJSON('currentUser', updatedCurrentUser);
+  }
+  await setStorageJSON('users', updatedOtherUsers);
+  
+  // Clear device ownership only if this user was the owner
+  if (currentOwnerId === userIdStr) {
+    await setDeviceOwner(deviceIdStr, null);
+  }
+  
+  // Record disconnection event
+  await recordDeviceDisconnected(deviceIdStr, userIdStr);
+  
+  // Notify listeners
+  notifyUserChange();
+  
+  return { success: true };
+};
