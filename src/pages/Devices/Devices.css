@@ -70,7 +70,15 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
+}
+
+.devices-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 18px;
 }
 
 h1 {
