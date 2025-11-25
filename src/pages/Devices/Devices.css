@@ -191,6 +191,13 @@ h1 {
   align-items: center;
 }
 
+.device-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
 .device-edit-btn {
   border: none;
   border-radius: 8px;
