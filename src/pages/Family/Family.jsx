@@ -278,23 +278,7 @@ const Users = () => {
                   <p className="user-meta">
                     {user.age ? `${user.age} years` : 'Age not set'} • {user.gender || 'Gender not set'}
                   </p>
-                  <p className="user-device">
-                    {(() => {
-                      const defaultDeviceId = user.defaultDevice;
-                      if (defaultDeviceId) {
-                        const device = pairedDevices.find(d => String(d.id) === String(defaultDeviceId));
-                        if (device) {
-                          return (
-                            <>
-                              {getDeviceIcon(device.deviceType)}
-                              <span>{device.name}</span>
-                            </>
-                          );
-                        }
-                      }
-                      return <span style={{ color: '#94a3b8' }}>No device paired</span>;
-                    })()}
-                  </p>
+                  
                 </div>
                 <div className="user-actions">
                   <button
