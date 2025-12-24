@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MdPerson, MdPersonOutline, MdEdit, MdDelete, MdAdd, MdWatch } from 'react-icons/md';
 import { GiRing } from 'react-icons/gi';
 import { FaWeight } from 'react-icons/fa';
-import { getStorageItem, getStorageJSON, setStorageItem, setStorageJSON, notifyUserChange } from '../../service';
+import { getStorageItem, getStorageJSON, setStorageItem, setStorageJSON, notifyUserChange, syncMedplusUsers } from '../../service';
+import WarningModal from '../../common/WarningModal/WarningModal';
 import './Family.css';
 
 const Users = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [defaultUserId, setDefaultUserId] = useState('');
   const [showDefaultModal, setShowDefaultModal] = useState(false);
@@ -21,6 +24,11 @@ const Users = () => {
   const [errors, setErrors] = useState({});
   const [showManageDevicesModal, setShowManageDevicesModal] = useState(false);
   const [managingUserIndex, setManagingUserIndex] = useState(null);
+  const [showNoPatientsModal, setShowNoPatientsModal] = useState(false);
+  const [hasCheckedPatients, setHasCheckedPatients] = useState(false);
+  const [medPlusCustomer, setMedPlusCustomer] = useState(null);
+  const [patientUserMappings, setPatientUserMappings] = useState({});
+  const [medplusPatients, setMedplusPatients] = useState([]);
 
   const sanitizeUserForStorage = (user) => {
     if (!user) return null;
@@ -46,18 +54,18 @@ const Users = () => {
   // Helper to migrate old user data structure to new one
   const migrateUserData = (user) => {
     if (!user) return user;
-    
+
     // If user already has devices array, return as-is
     if (Array.isArray(user.devices)) {
       return user;
     }
-    
+
     // Migrate from old deviceId to new devices array structure
     const devices = [];
     if (user.deviceId) {
       devices.push(String(user.deviceId));
     }
-    
+
     const { deviceId: _deviceId, ...rest } = user;
     return {
       ...rest,
@@ -70,29 +78,29 @@ const Users = () => {
     let isMounted = true;
     (async () => {
       try {
-        let currentUser = await getStorageJSON('currentUser', null);
+        let defaultUser = await getStorageJSON('defaultUser', null);
         let otherUsers = await getStorageJSON('users', []);
         const storedDefaultUserId = await getStorageItem('defaultUserId');
         // Ensure every user has a unique id
         const ensureId = (user) => {
           if (!user) return user;
           if (!user.id) {
-            return { ...user, id: `user_${Date.now()}_${Math.random().toString(36).slice(2,8)}` };
+            return { ...user, id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}` };
           }
           return user;
         };
-        currentUser = currentUser ? ensureId(currentUser) : null;
+        defaultUser = defaultUser ? ensureId(defaultUser) : null;
         otherUsers = Array.isArray(otherUsers) ? otherUsers.map(ensureId) : [];
         if (!isMounted) return;
-        
+
         // Migrate users to new data structure
-        const hydratedUsers = (currentUser
-          ? [{ ...migrateUserData(currentUser), self: true }, ...otherUsers.map(migrateUserData)]
+        const hydratedUsers = (defaultUser
+          ? [{ ...migrateUserData(defaultUser), self: true }, ...otherUsers.map(migrateUserData)]
           : otherUsers.map(migrateUserData));
-        
+
         setUsers(hydratedUsers);
         // Persist any id changes
-        if (currentUser) await setStorageJSON('currentUser', { ...migrateUserData(currentUser) });
+        if (defaultUser) await setStorageJSON('defaultUser', { ...migrateUserData(defaultUser) });
         await setStorageJSON('users', otherUsers.map(migrateUserData));
 
         // Default user logic persisted
@@ -101,6 +109,23 @@ const Users = () => {
         // Load paired devices
         const devices = await getStorageJSON('pairedDevices', []);
         setPairedDevices(devices);
+
+        // Load patient check flag
+        const patientCheckDone = await getStorageJSON('patientFirstCheckDone', false);
+        setHasCheckedPatients(patientCheckDone);
+
+        // Load MedPlus customer to check if life linked
+        const medPlus = await getStorageJSON('medPlusCustomer', null);
+        setMedPlusCustomer(medPlus);
+
+        // Sync medplusUsers list
+        await syncMedplusUsers();
+
+        // Load mappings and medplus users
+        const mappings = await getStorageJSON('patientUserMappings', {});
+        const patients = await getStorageJSON('medplusUsers', []);
+        setPatientUserMappings(mappings);
+        setMedplusPatients(patients);
       } catch (err) {
         console.error('Failed to load users/devices from IndexedDB', err);
       }
@@ -108,7 +133,7 @@ const Users = () => {
     return () => {
       isMounted = false;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getDeviceIcon = (deviceType) => {
@@ -130,6 +155,15 @@ const Users = () => {
       await setStorageJSON('users', onlyUsers);
       setUsers(updatedUsers);
       await persistDefaultUserSelection(updatedUsers);
+
+      // Sync medplusUsers list
+      await syncMedplusUsers();
+
+      // Refresh mappings and list
+      const mappings = await getStorageJSON('patientUserMappings', {});
+      const patients = await getStorageJSON('medplusUsers', []);
+      setPatientUserMappings(mappings);
+      setMedplusPatients(patients);
 
       notifyUserChange();
     } catch (err) {
@@ -176,14 +210,14 @@ const Users = () => {
   const handleAdd = async () => {
     if (!validateForm()) return;
 
-    const newUser = { 
-      ...formData, 
-      self: false, 
+    const newUser = {
+      ...formData,
+      self: false,
       id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       devices: [],
       defaultDevice: null
     };
-    
+
     // Add user directly without device selection
     const updatedUsers = [...users, newUser];
     await saveUsers(updatedUsers);
@@ -204,7 +238,13 @@ const Users = () => {
 
     if (isSelf) {
       const { self: _self, ...rest } = editedUser;
-      await setStorageJSON('currentUser', rest);
+      await setStorageJSON('defaultUser', rest);
+
+      // Also update registeredUser if it has the same ID
+      const registeredUser = await getStorageJSON('registeredUser', null);
+      if (registeredUser && String(registeredUser.id) === String(editedUser.id)) {
+        await setStorageJSON('registeredUser', rest);
+      }
     }
     await saveUsers(updatedUsers);
     closeModal();
@@ -218,11 +258,46 @@ const Users = () => {
     await saveUsers(updatedUsers);
   };
 
+
+
+  const handleUnlinkPatient = async (userId) => {
+    if (!window.confirm('Are you sure you want to unlink this patient?')) return;
+
+    try {
+      // Find the patientId mapped to this userId
+      const patientId = Object.keys(patientUserMappings).find(
+        key => String(patientUserMappings[key]) === String(userId)
+      );
+
+      if (patientId) {
+        const newMappings = { ...patientUserMappings };
+        delete newMappings[patientId];
+
+        await setStorageJSON('patientUserMappings', newMappings);
+        setPatientUserMappings(newMappings);
+
+        // No need to alert success, UI update is enough
+      }
+    } catch (err) {
+      console.error('Failed to unlink patient', err);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleMapPatient = () => {
+    if (!medPlusCustomer) {
+      // No customer ID linked - show modal
+      setShowNoPatientsModal(true);
+    } else {
+      // Customer ID linked - navigate to Patient Linking page
+      navigate('/patient-linking');
     }
   };
 
@@ -234,20 +309,15 @@ const Users = () => {
           <p className="page-subtitle">Manage your users</p>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'row', gap: 16, justifyContent: 'flex-end', marginBottom: 24 }}>
-          <button className="btn-primary add-member-btn" style={{ marginBottom: 0, maxWidth: 180 }} onClick={openAddModal}>
-            <MdAdd size={20} />
+        <div className="buttons-row">
+          <button className="action-button" onClick={openAddModal}>
+            <MdAdd size={18} />
             <span>Add User</span>
           </button>
-          {users.length > 1 && (
-            <button
-              className="btn-primary"
-              style={{ maxWidth: 180, padding: '8px 18px', fontSize: 14 }}
-              onClick={() => setShowDefaultModal(true)}
-            >
-              Change Default User
-            </button>
-          )}
+          <button className="action-button outline" onClick={() => setShowDefaultModal(true)}>
+            <MdPersonOutline size={18} />
+            <span>Change Default</span>
+          </button>
         </div>
 
         <div className="user-list">
@@ -278,7 +348,7 @@ const Users = () => {
                   <p className="user-meta">
                     {user.age ? `${user.age} years` : 'Age not set'} • {user.gender || 'Gender not set'}
                   </p>
-                  
+
                 </div>
                 <div className="user-actions">
                   <button
@@ -409,7 +479,40 @@ const Users = () => {
               {errors.gender && <span className="error-message">{errors.gender}</span>}
             </div>
 
-            
+            {/* Mapped Patient Info (Only in Edit Mode) */}
+            {modalMode === 'edit' && editingIndex !== null && (() => {
+              const user = users[editingIndex];
+              const userMappingKey = Object.keys(patientUserMappings).find(
+                key => String(patientUserMappings[key]) === String(user.id)
+              );
+              const linkedPatient = userMappingKey
+                ? medplusPatients.find(p => p.patientId === userMappingKey)
+                : null;
+
+              if (linkedPatient) {
+                return (
+                  <div className="linked-patient-section">
+                    <label>Linked MedPlus Patient</label>
+                    <div className="linked-patient-card">
+                      <div className="linked-patient-info">
+                        <span className="linked-patient-name">{linkedPatient.name}</span>
+                        <span className="linked-patient-id">{linkedPatient.patientId}</span>
+                      </div>
+                      <button
+                        className="unlink-btn"
+                        onClick={() => handleUnlinkPatient(user.id)}
+                        title="Unlink Patient"
+                      >
+                        Unlink
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
+
 
             <div className="modal-buttons">
               {modalMode === 'add' ? (
@@ -466,12 +569,12 @@ const Users = () => {
             if (idx === managingUserIndex) {
               const newDevices = (u.devices || []).filter(id => String(id) !== String(deviceId));
               let newDefaultDevice = u.defaultDevice;
-              
+
               // If removing the default device, set new default
               if (String(u.defaultDevice) === String(deviceId)) {
                 newDefaultDevice = newDevices.length > 0 ? newDevices[0] : null;
               }
-              
+
               return {
                 ...u,
                 devices: newDevices,
@@ -550,13 +653,13 @@ const Users = () => {
                           <div style={{ fontWeight: 500, marginBottom: '4px' }}>
                             {device.name}
                             {String(device.id) === String(user.defaultDevice) && (
-                              <span style={{ 
-                                marginLeft: '8px', 
-                                padding: '2px 8px', 
-                                background: '#667eea', 
-                                color: 'white', 
-                                borderRadius: '4px', 
-                                fontSize: '12px' 
+                              <span style={{
+                                marginLeft: '8px',
+                                padding: '2px 8px',
+                                background: '#667eea',
+                                color: 'white',
+                                borderRadius: '4px',
+                                fontSize: '12px'
                               }}>
                                 Default
                               </span>
@@ -595,13 +698,13 @@ const Users = () => {
               {/* Only show available paired devices, not unpaired ones */}
               {availablePairedDevices.length > 0 && (
                 <div style={{ marginTop: '20px' }}>
-                  <div style={{ 
-                        fontSize: '14px', 
-                        fontWeight: '600', 
-                        marginBottom: '12px',
-                        color: '#475569' 
-                      }}>
-                        Available Devices
+                  <div style={{
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    marginBottom: '12px',
+                    color: '#475569'
+                  }}>
+                    Available Devices
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {availablePairedDevices.map(device => (
@@ -652,6 +755,22 @@ const Users = () => {
           </div>
         );
       })()}
+
+      {/* Map Patient Button - Bottom of Screen */}
+      <div className="bottom-button-container">
+        <button className="action-button map-patient-btn" onClick={handleMapPatient}>
+          <MdPersonOutline size={18} />
+          <span>Map Patient</span>
+        </button>
+      </div>
+
+      {/* No Customer ID Linked Modal */}
+      <WarningModal
+        show={showNoPatientsModal}
+        title="No Customer ID Linked"
+        message="Please link your MedPlus Customer ID first from the Profile page to map patients."
+        onClose={() => setShowNoPatientsModal(false)}
+      />
     </div>
   );
 };

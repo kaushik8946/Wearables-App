@@ -43,6 +43,7 @@
   transition: all 0.3s ease;
   box-shadow: 0 8px 24px rgba(239, 68, 68, 0.25);
 }
+
 .btn-delete:hover {
   background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
 }
@@ -51,6 +52,7 @@
 .device-action-btn:only-child {
   width: 100%;
 }
+
 /* Remove Button in Paired Device Section */
 .btn-remove {
   padding: 6px 16px;
@@ -69,6 +71,7 @@
   margin-left: 8px;
   box-sizing: border-box;
 }
+
 .btn-remove:hover {
   background: #fee2e2;
   color: #b91c1c;
@@ -87,6 +90,7 @@
   border-radius: 8px !important;
   white-space: nowrap;
 }
+
 /* Modern Family Management UI - Enhanced Design */
 
 /* Page Container with Gradient Background */
@@ -132,39 +136,88 @@
   font-weight: 500;
 }
 
-/* Add User Button */
-.add-member-btn {
-  display: inline-flex;
+/* Buttons Row */
+.buttons-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 0 16px;
+}
+
+/* Action Button - Same style for both */
+.action-button {
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-bottom: 32px;
-  padding: 16px 32px;
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(10px);
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
   border: none;
-  color: #667eea;
-  font-weight: 700;
-  font-size: 16px;
-  border-radius: 16px;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+  white-space: nowrap;
+  min-width: 130px;
+}
+
+.action-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.35);
+}
+
+.action-button:active {
+  transform: translateY(0);
+}
+
+/* Outline variant */
+.action-button.outline {
+  background: transparent;
+  color: #667eea;
+  border: 2px solid #667eea;
+  box-shadow: none;
+}
+
+.action-button.outline:hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.35);
+}
+
+/* No Patients Found Modal */
+.no-patients-modal {
+  text-align: center;
+  max-width: 340px;
+}
+
+.no-patients-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px auto;
+}
+
+.no-patients-icon svg {
   width: 100%;
-  max-width: 240px;
-  margin-left: auto;
-  margin-right: auto;
-  display: flex;
+  height: 100%;
 }
 
-.add-member-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.2) inset;
-  background: #ffffff;
+.no-patients-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0 0 12px 0;
 }
 
-.add-member-btn:active {
-  transform: translateY(-1px);
+.no-patients-message {
+  font-size: 0.95rem;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0 0 24px 0;
 }
 
 /* User List */
@@ -399,6 +452,7 @@
     opacity: 0;
     transform: translateY(40px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -409,6 +463,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -711,4 +766,92 @@ select.form-input {
     width: 18px;
     height: 18px;
   }
+}
+
+/* Bottom Button Container */
+.bottom-button-container {
+  position: fixed;
+  bottom: 80px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  padding: 16px 20px;
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.95) 80%, transparent);
+  z-index: 100;
+}
+
+.map-patient-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+  min-width: 200px;
+}
+
+.map-patient-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* Linked Mapped Patient Section */
+.linked-patient-section {
+  margin-top: 24px;
+}
+
+.linked-patient-section label {
+  display: block;
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.linked-patient-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+
+.linked-patient-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.linked-patient-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1a202c;
+  text-transform: capitalize;
+}
+
+.linked-patient-id {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.unlink-btn {
+  background: #fee2e2;
+  color: #ef4444;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.unlink-btn:hover {
+  background: #fecaca;
+  color: #dc2626;
 }

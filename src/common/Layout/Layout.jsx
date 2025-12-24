@@ -15,30 +15,30 @@ const Layout = () => {
   const [activeUserId, setActiveUserId] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   useEffect(() => {
     let isMounted = true;
-    
+
     const loadUsers = async () => {
       try {
         // Get active user ID (or fall back to default)
         let activeId = await getStorageItem('activeUserId');
         const defaultUserId = await getStorageItem('defaultUserId');
-        
+
         if (!activeId) {
           activeId = defaultUserId;
         }
-        
+
         if (!isMounted) return;
-        
+
         // Get all users
-        const currentUser = await getStorageJSON('currentUser', null);
+        const defaultUser = await getStorageJSON('defaultUser', null);
         const otherUsers = await getStorageJSON('users', []);
         if (!isMounted) return;
-        
-        const users = [...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers];
+
+        const users = [...(defaultUser ? [{ ...defaultUser, self: true }] : []), ...otherUsers];
         setAllUsers(users);
-        
+
         // Find active user
         const activeUser = users.find(u => String(u.id) === String(activeId));
         setActiveUserName(activeUser?.name || '');
@@ -50,9 +50,9 @@ const Layout = () => {
         }
       }
     };
-    
+
     loadUsers();
-    
+
     return () => {
       isMounted = false;
     };
@@ -60,27 +60,27 @@ const Layout = () => {
 
   useEffect(() => {
     let isMounted = true;
-    
+
     const loadUsers = async () => {
       try {
         // Get active user ID (or fall back to default)
         let activeId = await getStorageItem('activeUserId');
         const defaultUserId = await getStorageItem('defaultUserId');
-        
+
         if (!activeId) {
           activeId = defaultUserId;
         }
-        
+
         if (!isMounted) return;
-        
+
         // Get all users
-        const currentUser = await getStorageJSON('currentUser', null);
+        const defaultUser = await getStorageJSON('defaultUser', null);
         const otherUsers = await getStorageJSON('users', []);
         if (!isMounted) return;
-        
-        const users = [...(currentUser ? [{ ...currentUser, self: true }] : []), ...otherUsers];
+
+        const users = [...(defaultUser ? [{ ...defaultUser, self: true }] : []), ...otherUsers];
         setAllUsers(users);
-        
+
         // Find active user
         const activeUser = users.find(u => String(u.id) === String(activeId));
         setActiveUserName(activeUser?.name || '');
@@ -92,12 +92,12 @@ const Layout = () => {
         }
       }
     };
-    
+
     // Listen for user data changes
     const unsubscribe = subscribeToUserChange(() => {
       loadUsers();
     });
-    
+
     return () => {
       isMounted = false;
       unsubscribe();
@@ -111,11 +111,11 @@ const Layout = () => {
         setShowUserDropdown(false);
       }
     };
-    
+
     if (showUserDropdown) {
       document.addEventListener('click', handleClickOutside);
     }
-    
+
     return () => {
       document.removeEventListener('click', handleClickOutside);
     };
@@ -151,7 +151,7 @@ const Layout = () => {
       setActiveUserName(selectedUser?.name || '');
       setActiveUserId(String(userId));
       setShowUserDropdown(false);
-      
+
       // Trigger a user change event to update dashboard
       window.dispatchEvent(new CustomEvent('user-data-changed'));
     } catch (err) {
@@ -162,25 +162,25 @@ const Layout = () => {
   return (
     <div className="layout">
       <header className="app-header">
-        <div 
+        <div
           className="user-dropdown-wrapper"
           style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', cursor: allUsers.length > 0 ? 'pointer' : 'default' }}
           onClick={() => allUsers.length > 0 && setShowUserDropdown(!showUserDropdown)}
         >
           <h1 className="app-title">Welcome{activeUserName ? `, ${activeUserName}` : ''}</h1>
           {allUsers.length > 0 && (
-            <MdKeyboardArrowDown 
-              size={24} 
-              style={{ 
-                color: '#333', 
+            <MdKeyboardArrowDown
+              size={24}
+              style={{
+                color: '#333',
                 transition: 'transform 0.2s',
                 transform: showUserDropdown ? 'rotate(180deg)' : 'rotate(0deg)'
-              }} 
+              }}
             />
           )}
-          
+
           {showUserDropdown && allUsers.length > 0 && (
-            <div 
+            <div
               className="user-dropdown"
               style={{
                 position: 'absolute',

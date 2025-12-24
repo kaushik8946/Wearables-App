@@ -61,12 +61,16 @@
 .app-content {
   margin-top: 60px;
   flex: 1;
-  min-height: calc(100vh - 60px);
+  width: 100%;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  /* Smooth scrolling on iOS */
 }
 
 /* Page Container (Shared) */
 .page-container {
   min-height: calc(100vh - 60px);
+  min-height: calc(100dvh - 60px);
   padding: 20px 16px;
   background: linear-gradient(135deg, #f5f7fa 0%, #e8eaf6 100%);
 }

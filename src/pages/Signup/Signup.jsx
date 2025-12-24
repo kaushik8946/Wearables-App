@@ -14,7 +14,7 @@ const Signup = () => {
     email: '',
     mobileNumber: '',
   });
-  
+
   useEffect(() => {
     let isMounted = true;
     (async () => {
@@ -70,7 +70,7 @@ const Signup = () => {
       id: `user_self_${Date.now()}`,
     };
     await setStorageItem('registeredUser', JSON.stringify(userToSave));
-    await setStorageItem('currentUser', JSON.stringify(userToSave));
+    await setStorageItem('defaultUser', JSON.stringify(userToSave));
     await setStorageItem('isAuthenticated', 'true');
     await setStorageItem('userPhone', form.mobileNumber);
     // Make this newly created user the default user so dashboard loads as expected

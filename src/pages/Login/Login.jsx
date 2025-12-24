@@ -31,7 +31,7 @@ const Login = () => {
     } catch (err) {
       console.error('Failed to persist phone before showing OTP', err);
     }
-    setOtp(['1','2','3','4','5','6']);
+    setOtp(['1', '2', '3', '4', '5', '6']);
     setShowOtpScreen(true);
   };
 
@@ -54,7 +54,7 @@ const Login = () => {
     // If the phone belongs to a registered user, sign them in.
     if (parsedUser && String(parsedUser.mobile) === String(mobileNumber)) {
       const user = parsedUser;
-      await setStorageItem('currentUser', JSON.stringify(user));
+      await setStorageItem('defaultUser', JSON.stringify(user));
       await setStorageItem('isAuthenticated', 'true');
       await setStorageItem('userPhone', mobileNumber);
       await setStorageItem('defaultUserId', user.id);
@@ -84,7 +84,7 @@ const Login = () => {
             <form className="login-form" onSubmit={handleRequestOtp}>
               <h2 className="form-title">Welcome Back!</h2>
               <div className="input-group">
-                <label htmlFor="mobile">Mobile Number <span style={{color:'#ff4757'}}>*</span></label>
+                <label htmlFor="mobile">Mobile Number <span style={{ color: '#ff4757' }}>*</span></label>
                 <div className="mobile-input-wrapper">
                   <input
                     type="tel"

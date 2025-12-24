@@ -37,41 +37,41 @@ const deviceImageMap = {
 };
 
 // 1. MAIN DASHBOARD (Light Mode)
-const DashboardView = ({ 
-  onOpenSteps, 
-  onOpenHeartRate, 
-  onOpenSleep, 
-  onOpenBloodPressure, 
-  onOpenSpO2, 
-  onOpenStress, 
-  onOpenCycles, 
-  onOpenWeight, 
+const DashboardView = ({
+  onOpenSteps,
+  onOpenHeartRate,
+  onOpenSleep,
+  onOpenBloodPressure,
+  onOpenSpO2,
+  onOpenStress,
+  onOpenCycles,
+  onOpenWeight,
   connectedDevice,
   userDevices,
   onDeviceSelect
 }) => {
   const [showDeviceDropdown, setShowDeviceDropdown] = useState(false);
-  
+
   // Determine which cards to show based on device type
   const isScale = connectedDevice?.deviceType === 'scale';
   const showWeightOnly = isScale;
   const showAllExceptWeight = !isScale && connectedDevice;
-  
+
   return (
     <div className="app-container">
       <div className="max-w-wrapper">
         {/* Device Selector */}
         {connectedDevice && userDevices && userDevices.length > 0 && (
-          <div style={{ 
-            marginBottom: '24px', 
-            padding: '16px', 
-            background: 'white', 
+          <div style={{
+            marginBottom: '24px',
+            padding: '16px',
+            background: 'white',
             borderRadius: '12px',
             boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
           }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
               justifyContent: 'space-between',
               gap: '12px'
             }}>
@@ -95,12 +95,12 @@ const DashboardView = ({
                   }}
                 >
                   <span>{connectedDevice.name}</span>
-                  <ChevronDown size={18} style={{ 
+                  <ChevronDown size={18} style={{
                     transition: 'transform 0.2s',
                     transform: showDeviceDropdown ? 'rotate(180deg)' : 'rotate(0deg)'
                   }} />
                 </div>
-                
+
                 {showDeviceDropdown && userDevices.length > 1 && (
                   <div style={{
                     position: 'absolute',
@@ -339,7 +339,7 @@ const Dashboard = () => {
   const [showStress, setShowStress] = useState(false);
   const [showCycles, setShowCycles] = useState(false);
   const [showWeight, setShowWeight] = useState(false);
-  
+
   // User and device state
   const [activeUser, setActiveUser] = useState(null);
   const [userDevices, setUserDevices] = useState([]);
@@ -351,7 +351,7 @@ const Dashboard = () => {
   // Load active user and their devices
   React.useEffect(() => {
     let mounted = true;
-    
+
     const loadUserAndDevices = async () => {
       try {
         // Get active user (or fall back to default)
@@ -359,7 +359,7 @@ const Dashboard = () => {
         if (!activeId) {
           activeId = await getStorageItem('defaultUserId');
         }
-        
+
         if (!activeId) {
           // No user set yet - wait for onboarding
           if (mounted) {
@@ -369,40 +369,40 @@ const Dashboard = () => {
           }
           return;
         }
-        
+
         const user = await getUserById(activeId);
         if (!mounted) return;
-        
+
         if (!user) {
           setActiveUser(null);
           setUserDevices([]);
           setConnectedDevice(null);
           return;
         }
-        
+
         setActiveUser(user);
-        
+
         // Get user's devices
         const devices = await getDevicesForUser(user.id);
         setUserDevices(devices);
-        
+
         // Get default device for user
         const defaultDevice = await getDefaultDeviceForUser(user.id);
         setConnectedDevice(defaultDevice);
-        
+
         // Don't automatically show modal - let user click button instead
       } catch (err) {
         console.error('Failed to load user and devices', err);
       }
     };
-    
+
     loadUserAndDevices();
-    
+
     // Subscribe to user changes (from header dropdown)
     const unsubUser = subscribeToUserChange(() => {
       loadUserAndDevices();
     });
-    
+
     return () => {
       mounted = false;
       unsubUser();
@@ -412,7 +412,7 @@ const Dashboard = () => {
   // Load paired devices
   React.useEffect(() => {
     let mounted = true;
-    
+
     const loadPairedDevices = async () => {
       try {
         const devices = await getStorageJSON('pairedDevices', []);
@@ -423,13 +423,13 @@ const Dashboard = () => {
         console.error('Failed to load paired devices', err);
       }
     };
-    
+
     loadPairedDevices();
-    
+
     const unsub = subscribeToPairedDevicesChange(() => {
       loadPairedDevices();
     });
-    
+
     return () => {
       mounted = false;
       unsub();
@@ -445,7 +445,7 @@ const Dashboard = () => {
   // Handle device selection
   const handleDeviceSelect = async (device) => {
     if (!activeUser) return;
-    
+
     try {
       // Set as default device for active user
       await setDefaultDeviceForUser(activeUser.id, device.id);
@@ -466,50 +466,50 @@ const Dashboard = () => {
         batteryLevel: 70,
         lastSync: new Date().toISOString()
       };
-      
+
       // Check if device already exists in pairedDevices to avoid duplicates
       const existingDevice = pairedDevices.find(d => String(d.id) === String(device.id));
       let updated;
       if (existingDevice) {
         // Update existing device
-        updated = pairedDevices.map(d => 
+        updated = pairedDevices.map(d =>
           String(d.id) === String(device.id) ? pairDevice : d
         );
       } else {
         // Add new device
         updated = [...pairedDevices, pairDevice];
       }
-      
+
       await setStorageJSON('pairedDevices', updated);
       setPairedDevices(updated);
       notifyPairedDevicesChange();
-      
+
       // If active user has no devices, pair this one
       if (activeUser && userDevices.length === 0) {
         // Add device to user's devices
-        const currentUser = await getStorageJSON('currentUser', null);
+        const defaultUser = await getStorageJSON('defaultUser', null);
         const otherUsers = await getStorageJSON('users', []);
-        
-        if (currentUser && String(currentUser.id) === String(activeUser.id)) {
+
+        if (defaultUser && String(defaultUser.id) === String(activeUser.id)) {
           const updatedUser = {
-            ...currentUser,
+            ...defaultUser,
             devices: [String(pairDevice.id)],
             defaultDevice: String(pairDevice.id)
           };
-          await setStorageJSON('currentUser', updatedUser);
+          await setStorageJSON('defaultUser', updatedUser);
         } else {
           const updatedOthers = otherUsers.map(u =>
             String(u.id) === String(activeUser.id)
               ? {
-                  ...u,
-                  devices: [String(pairDevice.id)],
-                  defaultDevice: String(pairDevice.id)
-                }
+                ...u,
+                devices: [String(pairDevice.id)],
+                defaultDevice: String(pairDevice.id)
+              }
               : u
           );
           await setStorageJSON('users', updatedOthers);
         }
-        
+
         notifyUserChange();
         setConnectedDevice(pairDevice);
         setUserDevices([pairDevice]);
@@ -526,11 +526,11 @@ const Dashboard = () => {
       const updated = pairedDevices.filter(d => d.id !== device.id);
       await setStorageJSON('pairedDevices', updated);
       setPairedDevices(updated);
-      
+
       if (connectedDevice && String(connectedDevice.id) === String(device.id)) {
         setConnectedDevice(null);
       }
-      
+
       notifyPairedDevicesChange();
     } catch (err) {
       console.error('Failed to unpair device', err);
@@ -540,15 +540,15 @@ const Dashboard = () => {
   // Show empty state if user has no devices
   if (activeUser && userDevices.length === 0 && !showDevicesMenuModal) {
     return (
-      <div className="app-container" style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
+      <div className="app-container" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         minHeight: 'calc(100vh - 60px)',
         padding: '40px 20px'
       }}>
-        <div style={{ 
-          textAlign: 'center', 
+        <div style={{
+          textAlign: 'center',
           maxWidth: '400px',
           background: 'white',
           padding: '40px',
@@ -560,8 +560,8 @@ const Dashboard = () => {
           </h2>
           <button
             className="btn-primary"
-            style={{ 
-              width: '100%', 
+            style={{
+              width: '100%',
               marginTop: '20px',
               padding: '12px 24px',
               fontSize: '16px',
@@ -595,7 +595,7 @@ const Dashboard = () => {
         userDevices={userDevices}
         onDeviceSelect={handleDeviceSelect}
       />
-      
+
       {/* Modals */}
       {showSteps && <StepsModal onClose={() => setShowSteps(false)} />}
       {showHeartRate && <HeartRateModal onClose={() => setShowHeartRate(false)} />}
@@ -605,15 +605,15 @@ const Dashboard = () => {
       {showStress && <StressModal onClose={() => setShowStress(false)} />}
       {showCycles && <CyclesModal onClose={() => setShowCycles(false)} />}
       {showWeight && <WeightModal onClose={() => setShowWeight(false)} />}
-      
+
       {/* Device Pairing Modal */}
       {showDevicesMenuModal && (
         <div className="devices-menu-overlay" onClick={() => setShowDevicesMenuModal(false)}>
           <div className="devices-menu-modal" onClick={(e) => e.stopPropagation()}>
             <div className="devices-menu-modal-header">
               <h3>{pairedDevices.length === 0 ? 'Pair a device to get started' : 'Pair a device'}</h3>
-              <button 
-                className="devices-menu-modal-close" 
+              <button
+                className="devices-menu-modal-close"
                 onClick={() => setShowDevicesMenuModal(false)}
               >
                 ✕

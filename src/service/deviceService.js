@@ -138,9 +138,9 @@ export const getAllAvailableDevicesWithOwnership = async () => {
   return devicesWithOwnership;
 };
 
-// Get all users (currentUser + users)
+// Get all users (defaultUser + users)
 export const getAllUsers = async () => {
-  const currentUser = await getStorageJSON('currentUser', null);
+  const defaultUser = await getStorageJSON('defaultUser', null);
   const otherUsers = await getStorageJSON('users', []);
   
   // Ensure every user has an id
@@ -152,11 +152,11 @@ export const getAllUsers = async () => {
     return user;
   };
   
-  const normalizedCurrentUser = currentUser ? ensureId(currentUser) : null;
+  const normalizeddefaultUser = defaultUser ? ensureId(defaultUser) : null;
   const normalizedOtherUsers = Array.isArray(otherUsers) ? otherUsers.map(ensureId) : [];
   
-  return normalizedCurrentUser 
-    ? [{ ...normalizedCurrentUser, self: true }, ...normalizedOtherUsers]
+  return normalizeddefaultUser 
+    ? [{ ...normalizeddefaultUser, self: true }, ...normalizedOtherUsers]
     : normalizedOtherUsers;
 };
 
@@ -201,19 +201,19 @@ export const reassignDevice = async (deviceId, newUserId) => {
   const oldOwnerId = await getDeviceOwner(deviceIdStr);
   
   // Get all users
-  const currentUser = await getStorageJSON('currentUser', null);
+  const defaultUser = await getStorageJSON('defaultUser', null);
   const otherUsers = await getStorageJSON('users', []);
   
-  let updatedCurrentUser = currentUser;
+  let updateddefaultUser = defaultUser;
   let updatedOtherUsers = [...otherUsers];
   
   // Clear default device for old owners if this was their default
-  if (updatedCurrentUser && Array.isArray(updatedCurrentUser.devices)) {
-    if (String(updatedCurrentUser.defaultDevice) === deviceIdStr && String(updatedCurrentUser.id) !== newUserIdStr) {
+  if (updateddefaultUser && Array.isArray(updateddefaultUser.devices)) {
+    if (String(updateddefaultUser.defaultDevice) === deviceIdStr && String(updateddefaultUser.id) !== newUserIdStr) {
       // Find another device to set as default, or null
-      const otherDevices = updatedCurrentUser.devices.filter(id => String(id) !== deviceIdStr);
-      updatedCurrentUser = {
-        ...updatedCurrentUser,
+      const otherDevices = updateddefaultUser.devices.filter(id => String(id) !== deviceIdStr);
+      updateddefaultUser = {
+        ...updateddefaultUser,
         defaultDevice: otherDevices.length > 0 ? otherDevices[0] : null
       };
     }
@@ -232,16 +232,16 @@ export const reassignDevice = async (deviceId, newUserId) => {
   });
   
   // Add device to the new user
-  if (updatedCurrentUser && String(updatedCurrentUser.id) === newUserIdStr) {
-    const devices = [...(updatedCurrentUser.devices || [])];
+  if (updateddefaultUser && String(updateddefaultUser.id) === newUserIdStr) {
+    const devices = [...(updateddefaultUser.devices || [])];
     if (!devices.includes(deviceIdStr)) {
       devices.push(deviceIdStr);
     }
-    updatedCurrentUser = {
-      ...updatedCurrentUser,
+    updateddefaultUser = {
+      ...updateddefaultUser,
       devices,
       // Set as default if no default device
-      defaultDevice: updatedCurrentUser.defaultDevice || deviceIdStr
+      defaultDevice: updateddefaultUser.defaultDevice || deviceIdStr
     };
   } else {
     updatedOtherUsers = updatedOtherUsers.map(user => {
@@ -262,8 +262,8 @@ export const reassignDevice = async (deviceId, newUserId) => {
   }
   
   // Save updated users
-  if (updatedCurrentUser) {
-    await setStorageJSON('currentUser', updatedCurrentUser);
+  if (updateddefaultUser) {
+    await setStorageJSON('defaultUser', updateddefaultUser);
   }
   await setStorageJSON('users', updatedOtherUsers);
   
@@ -292,22 +292,22 @@ export const unassignDevice = async (deviceId) => {
   const oldOwnerId = await getDeviceOwner(deviceIdStr);
   
   // Get all users
-  const currentUser = await getStorageJSON('currentUser', null);
+  const defaultUser = await getStorageJSON('defaultUser', null);
   const otherUsers = await getStorageJSON('users', []);
   
-  let updatedCurrentUser = currentUser;
+  let updateddefaultUser = defaultUser;
   let updatedOtherUsers = [...otherUsers];
   
   // Remove device from all users
-  if (updatedCurrentUser && Array.isArray(updatedCurrentUser.devices)) {
-    const devices = updatedCurrentUser.devices.filter(id => String(id) !== deviceIdStr);
-    updatedCurrentUser = {
-      ...updatedCurrentUser,
+  if (updateddefaultUser && Array.isArray(updateddefaultUser.devices)) {
+    const devices = updateddefaultUser.devices.filter(id => String(id) !== deviceIdStr);
+    updateddefaultUser = {
+      ...updateddefaultUser,
       devices,
       // If removing the default device, clear it or set to first available
-      defaultDevice: String(updatedCurrentUser.defaultDevice) === deviceIdStr 
+      defaultDevice: String(updateddefaultUser.defaultDevice) === deviceIdStr 
         ? (devices[0] ?? null)
-        : updatedCurrentUser.defaultDevice
+        : updateddefaultUser.defaultDevice
     };
   }
   
@@ -325,8 +325,8 @@ export const unassignDevice = async (deviceId) => {
   });
   
   // Save updated users
-  if (updatedCurrentUser) {
-    await setStorageJSON('currentUser', updatedCurrentUser);
+  if (updateddefaultUser) {
+    await setStorageJSON('defaultUser', updateddefaultUser);
   }
   await setStorageJSON('users', updatedOtherUsers);
   
@@ -396,14 +396,14 @@ export const getDefaultDeviceForUser = async (userId) => {
 
 // Set default device for a user
 export const setDefaultDeviceForUser = async (userId, deviceId) => {
-  const currentUser = await getStorageJSON('currentUser', null);
+  const defaultUser = await getStorageJSON('defaultUser', null);
   const otherUsers = await getStorageJSON('users', []);
   
   const userIdStr = String(userId);
   const deviceIdStr = String(deviceId);
   
-  if (currentUser && String(currentUser.id) === userIdStr) {
-    await setStorageJSON('currentUser', { ...currentUser, defaultDevice: deviceIdStr });
+  if (defaultUser && String(defaultUser.id) === userIdStr) {
+    await setStorageJSON('defaultUser', { ...defaultUser, defaultDevice: deviceIdStr });
   } else {
     const updatedOtherUsers = otherUsers.map(u => 
       String(u.id) === userIdStr ? { ...u, defaultDevice: deviceIdStr } : u
@@ -466,21 +466,21 @@ export const transferDeviceOwnership = async (deviceId, newUserId) => {
   const oldOwnerId = await getDeviceOwner(deviceIdStr);
   
   // Get all users
-  const currentUser = await getStorageJSON('currentUser', null);
+  const defaultUser = await getStorageJSON('defaultUser', null);
   const otherUsers = await getStorageJSON('users', []);
   
-  let updatedCurrentUser = currentUser;
+  let updateddefaultUser = defaultUser;
   let updatedOtherUsers = [...otherUsers];
   
   // Remove device from all users
-  if (updatedCurrentUser && Array.isArray(updatedCurrentUser.devices)) {
-    const devices = updatedCurrentUser.devices.filter(id => String(id) !== deviceIdStr);
-    updatedCurrentUser = {
-      ...updatedCurrentUser,
+  if (updateddefaultUser && Array.isArray(updateddefaultUser.devices)) {
+    const devices = updateddefaultUser.devices.filter(id => String(id) !== deviceIdStr);
+    updateddefaultUser = {
+      ...updateddefaultUser,
       devices,
-      defaultDevice: String(updatedCurrentUser.defaultDevice) === deviceIdStr 
+      defaultDevice: String(updateddefaultUser.defaultDevice) === deviceIdStr 
         ? (devices.length > 0 ? devices[0] : null)
-        : updatedCurrentUser.defaultDevice
+        : updateddefaultUser.defaultDevice
     };
   }
   
@@ -497,15 +497,15 @@ export const transferDeviceOwnership = async (deviceId, newUserId) => {
   });
   
   // Add device to the new user
-  if (updatedCurrentUser && String(updatedCurrentUser.id) === newUserIdStr) {
-    const devices = [...(updatedCurrentUser.devices || [])];
+  if (updateddefaultUser && String(updateddefaultUser.id) === newUserIdStr) {
+    const devices = [...(updateddefaultUser.devices || [])];
     if (!devices.includes(deviceIdStr)) {
       devices.push(deviceIdStr);
     }
-    updatedCurrentUser = {
-      ...updatedCurrentUser,
+    updateddefaultUser = {
+      ...updateddefaultUser,
       devices,
-      defaultDevice: updatedCurrentUser.defaultDevice || deviceIdStr
+      defaultDevice: updateddefaultUser.defaultDevice || deviceIdStr
     };
   } else {
     updatedOtherUsers = updatedOtherUsers.map(user => {
@@ -525,8 +525,8 @@ export const transferDeviceOwnership = async (deviceId, newUserId) => {
   }
   
   // Save updated users
-  if (updatedCurrentUser) {
-    await setStorageJSON('currentUser', updatedCurrentUser);
+  if (updateddefaultUser) {
+    await setStorageJSON('defaultUser', updateddefaultUser);
   }
   await setStorageJSON('users', updatedOtherUsers);
   
@@ -644,21 +644,21 @@ export const deleteDevice = async (deviceId) => {
   await setStorageJSON('pairedDevices', updatedPairedDevices);
   
   // Remove device from all users' devices lists
-  const currentUser = await getStorageJSON('currentUser', null);
+  const defaultUser = await getStorageJSON('defaultUser', null);
   const otherUsers = await getStorageJSON('users', []);
   
-  let updatedCurrentUser = currentUser;
+  let updateddefaultUser = defaultUser;
   let updatedOtherUsers = [...otherUsers];
   
   // Remove from current user
-  if (updatedCurrentUser && Array.isArray(updatedCurrentUser.devices)) {
-    const devices = updatedCurrentUser.devices.filter(id => String(id) !== deviceIdStr);
-    updatedCurrentUser = {
-      ...updatedCurrentUser,
+  if (updateddefaultUser && Array.isArray(updateddefaultUser.devices)) {
+    const devices = updateddefaultUser.devices.filter(id => String(id) !== deviceIdStr);
+    updateddefaultUser = {
+      ...updateddefaultUser,
       devices,
-      defaultDevice: String(updatedCurrentUser.defaultDevice) === deviceIdStr 
+      defaultDevice: String(updateddefaultUser.defaultDevice) === deviceIdStr 
         ? (devices.length > 0 ? devices[0] : null)
-        : updatedCurrentUser.defaultDevice
+        : updateddefaultUser.defaultDevice
     };
   }
   
@@ -676,8 +676,8 @@ export const deleteDevice = async (deviceId) => {
   });
   
   // Save updated users
-  if (updatedCurrentUser) {
-    await setStorageJSON('currentUser', updatedCurrentUser);
+  if (updateddefaultUser) {
+    await setStorageJSON('defaultUser', updateddefaultUser);
   }
   await setStorageJSON('users', updatedOtherUsers);
   
@@ -719,22 +719,22 @@ export const unlinkDeviceFromUser = async (deviceId, userId) => {
   const currentOwnerId = await getDeviceOwner(deviceIdStr);
   
   // Get all users
-  const currentUser = await getStorageJSON('currentUser', null);
+  const defaultUser = await getStorageJSON('defaultUser', null);
   const otherUsers = await getStorageJSON('users', []);
   
-  let updatedCurrentUser = currentUser;
+  let updateddefaultUser = defaultUser;
   let updatedOtherUsers = [...otherUsers];
   
   // Remove device from the specified user only
-  if (updatedCurrentUser && String(updatedCurrentUser.id) === userIdStr) {
-    if (Array.isArray(updatedCurrentUser.devices)) {
-      const devices = updatedCurrentUser.devices.filter(id => String(id) !== deviceIdStr);
-      updatedCurrentUser = {
-        ...updatedCurrentUser,
+  if (updateddefaultUser && String(updateddefaultUser.id) === userIdStr) {
+    if (Array.isArray(updateddefaultUser.devices)) {
+      const devices = updateddefaultUser.devices.filter(id => String(id) !== deviceIdStr);
+      updateddefaultUser = {
+        ...updateddefaultUser,
         devices,
-        defaultDevice: String(updatedCurrentUser.defaultDevice) === deviceIdStr 
+        defaultDevice: String(updateddefaultUser.defaultDevice) === deviceIdStr 
           ? (devices.length > 0 ? devices[0] : null)
-          : updatedCurrentUser.defaultDevice
+          : updateddefaultUser.defaultDevice
       };
     }
   } else {
@@ -753,8 +753,8 @@ export const unlinkDeviceFromUser = async (deviceId, userId) => {
   }
   
   // Save updated users
-  if (updatedCurrentUser) {
-    await setStorageJSON('currentUser', updatedCurrentUser);
+  if (updateddefaultUser) {
+    await setStorageJSON('defaultUser', updateddefaultUser);
   }
   await setStorageJSON('users', updatedOtherUsers);
   

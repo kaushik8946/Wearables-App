@@ -17,7 +17,8 @@ html {
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
@@ -35,7 +36,8 @@ body {
   padding: 0;
   width: 100vw;
   min-height: 100vh;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   
   /* Theme tokens — fallbacks if not provided by a higher-level theme */
   --card: #ffffff;
