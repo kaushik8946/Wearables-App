@@ -86,8 +86,8 @@ const Signup = () => {
     await setStorageItem('defaultUserId', userToSave.id);
     await setStorageItem('defaultUser', JSON.stringify(userToSave));
 
-    // Also add to medPlusUsers (as a MedPlus patient)
-    const existingMedPlusUsers = await getStorageJSON('medPlusUsers', []);
+    // Also add to medplusUsers (as a MedPlus patient)
+    const existingMedPlusUsers = await getStorageJSON('medplusUsers', []);
     const newMedPlusUser = {
       patientId: `MP${Date.now().toString().slice(-6)}`,
       patientName: fullName,
@@ -97,7 +97,19 @@ const Signup = () => {
       mobile: form.mobileNumber,
     };
     const updatedMedPlusUsers = [...existingMedPlusUsers, newMedPlusUser];
-    await setStorageJSON('medPlusUsers', updatedMedPlusUsers);
+    await setStorageJSON('medplusUsers', updatedMedPlusUsers);
+
+    // Also set medPlusCustomer so Patient Linking is enabled
+    const existingMedPlusCustomer = await getStorageJSON('medPlusCustomer', null);
+    if (!existingMedPlusCustomer) {
+      await setStorageJSON('medPlusCustomer', {
+        customerId: `CUST${Date.now().toString().slice(-6)}`,
+        name: form.firstName + " " + form.lastName,
+        mobile: form.mobileNumber,
+        email: form.email,
+        linkedAt: new Date().toISOString()
+      });
+    }
 
     navigate('/dashboard');
   };
