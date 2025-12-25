@@ -99,17 +99,8 @@ const MedPlusPairing = () => {
         <div className="medplus-pairing-bg">
             <div className="medplus-pairing-root">
                 <div className="medplus-pairing-container">
-                    {/* Header with Back Button */}
+                    {/* Header */}
                     <div className="medplus-header">
-                        <button
-                            className="medplus-back-btn"
-                            onClick={() => navigate('/manage-account')}
-                            aria-label="Go back"
-                        >
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                        </button>
                         <div className="medplus-header-text">
                             <h1 className="medplus-pairing-title">{isLinked ? 'Linked Account' : 'Available Account'}</h1>
                             <p className="medplus-pairing-desc">{isLinked ? 'Your MedPlus ID is linked' : 'Link your MedPlus ID to sync health data'}</p>
