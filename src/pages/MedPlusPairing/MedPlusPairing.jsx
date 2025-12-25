@@ -92,7 +92,8 @@ const MedPlusPairing = () => {
     const handleCloseSuccess = () => {
         setShowSuccessModal(false);
         setIsLinked(true);
-        // navigate('/manage-account'); // Stay in present screen
+        // Navigate to Patient Linking screen
+        navigate('/patient-linking');
     };
 
     return (
@@ -145,7 +146,7 @@ const MedPlusPairing = () => {
                                         Cancel
                                     </button>
                                     <button className="medplus-link-btn" type="button" onClick={handleLink}>
-                                        Link
+                                        Proceed
                                     </button>
                                 </>
                             )}
