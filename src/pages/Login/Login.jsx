@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getStorageItem, setStorageItem } from '../../service';
+import { getStorageItem, setStorageItem, getStorageJSON } from '../../service';
 import { useNavigate } from 'react-router-dom';
 import OtpInput from '../../common/OtpInput/OtpInput';
 import './Login.css';
@@ -48,8 +48,7 @@ const Login = () => {
       return;
     }
     // Load any registered user (single-user model) and branch accordingly.
-    let registeredUser = await getStorageItem('registeredUser');
-    const parsedUser = registeredUser ? JSON.parse(registeredUser) : null;
+    const parsedUser = await getStorageJSON('registeredUser');
 
     // If the phone belongs to a registered user, sign them in.
     if (parsedUser && String(parsedUser.mobile) === String(mobileNumber)) {
