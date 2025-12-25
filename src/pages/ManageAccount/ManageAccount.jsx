@@ -42,19 +42,11 @@ const ManageAccount = () => {
   const [editKey, setEditKey] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [error, setError] = useState('');
-  const [medPlusCustomer, setMedPlusCustomer] = useState(null);
-  const [showUnlinkConfirm, setShowUnlinkConfirm] = useState(false);
-  const [showNoCustomerModal, setShowNoCustomerModal] = useState(false);
-  const [hasCheckedMedPlus, setHasCheckedMedPlus] = useState(false);
-
-
   useEffect(() => {
     let isMounted = true;
     (async () => {
       try {
         const u = await getStorageJSON('defaultUser', {});
-        const medPlus = await getStorageJSON('medPlusCustomer', null);
-        const hasChecked = await getStorageJSON('medPlusFirstCheckDone', false);
         if (!isMounted) return;
         if (u.birthday) {
           const age = calculateAge(u.birthday);
@@ -64,8 +56,6 @@ const ManageAccount = () => {
           }
         }
         setUser(u);
-        setMedPlusCustomer(medPlus);
-        setHasCheckedMedPlus(hasChecked);
       } catch (err) {
         console.error('Failed to load profile info', err);
       }
@@ -74,18 +64,6 @@ const ManageAccount = () => {
       isMounted = false;
     };
   }, []);
-
-  const handlePairClick = async () => {
-    if (!hasCheckedMedPlus) {
-      // First time clicking - show "no customer found" modal
-      setShowNoCustomerModal(true);
-      await setStorageJSON('medPlusFirstCheckDone', true);
-      setHasCheckedMedPlus(true);
-    } else {
-      // Already checked once - go to pairing page
-      navigate('/medplus-pairing');
-    }
-  };
 
 
   const handleEdit = (key) => {
@@ -216,63 +194,7 @@ const ManageAccount = () => {
             })}
           </div>
 
-          {/* MedPlus Customer ID Section */}
-          {medPlusCustomer ? (
-            <div className="medplus-linked-card">
-              <div className="medplus-linked-header">
-                <span className="medplus-linked-label">MedPlus Customer ID</span>
-                <span className="medplus-linked-status">Linked</span>
-              </div>
-              <div className="medplus-linked-content">
-                <span className="medplus-linked-id">{medPlusCustomer.customerId}</span>
-                <button
-                  className="medplus-unlink-btn"
-                  type="button"
-                  onClick={() => setShowUnlinkConfirm(true)}
-                >
-                  Unlink
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              className="medplus-pair-btn"
-              type="button"
-              onClick={handlePairClick}
-            >
-              Pair with MedPlus Customer ID
-            </button>
-          )}
 
-          {/* Unlink Confirmation Modal */}
-          {showUnlinkConfirm && (
-            <div className="modal-overlay" onClick={() => setShowUnlinkConfirm(false)}>
-              <div className="unlink-confirm-modal" onClick={(e) => e.stopPropagation()}>
-                <div className="unlink-confirm-title">Unlink MedPlus ID?</div>
-                <div className="unlink-confirm-message">
-                  Are you sure you want to unlink your MedPlus Customer ID? You can link it again later.
-                </div>
-                <div className="unlink-confirm-buttons">
-                  <button
-                    className="unlink-confirm-cancel"
-                    onClick={() => setShowUnlinkConfirm(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="unlink-confirm-yes"
-                    onClick={async () => {
-                      await setStorageJSON('medPlusCustomer', null);
-                      setMedPlusCustomer(null);
-                      setShowUnlinkConfirm(false);
-                    }}
-                  >
-                    Unlink
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Error Modal Popup */}
           {error && (
@@ -285,13 +207,7 @@ const ManageAccount = () => {
             </div>
           )}
 
-          {/* No Customer ID Found Modal */}
-          <WarningModal
-            show={showNoCustomerModal}
-            title="No Customer ID Found"
-            message="We couldn't find a MedPlus Customer ID associated with your account. Please try again later."
-            onClose={() => setShowNoCustomerModal(false)}
-          />
+
         </div>
       </div>
     </div>

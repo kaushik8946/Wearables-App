@@ -4,7 +4,7 @@ import { MdPerson, MdPersonOutline, MdEdit, MdDelete, MdAdd, MdWatch } from 'rea
 import { GiRing } from 'react-icons/gi';
 import { FaWeight } from 'react-icons/fa';
 import { getStorageItem, getStorageJSON, setStorageItem, setStorageJSON, notifyUserChange, syncMedplusUsers } from '../../service';
-import WarningModal from '../../common/WarningModal/WarningModal';
+import SuccessModal from '../../common/SuccessModal/SuccessModal';
 import './Family.css';
 
 const Users = () => {
@@ -29,6 +29,8 @@ const Users = () => {
   const [medPlusCustomer, setMedPlusCustomer] = useState(null);
   const [patientUserMappings, setPatientUserMappings] = useState({});
   const [medplusPatients, setMedplusPatients] = useState([]);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const sanitizeUserForStorage = (user) => {
     if (!user) return null;
@@ -276,7 +278,9 @@ const Users = () => {
         await setStorageJSON('patientUserMappings', newMappings);
         setPatientUserMappings(newMappings);
 
-        // No need to alert success, UI update is enough
+        // Show success modal
+        setSuccessMessage('Patient unlinked successfully');
+        setShowSuccessModal(true);
       }
     } catch (err) {
       console.error('Failed to unlink patient', err);
@@ -479,38 +483,7 @@ const Users = () => {
               {errors.gender && <span className="error-message">{errors.gender}</span>}
             </div>
 
-            {/* Mapped Patient Info (Only in Edit Mode) */}
-            {modalMode === 'edit' && editingIndex !== null && (() => {
-              const user = users[editingIndex];
-              const userMappingKey = Object.keys(patientUserMappings).find(
-                key => String(patientUserMappings[key]) === String(user.id)
-              );
-              const linkedPatient = userMappingKey
-                ? medplusPatients.find(p => p.patientId === userMappingKey)
-                : null;
-
-              if (linkedPatient) {
-                return (
-                  <div className="linked-patient-section">
-                    <label>Linked MedPlus Patient</label>
-                    <div className="linked-patient-card">
-                      <div className="linked-patient-info">
-                        <span className="linked-patient-name">{linkedPatient.name}</span>
-                        <span className="linked-patient-id">{linkedPatient.patientId}</span>
-                      </div>
-                      <button
-                        className="unlink-btn"
-                        onClick={() => handleUnlinkPatient(user.id)}
-                        title="Unlink Patient"
-                      >
-                        Unlink
-                      </button>
-                    </div>
-                  </div>
-                );
-              }
-              return null;
-            })()}
+            {/* Mapped Patient Info (Removed) */}
 
 
 
@@ -756,21 +729,13 @@ const Users = () => {
         );
       })()}
 
-      {/* Map Patient Button - Bottom of Screen */}
-      <div className="bottom-button-container">
-        <button className="action-button map-patient-btn" onClick={handleMapPatient}>
-          <MdPersonOutline size={18} />
-          <span>Map Patient</span>
-        </button>
-      </div>
-
-      {/* No Customer ID Linked Modal */}
-      <WarningModal
-        show={showNoPatientsModal}
-        title="No Customer ID Linked"
-        message="Please link your MedPlus Customer ID first from the Profile page to map patients."
-        onClose={() => setShowNoPatientsModal(false)}
+      <SuccessModal
+        show={showSuccessModal}
+        title="Success"
+        message={successMessage}
+        onClose={() => setShowSuccessModal(false)}
       />
+
     </div>
   );
 };

@@ -126,6 +126,22 @@
   color: #667eea;
 }
 
+/* Disabled Link State */
+.sidebar-link-disabled {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  color: #999;
+  text-decoration: none;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.sidebar-link-disabled .sidebar-label {
+  color: #999;
+}
+
 /* Sidebar Footer */
 .sidebar-footer {
   padding: 16px 20px;

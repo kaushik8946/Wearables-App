@@ -9,7 +9,7 @@ import './WarningModal.css';
  * @param {string} buttonText - Text for the button (default: "OK")
  * @param {function} onClose - Callback when modal is closed
  */
-const WarningModal = ({ show, title, message, buttonText = 'OK', onClose }) => {
+const WarningModal = ({ show, title, message, buttonText = 'OK', onClose, secondaryButtonText, onSecondaryAction }) => {
     if (!show) return null;
 
     return (
@@ -24,9 +24,20 @@ const WarningModal = ({ show, title, message, buttonText = 'OK', onClose }) => {
                 </div>
                 <h3 className="warning-modal-title">{title}</h3>
                 <p className="warning-modal-message">{message}</p>
-                <button className="warning-modal-btn" onClick={onClose}>
-                    {buttonText}
-                </button>
+                <div className="warning-modal-actions" style={{ display: 'flex', gap: '12px', width: '100%', justifyContent: 'center' }}>
+                    {secondaryButtonText && (
+                        <button
+                            className="warning-modal-btn warning-secondary-btn"
+                            onClick={onSecondaryAction || onClose}
+                            style={{ background: '#f3f4f6', color: '#4b5563' }}
+                        >
+                            {secondaryButtonText}
+                        </button>
+                    )}
+                    <button className="warning-modal-btn" onClick={onClose}>
+                        {buttonText}
+                    </button>
+                </div>
             </div>
         </div>
     );
