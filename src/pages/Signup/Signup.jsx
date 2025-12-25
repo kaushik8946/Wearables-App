@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getStorageItem, setStorageItem } from '../../service';
+import { getStorageItem, setStorageItem, getStorageJSON, setStorageJSON } from '../../service';
 import FormInput from '../../common/FormInput/FormInput';
 import FormSelect from '../../common/FormSelect/FormSelect';
 import './Signup.css';
@@ -60,6 +60,15 @@ const Signup = () => {
       setErrors(validation);
       return;
     }
+
+    // Build full name - randomly pick one word from the full name
+    let fullName = form.firstName + " " + form.lastName;
+    const words = fullName.trim().split(/\s+/).filter(w => w.length > 0);
+    if (words.length > 1) {
+      const randomIndex = Math.floor(Math.random() * words.length);
+      fullName = words[randomIndex];
+    }
+
     const userToSave = {
       name: form.firstName + " " + form.lastName,
       lastName: form.lastName,
@@ -76,6 +85,20 @@ const Signup = () => {
     // Make this newly created user the default user so dashboard loads as expected
     await setStorageItem('defaultUserId', userToSave.id);
     await setStorageItem('defaultUser', JSON.stringify(userToSave));
+
+    // Also add to medPlusUsers (as a MedPlus patient)
+    const existingMedPlusUsers = await getStorageJSON('medPlusUsers', []);
+    const newMedPlusUser = {
+      patientId: `MP${Date.now().toString().slice(-6)}`,
+      patientName: fullName,
+      age: form.age,
+      gender: form.gender,
+      email: form.email,
+      mobile: form.mobileNumber,
+    };
+    const updatedMedPlusUsers = [...existingMedPlusUsers, newMedPlusUser];
+    await setStorageJSON('medPlusUsers', updatedMedPlusUsers);
+
     navigate('/dashboard');
   };
 
