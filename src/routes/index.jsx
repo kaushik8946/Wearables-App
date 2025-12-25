@@ -12,6 +12,8 @@ import ClassWorkout from '../pages/ClassWorkout/ClassWorkout';
 import ManageAccount from '../pages/ManageAccount/ManageAccount';
 import MedPlusPairing from '../pages/MedPlusPairing/MedPlusPairing';
 import PatientLinking from '../pages/PatientLinking/PatientLinking';
+import ShareDetails from '../pages/ShareDetails/ShareDetails';
+import ManageSharing from '../pages/ManageSharing/ManageSharing';
 
 export const AppRouter = () => {
   return (
@@ -29,6 +31,8 @@ export const AppRouter = () => {
           <Route path="/manage-account" element={<ManageAccount />} />
           <Route path="/medplus-pairing" element={<MedPlusPairing />} />
           <Route path="/patient-linking" element={<PatientLinking />} />
+          <Route path="/share-details" element={<ShareDetails />} />
+          <Route path="/manage-sharing" element={<ManageSharing />} />
         </Route>
 
         {/* Redirect /home to /dashboard */}

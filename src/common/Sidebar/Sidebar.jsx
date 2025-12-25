@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { MdDashboard, MdWatch, MdGroup, MdFitnessCenter, MdPerson, MdLink, MdPeople } from 'react-icons/md';
+import { MdDashboard, MdWatch, MdGroup, MdFitnessCenter, MdPerson, MdLink, MdPeople, MdShare } from 'react-icons/md';
 import { BsBoxArrowLeft } from 'react-icons/bs';
 import { useState, useEffect } from 'react';
 import { getStorageJSON } from '../../service';
@@ -13,7 +13,7 @@ const Sidebar = ({ isOpen, onClose, onLogout }) => {
       const medPlusData = await getStorageJSON('medPlusCustomer', null);
       setIsMedPlusLinked(!!medPlusData);
     };
-    
+
     if (isOpen) {
       checkMedPlusStatus();
     }
@@ -27,6 +27,7 @@ const Sidebar = ({ isOpen, onClose, onLogout }) => {
     { id: 5, path: '/manage-account', label: 'Manage Account', icon: '🧑‍💼' },
     { id: 6, path: '/medplus-pairing', label: 'Link MedPlus Customer ID', icon: '🔗' },
     { id: 7, path: '/patient-linking', label: 'Link Patients from MedPlus', icon: '👥', disabled: !isMedPlusLinked },
+    { id: 8, path: '/manage-sharing', label: 'Manage Sharing', icon: '📤' },
   ];
 
   return (
@@ -58,10 +59,11 @@ const Sidebar = ({ isOpen, onClose, onLogout }) => {
               '/manage-account': <MdPerson size={22} style={{ fontWeight: 'bold', color: '#111' }} />,
               '/medplus-pairing': <MdLink size={22} style={{ fontWeight: 'bold', color: '#111' }} />,
               '/patient-linking': <MdPeople size={22} style={{ fontWeight: 'bold', color: '#111' }} />,
+              '/manage-sharing': <MdShare size={22} style={{ fontWeight: 'bold', color: '#111' }} />,
             };
-            
+
             const isDisabled = item.disabled;
-            
+
             return (
               <li key={item.id} className="sidebar-item">
                 {isDisabled ? (

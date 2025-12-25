@@ -1,0 +1,223 @@
+.manage-sharing-bg {
+    min-height: 100vh;
+    width: 100%;
+    background: linear-gradient(145deg, #f8faff 0%, #eef2fb 50%, #e8eef9 100%);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.manage-sharing-root {
+    width: 100%;
+    max-width: 480px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 0 20px;
+}
+
+.manage-sharing-container {
+    width: 100%;
+    padding: 24px 0 40px 0;
+}
+
+/* Header Section */
+.manage-sharing-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.manage-sharing-header-text {
+    flex: 1;
+    padding-left: 8px;
+}
+
+.manage-sharing-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #5438ec;
+    margin: 0 0 4px 0;
+    letter-spacing: -0.02em;
+}
+
+.manage-sharing-desc {
+    font-size: 0.92rem;
+    color: #8b9bc0;
+    margin: 0;
+    font-weight: 450;
+    line-height: 1.4;
+}
+
+/* Loading State */
+.manage-sharing-loading {
+    text-align: center;
+    padding: 48px 24px;
+    color: #64748b;
+    font-size: 1rem;
+}
+
+/* Empty State */
+.manage-sharing-empty {
+    background: #fff;
+    border-radius: 20px;
+    padding: 48px 32px;
+    text-align: center;
+    box-shadow: 0 4px 24px rgba(84, 56, 236, 0.06),
+        0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.manage-sharing-empty-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 24px auto;
+    color: #667eea;
+}
+
+.manage-sharing-empty-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.manage-sharing-empty-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0 0 12px 0;
+}
+
+.manage-sharing-empty-desc {
+    font-size: 0.95rem;
+    color: #64748b;
+    line-height: 1.6;
+    margin: 0;
+    max-width: 280px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Share Request List */
+.manage-sharing-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Share Request Card */
+.manage-sharing-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(84, 56, 236, 0.06),
+        0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.manage-sharing-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.manage-sharing-mobile {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #2d3748;
+    letter-spacing: 0.5px;
+}
+
+.manage-sharing-status {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.manage-sharing-status.status-accepted {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(16, 185, 129, 0.08) 100%);
+    color: #10b981;
+}
+
+.manage-sharing-status.status-pending {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(245, 158, 11, 0.08) 100%);
+    color: #f59e0b;
+}
+
+/* Card Details */
+.manage-sharing-card-details {
+    background: linear-gradient(135deg, #fafbff 0%, #f5f7fc 100%);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+}
+
+.manage-sharing-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+}
+
+.manage-sharing-detail-row:first-child {
+    padding-top: 0;
+}
+
+.manage-sharing-detail-row:last-child {
+    padding-bottom: 0;
+}
+
+.manage-sharing-detail-row:not(:last-child) {
+    border-bottom: 1px solid rgba(84, 56, 236, 0.06);
+}
+
+.manage-sharing-detail-label {
+    color: #6b7a99;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.manage-sharing-detail-value {
+    color: #2d3748;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* Cancel Button */
+.manage-sharing-cancel-btn {
+    width: 100%;
+    padding: 12px 20px;
+    background: #fee2e2;
+    color: #ef4444;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.manage-sharing-cancel-btn:hover {
+    background: #fecaca;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+}
+
+@media (max-width: 600px) {
+    .manage-sharing-root {
+        padding: 0 16px;
+    }
+
+    .manage-sharing-container {
+        padding: 20px 0 32px 0;
+    }
+
+    .manage-sharing-title {
+        font-size: 1.4rem;
+    }
+
+    .manage-sharing-card {
+        padding: 16px;
+    }
+}

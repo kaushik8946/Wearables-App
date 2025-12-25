@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Heart,
   Footprints,
@@ -8,7 +9,8 @@ import {
   Scale,
   CalendarHeart,
   Stethoscope,
-  ChevronDown
+  ChevronDown,
+  Share2
 } from 'lucide-react';
 import DevicesMenu from '../../common/DevicesMenu/DevicesMenu';
 import SineWave from '../../common/SineWave/SineWave';
@@ -48,7 +50,8 @@ const DashboardView = ({
   onOpenWeight,
   connectedDevice,
   userDevices,
-  onDeviceSelect
+  onDeviceSelect,
+  onShareClick
 }) => {
   const [showDeviceDropdown, setShowDeviceDropdown] = useState(false);
 
@@ -150,6 +153,31 @@ const DashboardView = ({
                 )}
               </div>
             </div>
+            {/* Share Button - Below dropdown */}
+            <button
+              onClick={() => onShareClick()}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                width: '100%',
+                marginTop: '12px',
+                padding: '12px 16px',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <Share2 size={18} />
+              Share Details
+            </button>
           </div>
         )}
 
@@ -331,6 +359,7 @@ const DashboardView = ({
 // Simplified Dashboard Component
 // Main Dashboard component for wearables app
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [showSteps, setShowSteps] = useState(false);
   const [showHeartRate, setShowHeartRate] = useState(false);
   const [showSleep, setShowSleep] = useState(false);
@@ -594,6 +623,7 @@ const Dashboard = () => {
         connectedDevice={connectedDevice}
         userDevices={userDevices}
         onDeviceSelect={handleDeviceSelect}
+        onShareClick={() => navigate('/share-details')}
       />
 
       {/* Modals */}
